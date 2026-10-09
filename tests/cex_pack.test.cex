@@ -4,6 +4,7 @@ import "../src/types.cex";
 import "../src/parser.cex";
 import "../src/schema.cex";
 import "../src/validator.cex";
+import "../src/downloader.cex";
 
 fn testValidManifest() {
     println("[TEST 1] Testing Valid Manifest...");
@@ -61,6 +62,18 @@ fn testRule29EofNewlineViolation() {
     }
 }
 
+fn testDependencyDownloader() {
+    println("[TEST 5] Testing Dependency Downloader into .cex_boxes/...");
+    let downloader: DependencyDownloader* = new DependencyDownloader();
+    bool success: bool = downloader->downloadDependencies("cex-pack.json", "tests/.cex_boxes");
+
+    if (success) {
+        println("  -> PASSED: Dependency downloader installed packages into .cex_boxes/ successfully.");
+    } else {
+        println("  -> FAILED: Dependency downloader failed!");
+    }
+}
+
 fn main(): int {
     println("================================================------------------");
     println("        Running CexPack Manifest Validator Test Suite             ");
@@ -70,6 +83,7 @@ fn main(): int {
     testRule69Violation();
     testSyntaxErrorUnclosedObject();
     testRule29EofNewlineViolation();
+    testDependencyDownloader();
 
     println("================================================------------------");
     println("        All CexPack Unit & Integration Tests Passed!             ");

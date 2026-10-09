@@ -2,35 +2,41 @@
 
 import "./types.cex";
 import "./validator.cex";
+import "./downloader.cex";
 
 class PackCLI {
     private PackValidator* validator;
+    private DependencyDownloader* downloader;
 
     public PackCLI() {
         this.validator = new PackValidator();
+        this.downloader = new DependencyDownloader();
     }
 
     public void printHelp() {
         println("================================================------------------");
-        println("   2-TEK Cex-Pack: Native Manifest Syntax & Schema Checker        ");
+        println("   2-TEK Cex-Pack: Native Manifest Validator & Package Manager    ");
+        println("   Integrated with @2tek/cli Task Dispatcher Engine               ");
         println("================================================------------------");
         println("  Usage: cex-pack [command] [options] <filepath>");
         println("");
         println("  Commands:");
-        println("    check [file]   Validate JSON syntax and manifest schema (default: cex-pack.json)");
-        println("    lint [file]    Perform deep linter and rule governance checks");
-        println("    init           Scaffold a standard governance-compliant cex-pack.json");
-        println("    help           Display this help documentation");
+        println("    check [file]       Validate JSON syntax and manifest schema (default: cex-pack.json)");
+        println("    downloads [file]   Download dependencies defined in manifest into .cex_boxes/");
+        println("    lint [file]        Perform deep linter and rule governance checks");
+        println("    init               Scaffold a standard governance-compliant cex-pack.json");
+        println("    help               Display this help documentation");
         println("");
         println("  Options:");
-        println("    --verbose      Show verbose tokenization and step breakdown");
-        println("    --help, -h     Show command line options");
-        println("    --version, -v  Display version info");
+        println("    --verbose          Show verbose tokenization and step breakdown");
+        println("    --help, -h         Show command line options");
+        println("    --version, -v      Display version info");
         println("================================================------------------");
     }
 
     public void printVersion() {
-        println("cex-pack v1.0.0 (2-TEK Cex Manifest Validator)");
+        println("cex-pack v1.0.0 (2-TEK Cex Manifest Validator & Package Manager)");
+        println("  • Integrated Engine: @2tek/cli v1.0.0");
     }
 
     public void createTemplateManifest() {
@@ -56,6 +62,14 @@ class PackCLI {
         if (cmd == "init") {
             this.createTemplateManifest();
             return 0;
+        }
+
+        if (cmd == "downloads" || cmd == "download" || cmd == "--downloads" || cmd == "--download") {
+            bool ok: bool = this.downloader->downloadDependencies(fileToValidate, ".cex_boxes");
+            if (ok) {
+                return 0;
+            }
+            return 1;
         }
 
         if (cmd == "check" || cmd == "lint" || cmd == "--check" || cmd.length() == 0 || cmd == fileToValidate) {

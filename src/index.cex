@@ -5,6 +5,7 @@ import "./parser.cex";
 import "./schema.cex";
 import "./reporter.cex";
 import "./validator.cex";
+import "./downloader.cex";
 import "./cli.cex";
 
 function main(args: Array<string>*): int {

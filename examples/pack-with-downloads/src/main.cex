@@ -1,0 +1,7 @@
+// Sample Application Main Entrypoint
+
+function main(): int {
+    println("--- Sample Application Running ---");
+    println("Dependencies imported successfully from .cex_boxes/");
+    return 0;
+}

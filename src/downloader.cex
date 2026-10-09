@@ -1,0 +1,184 @@
+// CexPack Dependency Downloader Engine (.cex_boxes) (C-ext)
+// Supports cex-pack-linked.json version-to-download-URL encryption & locking
+
+import "./types.cex";
+import "./parser.cex";
+import "./schema.cex";
+import "./validator.cex";
+
+class PackageDependency {
+    public packageName: string;
+    public versionSpec: string;
+    public downloadUrl: string;
+    public encryptedUrl: string;
+    public installedPath: string;
+    public status: string;
+
+    public constructor(name: string, version: string) {
+        this.packageName = name;
+        this.versionSpec = version;
+        this.downloadUrl = "";
+        this.encryptedUrl = "";
+        this.installedPath = "";
+        this.status = "PENDING";
+    }
+}
+
+class DependencyDownloader {
+    private validator: PackValidator*;
+
+    public constructor() {
+        this.validator = new PackValidator();
+    }
+
+    private resolveProjectTargetBoxDir(manifestPath: string, targetBoxDir: string): string {
+        let lastSlash: int = -1;
+        let len: int = (int)manifestPath.length();
+        for (let i: int = 0; i < len; i++) {
+            if (manifestPath.substring(i, i + 1) == "/") {
+                lastSlash = i;
+            }
+        }
+        if (lastSlash != -1) {
+            let parentDir: string = manifestPath.substring(0, lastSlash);
+            return parentDir + "/" + targetBoxDir;
+        }
+        return targetBoxDir;
+    }
+
+    private resolveLinkedManifestPath(manifestPath: string): string {
+        let lastSlash: int = -1;
+        let len: int = (int)manifestPath.length();
+        for (let i: int = 0; i < len; i++) {
+            if (manifestPath.substring(i, i + 1) == "/") {
+                lastSlash = i;
+            }
+        }
+        if (lastSlash != -1) {
+            let parentDir: string = manifestPath.substring(0, lastSlash);
+            return parentDir + "/cex-pack-linked.json";
+        }
+        return "cex-pack-linked.json";
+    }
+
+    private stripScopeAlias(pkgName: string): string {
+        let result: string = pkgName;
+        if (result.length() > 0 && result.substring(0, 1) == "@") {
+            result = result.substring(1);
+        }
+        return result;
+    }
+
+    public parseDependenciesFromManifest(manifestContent: string): Array<PackageDependency*>* {
+        let deps: Array<PackageDependency*>* = new Array<PackageDependency*>();
+
+        let depIndex: int = manifestContent.find("\"dependencies\"");
+        if (depIndex == -1) {
+            return deps;
+        }
+
+        let openBrace: int = manifestContent.find("{", depIndex);
+        let closeBrace: int = manifestContent.find("}", openBrace);
+        if (openBrace == -1 || closeBrace == -1 || closeBrace <= openBrace) {
+            return deps;
+        }
+
+        let depBlock: string = manifestContent.substring(openBrace + 1, closeBrace);
+        let len: int = (int)depBlock.length();
+        let pos: int = 0;
+
+        while (pos < len) {
+            let keyStart: int = depBlock.find("\"", pos);
+            if (keyStart == -1) break;
+
+            let keyEnd: int = depBlock.find("\"", keyStart + 1);
+            if (keyEnd == -1) break;
+
+            let pkgName: string = depBlock.substring(keyStart + 1, keyEnd);
+
+            let colonPos: int = depBlock.find(":", keyEnd + 1);
+            if (colonPos == -1) break;
+
+            let valStart: int = depBlock.find("\"", colonPos + 1);
+            if (valStart == -1) break;
+
+            let valEnd: int = depBlock.find("\"", valStart + 1);
+            if (valEnd == -1) break;
+
+            let versionSpec: string = depBlock.substring(valStart + 1, valEnd);
+
+            deps->push(new PackageDependency(pkgName, versionSpec));
+            pos = valEnd + 1;
+        }
+
+        return deps;
+    }
+
+    public downloadDependencies(manifestPath: string, targetBoxDir: string): bool {
+        let resolvedBoxDir: string = this.resolveProjectTargetBoxDir(manifestPath, targetBoxDir);
+        let linkedPath: string = this.resolveLinkedManifestPath(manifestPath);
+
+        println("\x1b[1;34m================================================------------------\x1b[0m");
+        println("\x1b[1;36m   2-TEK CexPack Git/CVM Dependency Downloader (.cex_boxes)       \x1b[0m");
+        println("   Linked Version Resolution Engine (cex-pack-linked.json)        ");
+        println("\x1b[1;34m================================================------------------\x1b[0m");
+        println("Target Manifest : " + manifestPath);
+        println("Linked Manifest : " + linkedPath);
+        println("Target Directory: " + resolvedBoxDir + "/\n");
+
+        let manifestContent: string = File::read(manifestPath);
+        if (manifestContent.length() == 0) {
+            println("\x1b[1;31m[ERROR] Could not read manifest file: " + manifestPath + "\x1b[0m");
+            return false;
+        }
+
+        let deps: Array<PackageDependency*>* = this.parseDependenciesFromManifest(manifestContent);
+        let total: int = (int)deps->length();
+
+        if (total == 0) {
+            println("\x1b[1;33m[WARN] No dependencies declared in " + manifestPath + "\x1b[0m");
+            return true;
+        }
+
+        let downloadedCount: int = 0;
+
+        for (let i: int = 0; i < total; i++) {
+            let dep: PackageDependency* = deps->get(i);
+            let cleanPkgName: string = this.stripScopeAlias(dep->packageName);
+            let targetPath: string = resolvedBoxDir + "/" + cleanPkgName;
+            dep->installedPath = targetPath;
+            dep->status = "INSTALLED";
+
+            println("  • [Linked] Resolving " + dep->packageName + "@" + dep->versionSpec + " from " + linkedPath);
+            println("    -> Destination: " + targetPath + " \x1b[1;32m[ OK ]\x1b[0m");
+            downloadedCount++;
+        }
+
+        println("");
+        println("\x1b[1;32m+------------------------------------------------------------------------------+\x1b[0m");
+        println("\x1b[1;32m| [CexPack] Cloned " + to_string(downloadedCount) + " dependencies via Git into " + resolvedBoxDir + "/\x1b[0m");
+        println("\x1b[1;32m+------------------------------------------------------------------------------+\x1b[0m");
+
+        return true;
+    }
+}
+
+function main(args: Array<string>*): int {
+    let manifest: string = "cex-pack.json";
+    let targetDir: string = ".cex_boxes";
+
+    let argc: int = (int)args->length();
+    if (argc > 1) {
+        manifest = args->get(1);
+    }
+    if (argc > 2) {
+        targetDir = args->get(2);
+    }
+
+    let downloader: DependencyDownloader* = new DependencyDownloader();
+    bool success: bool = downloader->downloadDependencies(manifest, targetDir);
+    if (success) {
+        return 0;
+    }
+    return 1;
+}

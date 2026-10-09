@@ -1,0 +1,20 @@
+{
+  "name": "@2tek/sample-pack-app",
+  "version": "1.0.0",
+  "description": "Sample Cex Application demonstrating cex-pack downloads dependency installer into .cex_boxes/",
+  "main": "src/main.cex",
+  "target": "runtime",
+  "required": {
+    "cexr": "^8"
+  },
+  "scripts": {
+    "install": "cex-pack downloads",
+    "start": "cexr run src/main.cex"
+  },
+  "dependencies": {
+    "@2tek/cli": "1.0.0",
+    "cexr": "https://github.com/2-tek/cexr.git",
+    "cexp": "https://github.com/2-tek/cexp.git",
+    "cex-test": "https://github.com/2-tek/cex-test.git"
+  }
+}
