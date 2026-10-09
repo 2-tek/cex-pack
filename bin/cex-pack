@@ -205,7 +205,7 @@ function saveLinkedManifest(linkedPath, linkedData) {
 }
 
 // -----------------------------------------------------------------------------
-// cex-log & PROGESS.md Progress Tracker
+// cex-log & .cex_boxes/PROGRESS.md Progress Tracker
 // -----------------------------------------------------------------------------
 const CEX_LOG_PREFIX = '\x1b[1;35m[cex-log]\x1b[0m';
 
@@ -246,48 +246,60 @@ function renderProgressBar(percent, length = 20) {
     return '█'.repeat(filled) + '░'.repeat(empty);
 }
 
-function updateProgressFile(projectDir, manifestData, depList, currentStatus, currentPercent) {
-    const progressFiles = [
-        path.join(projectDir, 'PROGESS.md'),
-        path.join(projectDir, 'PROGRESS.md')
-    ];
+function getDirSizeBytes(dirPath) {
+    if (!fs.existsSync(dirPath)) return 0;
+    try {
+        let total = 0;
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+        for (const entry of entries) {
+            const fullPath = path.join(dirPath, entry.name);
+            if (entry.isDirectory()) {
+                total += getDirSizeBytes(fullPath);
+            } else if (entry.isFile()) {
+                total += fs.statSync(fullPath).size;
+            }
+        }
+        return total;
+    } catch (e) {
+        return 0;
+    }
+}
 
-    const bar = renderProgressBar(currentPercent, 20);
-    const dateStr = new Date().toISOString();
-    const installedCount = depList.filter(d => d.status === 'INSTALLED' || d.status === 'UPDATED').length;
+function formatMb(bytes) {
+    const mb = bytes / (1024 * 1024);
+    if (mb < 0.01 && bytes > 0) return '0.01Mb';
+    return mb.toFixed(2) + 'Mb';
+}
 
-    let content = `# CexPack Download Progress\n\n`;
-    content += `> **Project**: \`${manifestData.name || 'unnamed-project'}\` v${manifestData.version || '1.0.0'}\n`;
-    content += `> **Target Directory**: \`.cex_boxes/\`\n`;
-    content += `> **Last Updated**: \`${dateStr}\`\n\n`;
-    content += `## Status: **${currentStatus}** (${currentPercent}%)\n\n`;
-    content += `\`\`\`text\n`;
-    content += `[${bar}] ${currentPercent}%\n`;
-    content += `\`\`\`\n\n`;
-    content += `### Dependencies Status (${installedCount}/${depList.length})\n\n`;
-    content += `| Package | Version | Destination | Source URL | Status |\n`;
-    content += `|---|---|---|---|---|\n`;
+function updateProgressFile(targetBoxDir, depList) {
+    // PROGRESS.md is strictly inside .cex_boxes only
+    if (!fs.existsSync(targetBoxDir)) {
+        fs.mkdirSync(targetBoxDir, { recursive: true });
+    }
+    const progressFile = path.join(targetBoxDir, 'PROGRESS.md');
+
+    // Calculate total size of .cex_boxes
+    const totalBytes = getDirSizeBytes(targetBoxDir);
+    const totalSizeStr = formatMb(totalBytes);
+
+    let content = `current: ${totalSizeStr}\n.cex_boxes -> PROGRESS.md\n\n`;
 
     for (const dep of depList) {
-        let statusBadge = '⏳ PENDING';
-        if (dep.status === 'DOWNLOADING') statusBadge = '⚙️ DOWNLOADING';
-        if (dep.status === 'INSTALLED') statusBadge = '✅ INSTALLED';
-        if (dep.status === 'UPDATED') statusBadge = '🔄 UPDATED';
-        if (dep.status === 'FAILED') statusBadge = '❌ FAILED';
+        const depDir = path.join(targetBoxDir, dep.cleanName);
+        const depBytes = getDirSizeBytes(depDir);
+        const depSizeStr = formatMb(depBytes);
+        const depState = dep.status || 'PENDING';
+        const percentStr = (typeof dep.percent === 'number' ? dep.percent : 0) + '%';
+        const linkedRef = dep.linked || 'cex-pack-linked.json';
 
-        const destDisplay = `.cex_boxes/${dep.cleanName}`;
-        const sourceDisplay = dep.source ? `\`${dep.source}\`` : '`-`';
-        content += `| **${dep.name}** | \`${dep.version}\` | \`${destDisplay}\` | ${sourceDisplay} | ${statusBadge} |\n`;
+        // Template: [state][percent][size][totalsize][name][linked]
+        content += `[${depState}][${percentStr}][${depSizeStr}][${totalSizeStr}][${dep.name}][${linkedRef}]\n`;
     }
 
-    content += `\n---\n*Updated automatically by \`cex-pack downloads\` & \`cex-log\` engine*\n`;
-
-    for (const file of progressFiles) {
-        try {
-            fs.writeFileSync(file, content);
-        } catch (e) {
-            // ignore error
-        }
+    try {
+        fs.writeFileSync(progressFile, content);
+    } catch (e) {
+        // ignore error
     }
 }
 
@@ -335,16 +347,20 @@ function runDownloads(manifestFile) {
         process.exit(0);
     }
 
+    fs.mkdirSync(targetBoxDir, { recursive: true });
+
     const depList = depNames.map(name => ({
         name: name,
         cleanName: stripScopeAlias(name),
         version: dependencies[name],
         source: '',
-        status: 'PENDING'
+        status: 'PENDING',
+        percent: 0,
+        linked: 'cex-pack-linked.json'
     }));
 
-    // Initialize PROGESS.md at 0%
-    updateProgressFile(projectDir, manifestData, depList, 'INITIALIZING', 0);
+    // Initialize .cex_boxes/PROGRESS.md at 0%
+    updateProgressFile(targetBoxDir, depList);
     cexLog('info', `Starting download pipeline for ${depNames.length} dependencies into ${targetBoxDir}/`, 0);
 
     // 1. Load or initialize project cex-pack-linked.json
@@ -354,8 +370,6 @@ function runDownloads(manifestFile) {
 
     cexLog('info', `Checking lockfile: ${linkedPath}`, 0);
 
-    fs.mkdirSync(targetBoxDir, { recursive: true });
-
     let downloadedCount = 0;
     for (let i = 0; i < depNames.length; i++) {
         const pkgName = depNames[i];
@@ -364,7 +378,8 @@ function runDownloads(manifestFile) {
         const startPercent = Math.round((i / depNames.length) * 100);
 
         depItem.status = 'DOWNLOADING';
-        updateProgressFile(projectDir, manifestData, depList, 'DOWNLOADING', startPercent);
+        depItem.percent = startPercent;
+        updateProgressFile(targetBoxDir, depList);
         cexLog('info', `[${i + 1}/${depNames.length}] Resolving & downloading ${pkgName}@${declaredVersion} ...`, startPercent);
 
         let resolvedDownloadUrl = '';
@@ -415,6 +430,7 @@ function runDownloads(manifestFile) {
                 // Real Git repository already cloned -> pull latest
                 execSync(`git -C "${destPath}" pull --quiet`, { stdio: 'inherit' });
                 depItem.status = 'UPDATED';
+                depItem.percent = currentStepPercent;
                 cexLog('success', `[${i + 1}/${depNames.length}] Updated repository in .cex_boxes/${cleanName}`, currentStepPercent);
             } else {
                 // Ensure parent directory exists (e.g. for scoped 2tek/cli)
@@ -427,15 +443,17 @@ function runDownloads(manifestFile) {
                 const cloneUrl = (depDownloadUrl.startsWith('/') && !depDownloadUrl.startsWith('file://')) ? 'file://' + depDownloadUrl : depDownloadUrl;
                 execSync(`git clone --depth 1 "${cloneUrl}" "${destPath}" --quiet`, { stdio: 'inherit' });
                 depItem.status = 'INSTALLED';
+                depItem.percent = currentStepPercent;
                 cexLog('success', `[${i + 1}/${depNames.length}] Cloned ${pkgName} into .cex_boxes/${cleanName}`, currentStepPercent);
             }
             downloadedCount++;
         } catch (err) {
             depItem.status = 'FAILED';
+            depItem.percent = currentStepPercent;
             cexLog('error', `[${i + 1}/${depNames.length}] Git download failed for ${pkgName}: ${err.message}`, currentStepPercent);
         }
 
-        updateProgressFile(projectDir, manifestData, depList, currentStepPercent === 100 ? 'COMPLETED' : 'DOWNLOADING', currentStepPercent);
+        updateProgressFile(targetBoxDir, depList);
         cexLog('progress', `Download Progress: [${renderProgressBar(currentStepPercent, 20)}] ${currentStepPercent}%`, currentStepPercent);
     }
 
@@ -445,10 +463,13 @@ function runDownloads(manifestFile) {
         cexLog('info', `Updated encrypted lockfile: ${linkedPath}`, 100);
     }
 
-    // Final PROGESS.md update at 100%
-    updateProgressFile(projectDir, manifestData, depList, 'COMPLETED', 100);
+    // Final .cex_boxes/PROGRESS.md update at 100%
+    for (const dep of depList) {
+        dep.percent = 100;
+    }
+    updateProgressFile(targetBoxDir, depList);
     cexLog('success', `Downloaded ${downloadedCount}/${depNames.length} dependencies via cex-pack-linked.json into ${targetBoxDir}/`, 100);
-    cexLog('info', `State and progress percent successfully written to PROGESS.md`, 100);
+    cexLog('info', `Total size of .cex_boxes recorded in .cex_boxes/PROGRESS.md: current: ${formatMb(getDirSizeBytes(targetBoxDir))}`, 100);
 }
 
 function runCheck(manifestFile) {

@@ -1,0 +1,26 @@
+// 2-TEK CexPack Native CLI Entrypoint (.cex)
+// Supports Rule 69, Rule 29, Rule 72 & .cex_boxes/PROGRESS.md tracking
+
+import "../src/types.cex";
+import "../src/parser.cex";
+import "../src/schema.cex";
+import "../src/reporter.cex";
+import "../src/validator.cex";
+import "../src/downloader.cex";
+import "../src/cli.cex";
+
+function main(args: Array<string>*): int {
+    let cli: PackCLI* = new PackCLI();
+    let cmd: string = "check";
+    let targetFile: string = "cex-pack.json";
+
+    let argc: int = (int)args->length();
+    if (argc > 1) {
+        cmd = args->get(1);
+    }
+    if (argc > 2) {
+        targetFile = args->get(2);
+    }
+
+    return cli->run(cmd, targetFile);
+}

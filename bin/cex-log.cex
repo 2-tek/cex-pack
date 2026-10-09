@@ -1,0 +1,50 @@
+// 2-TEK CexLog Terminal Logger (.cex)
+// Supports logging levels, progress percentages, and ANSI colors
+
+class CexLog {
+    public static log(level: string, message: string, percent: int): void {
+        let prefix: string = "\033[1;35m[cex-log]\033[0m";
+        let levelTag: string = "\033[1;36m[INFO]\033[0m";
+
+        if (level == "SUCCESS" || level == "OK") {
+            levelTag = "\033[1;32m[SUCCESS]\033[0m";
+        } else if (level == "WARN" || level == "WARNING") {
+            levelTag = "\033[1;33m[WARN]\033[0m";
+        } else if (level == "ERROR" || level == "FAIL") {
+            levelTag = "\033[1;31m[ERROR]\033[0m";
+        } else if (level == "PROGRESS") {
+            levelTag = "\033[1;34m[PROGRESS]\033[0m";
+        }
+
+        let percentStr: string = "";
+        if (percent >= 0) {
+            percentStr = " \033[1;33m(" + to_string(percent) + "%)\033[0m";
+        }
+
+        println(prefix + " " + levelTag + percentStr + " " + message);
+    }
+}
+
+function main(args: Array<string>*): int {
+    let level: string = "INFO";
+    let percent: int = -1;
+    let message: string = "";
+
+    let argc: int = (int)args->length();
+    for (let i: int = 1; i < argc; i++) {
+        let arg: string = args->get(i);
+        if (arg.find("--level=") == 0) {
+            level = arg.substring(8);
+        } else if (arg.find("--percent=") == 0) {
+            percent = (int)to_int(arg.substring(10));
+        } else {
+            if (message.length() > 0) {
+                message = message + " ";
+            }
+            message = message + arg;
+        }
+    }
+
+    CexLog::log(level, message, percent);
+    return 0;
+}

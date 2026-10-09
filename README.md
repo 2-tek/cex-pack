@@ -8,8 +8,9 @@
 
 ## Features
 
-- **Real-Time Progress Tracking (`PROGESS.md`)**: Automatically updates `PROGESS.md` with visual progress bars (`[█████░░░░░] 50%`), percentages, dependency download statuses, and timestamps.
+- **Real-Time Progress Tracking (`.cex_boxes/PROGRESS.md`)**: Automatically updates `.cex_boxes/PROGRESS.md` with total `.cex_boxes` directory size (`current: 0.5Mb`) and formatted dependency lines following the template: `[state][percent][size][totalsize][name][linked]`.
 - **Terminal Progress Logger (`cex-log`)**: Outputs styled and timestamped progress logs (`[cex-log] [INFO] (50%)`) into the terminal during downloads.
+- **Native `.cex` CLI Implementation (`bin/*.cex`)**: CLI commands and loggers implemented as native `.cex` files (`bin/cex-pack.cex`, `bin/cex-log.cex`).
 - **`cex-pack-linked.json` Encrypted Lockfile**: Links package versions to AES-256 encrypted repository download URLs (`cex-enc:...`) specifically scoped for the project.
 - **Git & CVM Dependency Downloader (`.cex_boxes`)**: Downloads package dependencies declared in `cex-pack.json` and resolved in `cex-pack-linked.json` via real `git clone --depth 1` into `.cex_boxes/{dependencyName}` using real canonical project names without `@` alias symbols.
 - **Integrated with `cex-cli`**: Full integration with the `cex-cli` task dispatcher and terminal UI engine.
