@@ -246,32 +246,24 @@ function renderProgressBar(percent, length = 20) {
     return '█'.repeat(filled) + '░'.repeat(empty);
 }
 
-function getDirSizeBytes(dirPath) {
+function getDirSizeKb(dirPath) {
     if (!fs.existsSync(dirPath)) return 0;
     try {
-        let total = 0;
-        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-        for (const entry of entries) {
-            const fullPath = path.join(dirPath, entry.name);
-            if (entry.isDirectory()) {
-                total += getDirSizeBytes(fullPath);
-            } else if (entry.isFile()) {
-                total += fs.statSync(fullPath).size;
-            }
-        }
-        return total;
+        const out = execSync(`du -sk "${dirPath}"`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
+        const kb = parseInt(out.trim().split(/\s+/)[0], 10);
+        return isNaN(kb) ? 0 : kb;
     } catch (e) {
         return 0;
     }
 }
 
-function formatMb(bytes) {
-    const mb = bytes / (1024 * 1024);
-    if (mb < 0.01 && bytes > 0) return '0.01Mb';
+function formatMb(kb) {
+    const mb = kb / 1024;
+    if (mb < 0.01 && kb > 0) return '0.01Mb';
     return mb.toFixed(2) + 'Mb';
 }
 
-function updateProgressFile(targetBoxDir, depList) {
+function updateProgressFile(targetBoxDir, depList, overallPercent) {
     // PROGRESS.md is strictly inside .cex_boxes only
     if (!fs.existsSync(targetBoxDir)) {
         fs.mkdirSync(targetBoxDir, { recursive: true });
@@ -279,22 +271,51 @@ function updateProgressFile(targetBoxDir, depList) {
     const progressFile = path.join(targetBoxDir, 'PROGRESS.md');
 
     // Calculate total size of .cex_boxes
-    const totalBytes = getDirSizeBytes(targetBoxDir);
-    const totalSizeStr = formatMb(totalBytes);
+    const boxTotalKb = getDirSizeKb(targetBoxDir);
+    const boxTotalSizeStr = formatMb(boxTotalKb);
 
-    let content = `current: ${totalSizeStr}\n.cex_boxes -> PROGRESS.md\n\n`;
+    let totalCurrentKb = 0;
+    let totalDepKb = 0;
 
+    const lines = [];
     for (const dep of depList) {
         const depDir = path.join(targetBoxDir, dep.cleanName);
-        const depBytes = getDirSizeBytes(depDir);
-        const depSizeStr = formatMb(depBytes);
+        const depKb = getDirSizeKb(depDir);
+        const depPercent = (typeof dep.percent === 'number' ? dep.percent : 0);
+
+        let currentDepKb = 0;
+        let totalSingleDepKb = depKb;
+
+        if (dep.status === 'INSTALLED' || dep.status === 'UPDATED') {
+            currentDepKb = depKb;
+            totalSingleDepKb = depKb;
+        } else if (dep.status === 'DOWNLOADING') {
+            currentDepKb = depKb;
+            totalSingleDepKb = depPercent > 0 ? Math.round((depKb / depPercent) * 100) : depKb;
+        } else {
+            currentDepKb = 0;
+            totalSingleDepKb = depKb;
+        }
+
+        totalCurrentKb += currentDepKb;
+        totalDepKb += (totalSingleDepKb > 0 ? totalSingleDepKb : depKb);
+
+        const currentDepSizeStr = formatMb(currentDepKb);
+        const totalDepSizeStr = formatMb(totalSingleDepKb);
         const depState = dep.status || 'PENDING';
-        const percentStr = (typeof dep.percent === 'number' ? dep.percent : 0) + '%';
+        const percentStr = depPercent + '%';
         const linkedRef = dep.linked || 'cex-pack-linked.json';
 
         // Template: [state][percent][size][totalsize][name][linked]
-        content += `[${depState}][${percentStr}][${depSizeStr}][${totalSizeStr}][${dep.name}][${linkedRef}]\n`;
+        lines.push(`[${depState}][${percentStr}][${currentDepSizeStr}][${totalDepSizeStr}][${dep.name}][${linkedRef}]`);
     }
+
+    const currentBoxSizeStr = formatMb(totalCurrentKb > 0 ? totalCurrentKb : boxTotalKb);
+    const finalPercent = (typeof overallPercent === 'number') ? overallPercent : 100;
+
+    let content = `current: ${boxTotalSizeStr}\n.cex_boxes -> PROGRESS.md\n\n`;
+    content += lines.join('\n') + '\n\n';
+    content += `summary:[${currentBoxSizeStr}][${boxTotalSizeStr}][${finalPercent}%]\n`;
 
     try {
         fs.writeFileSync(progressFile, content);
@@ -469,7 +490,7 @@ function runDownloads(manifestFile) {
     }
     updateProgressFile(targetBoxDir, depList);
     cexLog('success', `Downloaded ${downloadedCount}/${depNames.length} dependencies via cex-pack-linked.json into ${targetBoxDir}/`, 100);
-    cexLog('info', `Total size of .cex_boxes recorded in .cex_boxes/PROGRESS.md: current: ${formatMb(getDirSizeBytes(targetBoxDir))}`, 100);
+    cexLog('info', `Total size of .cex_boxes recorded in .cex_boxes/PROGRESS.md: current: ${formatMb(getDirSizeKb(targetBoxDir))}`, 100);
 }
 
 function runCheck(manifestFile) {
