@@ -6,30 +6,26 @@
     "algorithm": "aes-256-cbc",
     "scope": "project"
   },
-  "packages": {
+  "dependencies": {
     "@2tek/cli": {
       "version": "1.0.0",
-      "url": "/Users/tranduyviet/Projects/cex/cxvm/packages/cex-cli",
-      "encryptedUrl": "cex-enc:e13758ce539c69f44fbecab52e88b21b:d40adf66b60dad1ccb9f81771f0fb0e3d710a394a31b5679278d97d1fce668af29b174881f5f8f37ce485f224f288af0541e583e19b10645b0ea57fe7a7421da",
-      "updatedAt": "2026-10-09T04:10:08.245Z"
+      "url": "cex-enc:1031f8219144a2e4d34b264ea78d0777:62535b17ee387ee55fc11319834df9e8895d20477f75e273d854dcd9ba410ee4f544b78bf66f9cf74790dd66300aef07b8ad7a6dcefca8fab3f66ce47fa42836",
+      "updatedAt": "2026-10-09T04:15:01.657Z"
     },
     "cexr": {
-      "version": "https://github.com/2-tek/cexr.git",
-      "url": "https://github.com/2-tek/cexr.git",
-      "encryptedUrl": "cex-enc:d068f398735204539d388becede6c6dd:e9fc88f9baf50bc81c5f2e3e614f70fcf5defbf7350a2253e9abd8a8c5f7dafb699478e6dd9e4e3ef537451648a34253",
-      "updatedAt": "2026-10-09T04:10:08.246Z"
+      "version": "1.0.0",
+      "url": "cex-enc:3726758e935b97dd338db36620f8777b:c707960ca9519f40cff68e2ca89033156d98e5f4975a84718da998b3bfd5d33df2791fe2dc41e989fb7be5d97aa0760f",
+      "updatedAt": "2026-10-09T04:15:01.798Z"
     },
     "cexp": {
-      "version": "https://github.com/2-tek/cexp.git",
-      "url": "https://github.com/2-tek/cexp.git",
-      "encryptedUrl": "cex-enc:f324b95f03186ebb9643846b2fb2ff20:627fcc65a0e91928582402e37eb88fa3b8b474fce13fe1e9e4c6a5a8b82d3b5c9669366c5273e6215b713379d3b16eba",
-      "updatedAt": "2026-10-09T04:10:08.247Z"
+      "version": "1.0.0",
+      "url": "cex-enc:cf836ae4e94478c97fcac37ad21475c4:df12279e58a2e2e81e6ca642f91ecd9d2b433b391e921b0e66bc306cecc40ef484e458d47fc989d8943d8b7948c49227",
+      "updatedAt": "2026-10-09T04:15:03.902Z"
     },
     "cex-test": {
-      "version": "https://github.com/2-tek/cex-test.git",
-      "url": "https://github.com/2-tek/cex-test.git",
-      "encryptedUrl": "cex-enc:ddb8d6469e93e91bfb55a935f3f07224:ca37a6c956854b8239989b31b68c901f9c892ec3445c13d503e014e935d15635b9dbd0e65255aa1beeba0d3005419cb1",
-      "updatedAt": "2026-10-09T04:10:08.247Z"
+      "version": "1.0.0",
+      "url": "cex-enc:dde0f5cb195b70fa61bcc2e5ddc8c2d3:76f005d52320232cb5575ed31cf2abe6de825f824ddc680398630b785b095cff1c2e3b01c40c60a8b84f6270f36e885c",
+      "updatedAt": "2026-10-09T04:15:05.561Z"
     }
   }
 }

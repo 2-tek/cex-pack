@@ -50,16 +50,14 @@ cex-pack link
     "algorithm": "aes-256-cbc",
     "scope": "project"
   },
-  "packages": {
-    "cex-cli": {
+  "dependencies": {
+    "@2tek/cli": {
       "version": "1.0.0",
-      "url": "https://github.com/2-tek/cxvm.git#packages/cex-cli",
-      "encryptedUrl": "cex-enc:e13758ce539c69f44fbecab52e88b21b:d40adf66..."
+      "url": "cex-enc:1031f8219144a2e4d34b264ea78d0777:62535b17ee387ee55fc11319834df9e8..."
     },
     "cexr": {
-      "version": "https://github.com/2-tek/cexr.git",
-      "url": "https://github.com/2-tek/cexr.git",
-      "encryptedUrl": "cex-enc:d068f398735204539d388becede6c6dd:e9fc88f9..."
+      "version": "1.0.0",
+      "url": "cex-enc:3726758e935b97dd338db36620f8777b:c707960ca9519f40cff68e2ca8903315..."
     }
   }
 }

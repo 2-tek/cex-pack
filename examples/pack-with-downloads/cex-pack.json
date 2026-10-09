@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@2tek/cli": "1.0.0",
-    "cexr": "https://github.com/2-tek/cexr.git",
-    "cexp": "https://github.com/2-tek/cexp.git",
-    "cex-test": "https://github.com/2-tek/cex-test.git"
+    "cexr": "1.0.0",
+    "cexp": "1.0.0",
+    "cex-test": "1.0.0"
   }
 }

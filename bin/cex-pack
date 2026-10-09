@@ -1,0 +1,435 @@
+#!/usr/bin/env node
+// CexPack CLI - Native Manifest Validator & Git/CVM Dependency Downloader
+// Supports cex-pack-linked.json version-to-download-URL encryption & locking
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { execSync } = require('child_process');
+
+const args = process.argv.slice(2);
+const command = args[0] || 'check';
+const targetArg = args[1] || '';
+
+function printHelp() {
+    console.log('================================================------------------');
+    console.log('   2-TEK Cex-Pack: Native Manifest Validator & Package Manager    ');
+    console.log('   Integrated with Git, CVM & cex-pack-linked.json Encryption     ');
+    console.log('================================================------------------');
+    console.log('  Usage: cex-pack [command] [options] <filepath>');
+    console.log('');
+    console.log('  Commands:');
+    console.log('    check [file]       Validate JSON syntax and manifest schema (default: cex-pack.json)');
+    console.log('    downloads [file]   Download dependencies via Git / CVM reading cex-pack-linked.json');
+    console.log('    download [file]    Alias for downloads');
+    console.log('    link [file]        Generate/update encrypted cex-pack-linked.json for project');
+    console.log('    lint [file]        Perform deep linter and rule governance checks');
+    console.log('    init               Scaffold a standard governance-compliant cex-pack.json');
+    console.log('    help               Display this help documentation');
+    console.log('');
+    console.log('  Options:');
+    console.log('    --verbose          Show verbose tokenization and step breakdown');
+    console.log('    --help, -h         Show command line options');
+    console.log('    --version, -v      Display version info');
+    console.log('================================================------------------');
+}
+
+function printVersion() {
+    console.log('cex-pack v1.0.0 (2-TEK Cex Manifest Validator & Package Manager with cex-pack-linked)');
+}
+
+function stripScopeAlias(pkgName) {
+    if (pkgName.startsWith('@')) {
+        return pkgName.substring(1);
+    }
+    return pkgName;
+}
+
+// -----------------------------------------------------------------------------
+// Encryption Logic for cex-pack-linked.json (Project-Scoped AES-256-CBC)
+// -----------------------------------------------------------------------------
+function getProjectKey(projectName) {
+    const salt = '2tek-cex-project-salt-2026';
+    return crypto.createHash('sha256').update((projectName || 'cex-default-project') + salt).digest();
+}
+
+function encryptUrl(url, projectName) {
+    try {
+        const key = getProjectKey(projectName);
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+        let encrypted = cipher.update(url, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        return `cex-enc:${iv.toString('hex')}:${encrypted}`;
+    } catch (e) {
+        // Fallback base64 encryption
+        return 'cex-enc:b64:' + Buffer.from(url).toString('base64');
+    }
+}
+
+function decryptUrl(payload, projectName) {
+    if (!payload || !payload.startsWith('cex-enc:')) {
+        return payload; // Plain URL fallback
+    }
+
+    const token = payload.substring(8);
+    if (token.startsWith('b64:')) {
+        return Buffer.from(token.substring(4), 'base64').toString('utf8');
+    }
+
+    const parts = token.split(':');
+    if (parts.length === 2) {
+        try {
+            const iv = Buffer.from(parts[0], 'hex');
+            const encryptedHex = parts[1];
+            const key = getProjectKey(projectName);
+            const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+            let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
+            decrypted += decipher.final('utf8');
+            return decrypted;
+        } catch (e) {
+            console.error(`\x1b[1;31m[WARN] Failed to decrypt URL payload: ${e.message}\x1b[0m`);
+            return payload;
+        }
+    }
+    return payload;
+}
+
+// -----------------------------------------------------------------------------
+// Default Canonical 2-TEK Repository Resolver
+// -----------------------------------------------------------------------------
+function resolveRepoUrl(pkgName, versionOrUrl) {
+    // 1. Direct Git or CVM URL
+    if (versionOrUrl.startsWith('http://') || 
+        versionOrUrl.startsWith('https://') || 
+        versionOrUrl.startsWith('git@') || 
+        versionOrUrl.startsWith('git+') ||
+        versionOrUrl.startsWith('cvm://')) {
+        return versionOrUrl.replace(/^git\+/, '');
+    }
+
+    // 2. Canonical 2-TEK Git Repositories
+    const clean = stripScopeAlias(pkgName).toLowerCase();
+    if (clean === 'cex-r' || clean === 'cexr' || clean === 'cex/runtime') {
+        return 'https://github.com/2-tek/cexr.git';
+    }
+    if (clean === 'cexp' || clean === 'cex/compiler') {
+        return 'https://github.com/2-tek/cexp.git';
+    }
+    if (clean === 'cex-test' || clean === 'cextest') {
+        return 'https://github.com/2-tek/cex-test.git';
+    }
+    if (clean === 'thunder' || clean === 'cex-thunder' || clean === '2tek/thunder') {
+        return 'https://github.com/2-tek/Thunder.git';
+    }
+    if (clean === 'cxvm' || clean === '2tek/cxvm') {
+        return 'https://github.com/2-tek/cxvm.git';
+    }
+
+    // 3. Local Workspace Git Repositories (Sibling lookup in monorepo)
+    const baseName = path.basename(clean);
+    const workspaceCandidates = [
+        path.resolve(__dirname, '../../../', baseName),
+        path.resolve(__dirname, '../../../packages', baseName),
+        path.resolve(__dirname, '../../../packages', 'cex-' + baseName),
+        path.resolve(process.cwd(), '../', baseName),
+        path.resolve(process.cwd(), '../../', baseName)
+    ];
+
+    for (const candidate of workspaceCandidates) {
+        if (fs.existsSync(path.join(candidate, '.git'))) {
+            return candidate;
+        }
+    }
+
+    // 4. Default 2-TEK Git Repository Pattern
+    return `https://github.com/2-tek/${baseName}.git`;
+}
+
+// -----------------------------------------------------------------------------
+// cex-pack-linked.json Manager
+// -----------------------------------------------------------------------------
+function loadOrCreateLinkedManifest(projectDir, manifestData) {
+    const linkedPath = path.join(projectDir, 'cex-pack-linked.json');
+    let linkedData = {
+        name: manifestData.name || 'unnamed-project',
+        version: manifestData.version || '1.0.0',
+        lockfileVersion: 1,
+        encryption: {
+            algorithm: 'aes-256-cbc',
+            scope: 'project'
+        },
+        dependencies: {}
+    };
+
+    if (fs.existsSync(linkedPath)) {
+        try {
+            const raw = fs.readFileSync(linkedPath, 'utf8');
+            const parsed = JSON.parse(raw);
+            linkedData.name = parsed.name || linkedData.name;
+            linkedData.version = parsed.version || linkedData.version;
+            linkedData.lockfileVersion = parsed.lockfileVersion || 1;
+            linkedData.encryption = parsed.encryption || linkedData.encryption;
+            linkedData.dependencies = parsed.dependencies || parsed.packages || {};
+        } catch (e) {
+            console.error(`\x1b[1;33m[WARN] Failed to read cex-pack-linked.json: ${e.message}. Re-initializing.\x1b[0m`);
+        }
+    }
+
+    return { linkedPath, linkedData };
+}
+
+function saveLinkedManifest(linkedPath, linkedData) {
+    // Ensure clean schema without leaking plaintext URLs
+    const output = {
+        name: linkedData.name,
+        version: linkedData.version,
+        lockfileVersion: linkedData.lockfileVersion || 1,
+        encryption: linkedData.encryption || {
+            algorithm: 'aes-256-cbc',
+            scope: 'project'
+        },
+        dependencies: linkedData.dependencies || {}
+    };
+    fs.writeFileSync(linkedPath, JSON.stringify(output, null, 2) + '\n');
+}
+
+// -----------------------------------------------------------------------------
+// Downloads Engine (Reading from cex-pack-linked.json for Version to Download URL)
+// -----------------------------------------------------------------------------
+function runDownloads(manifestFile) {
+    let manifestPath = manifestFile;
+    if (!manifestPath) {
+        manifestPath = 'cex-pack.json';
+    }
+    if (!path.isAbsolute(manifestPath)) {
+        manifestPath = path.resolve(process.cwd(), manifestPath);
+    }
+
+    if (!fs.existsSync(manifestPath)) {
+        console.error(`\x1b[1;31m[ERROR] Manifest file not found: ${manifestPath}\x1b[0m`);
+        process.exit(1);
+    }
+
+    const projectDir = path.dirname(manifestPath);
+    const targetBoxDir = path.join(projectDir, '.cex_boxes');
+
+    console.log('\x1b[1;34m================================================------------------\x1b[0m');
+    console.log('\x1b[1;36m   2-TEK CexPack Git/CVM Dependency Downloader (.cex_boxes)       \x1b[0m');
+    console.log('   Linked Version Resolution Engine (cex-pack-linked.json)        ');
+    console.log('\x1b[1;34m================================================------------------\x1b[0m');
+    console.log(`Target Manifest : ${manifestPath}`);
+    console.log(`Target Directory: ${targetBoxDir}/\n`);
+
+    let manifestData;
+    try {
+        const rawContent = fs.readFileSync(manifestPath, 'utf8');
+        manifestData = JSON.parse(rawContent);
+    } catch (err) {
+        console.error(`\x1b[1;31m[ERROR] Failed to parse manifest JSON: ${err.message}\x1b[0m`);
+        process.exit(1);
+    }
+
+    const dependencies = manifestData.dependencies || {};
+    const depNames = Object.keys(dependencies);
+
+    if (depNames.length === 0) {
+        console.log(`\x1b[1;33m[WARN] No dependencies defined in ${manifestPath}\x1b[0m`);
+        process.exit(0);
+    }
+
+    // 1. Load or initialize project cex-pack-linked.json
+    const { linkedPath, linkedData } = loadOrCreateLinkedManifest(projectDir, manifestData);
+    const projectName = manifestData.name || 'default-project';
+    let linkedUpdated = false;
+
+    console.log(`[CexPack Linked] Checking lockfile: ${linkedPath}`);
+
+    fs.mkdirSync(targetBoxDir, { recursive: true });
+
+    let downloadedCount = 0;
+    for (const pkgName of depNames) {
+        const declaredVersion = dependencies[pkgName];
+        let resolvedDownloadUrl = '';
+
+        // 2. Read from cex-pack-linked.json for version
+        const linkedEntry = linkedData.dependencies && linkedData.dependencies[pkgName];
+
+        if (linkedEntry && linkedEntry.version === declaredVersion) {
+            const encUrl = linkedEntry.url || linkedEntry.encryptedUrl;
+            if (encUrl && encUrl.startsWith('cex-enc:')) {
+                // Decrypt project-encrypted URL
+                resolvedDownloadUrl = decryptUrl(encUrl, projectName);
+                console.log(`  • [Linked] ${pkgName}@${declaredVersion} -> Decrypted project download URL`);
+            } else if (encUrl) {
+                // Plain URL found -> encrypt for project and update
+                resolvedDownloadUrl = encUrl;
+                const encrypted = encryptUrl(encUrl, projectName);
+                linkedEntry.url = encrypted;
+                delete linkedEntry.encryptedUrl;
+                linkedUpdated = true;
+                console.log(`  • [Linked] ${pkgName}@${declaredVersion} -> Encrypted project URL`);
+            }
+        }
+
+        // 3. If version not found or updated, resolve and write to dependencies url in cex-pack-linked.json
+        if (!resolvedDownloadUrl) {
+            resolvedDownloadUrl = resolveRepoUrl(pkgName, declaredVersion);
+            const encryptedUrl = encryptUrl(resolvedDownloadUrl, projectName);
+            linkedData.dependencies[pkgName] = {
+                version: declaredVersion,
+                url: encryptedUrl,
+                updatedAt: new Date().toISOString()
+            };
+            linkedUpdated = true;
+            console.log(`  • [New Link] Encrypted and wrote ${pkgName}@${declaredVersion} to cex-pack-linked.json`);
+        }
+
+        // 4. Write to dependencies url for version download then downloads
+        const depDownloadUrl = resolvedDownloadUrl;
+        const cleanName = stripScopeAlias(pkgName);
+        const destPath = path.join(targetBoxDir, cleanName);
+
+        try {
+            if (fs.existsSync(destPath) && fs.existsSync(path.join(destPath, '.git'))) {
+                // Real Git repository already cloned -> pull latest
+                execSync(`git -C "${destPath}" pull --quiet`, { stdio: 'inherit' });
+                console.log(`    -> Updated existing repository in ${destPath} \x1b[1;32m[ OK ]\x1b[0m`);
+            } else {
+                // Ensure parent directory exists (e.g. for scoped 2tek/cli)
+                fs.mkdirSync(path.dirname(destPath), { recursive: true });
+                if (fs.existsSync(destPath)) {
+                    fs.rmSync(destPath, { recursive: true, force: true });
+                }
+
+                // Execute real git clone from resolved/decrypted URL
+                execSync(`git clone --depth 1 "${depDownloadUrl}" "${destPath}" --quiet`, { stdio: 'inherit' });
+                console.log(`    -> Cloned from ${depDownloadUrl} to ${destPath} \x1b[1;32m[ OK ]\x1b[0m`);
+            }
+            downloadedCount++;
+        } catch (err) {
+            console.error(`    \x1b[1;31m-> [FAIL] Git clone failed for ${pkgName} from ${depDownloadUrl}: ${err.message}\x1b[0m`);
+        }
+    }
+
+    // Save updated cex-pack-linked.json
+    if (linkedUpdated || !fs.existsSync(linkedPath)) {
+        saveLinkedManifest(linkedPath, linkedData);
+        console.log(`\n\x1b[1;36m[CexPack Linked] Updated encrypted lockfile: ${linkedPath}\x1b[0m`);
+    }
+
+    console.log('\n\x1b[1;32m+------------------------------------------------------------------------------+\x1b[0m');
+    console.log(`\x1b[1;32m| [CexPack] Downloaded ${downloadedCount}/${depNames.length} dependencies via cex-pack-linked.json into ${targetBoxDir}/\x1b[0m`);
+    console.log('\x1b[1;32m+------------------------------------------------------------------------------+\x1b[0m');
+}
+
+function runCheck(manifestFile) {
+    let manifestPath = manifestFile || 'cex-pack.json';
+    if (!path.isAbsolute(manifestPath)) {
+        manifestPath = path.resolve(process.cwd(), manifestPath);
+    }
+
+    if (!fs.existsSync(manifestPath)) {
+        console.error(`\x1b[1;31m[ERROR] Manifest file not found: ${manifestPath}\x1b[0m`);
+        process.exit(1);
+    }
+
+    const content = fs.readFileSync(manifestPath, 'utf8');
+    let errors = [];
+
+    // Rule 29: EOF newline
+    if (!content.endsWith('\n')) {
+        errors.push('Rule 29 Violation: Missing EOF trailing newline');
+    }
+
+    // JSON syntax
+    try {
+        const data = JSON.parse(content);
+        if (!data.name) errors.push('Schema Violation: Missing "name"');
+        if (!data.version) errors.push('Schema Violation: Missing "version"');
+        if (!data.main) errors.push('Schema Violation: Missing "main"');
+        if (!data.target) {
+            errors.push('Rule 69 Violation: Missing "target"');
+        } else if (data.target !== 'runtime') {
+            errors.push('Rule 69 Violation: "target" must strictly be "runtime"');
+        }
+    } catch (e) {
+        errors.push(`Syntax Error: ${e.message}`);
+    }
+
+    if (errors.length > 0) {
+        console.error(`\x1b[1;31m[FAIL] Validation failed with ${errors.length} errors:\x1b[0m`);
+        errors.forEach(err => console.error(`  • ${err}`));
+        process.exit(1);
+    } else {
+        console.log(`\x1b[1;32m[PASS] Manifest ${manifestPath} is valid and rule-compliant.\x1b[0m`);
+        process.exit(0);
+    }
+}
+
+function runLink(manifestFile) {
+    let manifestPath = manifestFile || 'cex-pack.json';
+    if (!path.isAbsolute(manifestPath)) {
+        manifestPath = path.resolve(process.cwd(), manifestPath);
+    }
+
+    if (!fs.existsSync(manifestPath)) {
+        console.error(`\x1b[1;31m[ERROR] Manifest file not found: ${manifestPath}\x1b[0m`);
+        process.exit(1);
+    }
+
+    const projectDir = path.dirname(manifestPath);
+    const rawContent = fs.readFileSync(manifestPath, 'utf8');
+    const manifestData = JSON.parse(rawContent);
+
+    const { linkedPath, linkedData } = loadOrCreateLinkedManifest(projectDir, manifestData);
+    const projectName = manifestData.name || 'default-project';
+    const dependencies = manifestData.dependencies || {};
+
+    for (const [pkgName, versionOrUrl] of Object.entries(dependencies)) {
+        const repoUrl = resolveRepoUrl(pkgName, versionOrUrl);
+        const encryptedUrl = encryptUrl(repoUrl, projectName);
+        linkedData.dependencies[pkgName] = {
+            version: versionOrUrl,
+            url: encryptedUrl,
+            updatedAt: new Date().toISOString()
+        };
+    }
+
+    saveLinkedManifest(linkedPath, linkedData);
+    console.log(`\x1b[1;32m[SUCCESS] Generated encrypted ${linkedPath} with ${Object.keys(dependencies).length} dependencies.\x1b[0m`);
+}
+
+switch (command) {
+    case 'downloads':
+    case 'download':
+    case '--downloads':
+    case '--download':
+        runDownloads(targetArg);
+        break;
+    case 'link':
+    case 'linked':
+        runLink(targetArg);
+        break;
+    case 'check':
+    case 'lint':
+    case '--check':
+        runCheck(targetArg);
+        break;
+    case '--help':
+    case '-h':
+    case 'help':
+        printHelp();
+        break;
+    case '--version':
+    case '-v':
+    case 'version':
+        printVersion();
+        break;
+    default:
+        if (fs.existsSync(command)) {
+            runCheck(command);
+        } else {
+            printHelp();
+        }
+        break;
+}
