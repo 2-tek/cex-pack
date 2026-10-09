@@ -1,0 +1,31 @@
+{
+  "name": "cex-pack",
+  "version": "1.0.0",
+  "lockfileVersion": 1,
+  "encryption": {
+    "algorithm": "aes-256-cbc",
+    "scope": "project"
+  },
+  "dependencies": {
+    "cex-cli": {
+      "version": "1.0.0",
+      "url": "cex-enc:9b4c929272cfefcf2d6613ee59e72228:fcd46873389e43e0384735261cbfc2790a269ddde9f80cbe1055a4e9007fafc9ff12ab80692836f51c10e593cb4dd863b2bb6432aba52c7d90e3b98a152cbe7c",
+      "updatedAt": "2026-10-09T04:18:48.189Z"
+    },
+    "cexr": {
+      "version": "1.0.0",
+      "url": "cex-enc:f11d462002b9f49b84c4ae6f317fe4ca:dc05e32f610db9cfc0e820e4f8d6eda2edd3ab5fda2d927d2f4007d5e3f6627a2dc50483facb45e812d5214b4fcbc69b",
+      "updatedAt": "2026-10-09T04:18:48.192Z"
+    },
+    "cex-service": {
+      "version": "1.0.0",
+      "url": "cex-enc:749b0ef29385725dae6fa81e6719534b:1508685e4fedfa5f3de64bc730efd78e153e635839e2aada6cb87a03064a206dd2bc4efc99d08e4482ac55ea940e8105ff0c47756e257bc14b1f8e64a39d2174",
+      "updatedAt": "2026-10-09T04:18:48.192Z"
+    },
+    "cex-test": {
+      "version": "1.0.0",
+      "url": "cex-enc:1e3d2eeb4c6a1b20089a6854a870998b:210c8aed9fc1412e065ecaf62cb7330d33c40f94e016c56ca68040e7816171b137e489b28ecdce84e4665520fdd3c046",
+      "updatedAt": "2026-10-09T04:18:48.192Z"
+    }
+  }
+}

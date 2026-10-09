@@ -51,7 +51,7 @@ cex-pack link
     "scope": "project"
   },
   "dependencies": {
-    "@2tek/cli": {
+    "cex-cli": {
       "version": "1.0.0",
       "url": "cex-enc:1031f8219144a2e4d34b264ea78d0777:62535b17ee387ee55fc11319834df9e8..."
     },

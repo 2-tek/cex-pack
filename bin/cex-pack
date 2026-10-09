@@ -131,8 +131,12 @@ function resolveRepoUrl(pkgName, versionOrUrl) {
         path.resolve(__dirname, '../../../', baseName),
         path.resolve(__dirname, '../../../packages', baseName),
         path.resolve(__dirname, '../../../packages', 'cex-' + baseName),
+        path.resolve(__dirname, '../../', baseName),
+        path.resolve(__dirname, '../../', 'cex-' + baseName),
         path.resolve(process.cwd(), '../', baseName),
-        path.resolve(process.cwd(), '../../', baseName)
+        path.resolve(process.cwd(), '../../', baseName),
+        path.resolve(process.cwd(), '../../packages', baseName),
+        path.resolve(process.cwd(), '../../packages', 'cex-' + baseName)
     ];
 
     for (const candidate of workspaceCandidates) {
@@ -351,6 +355,15 @@ function runCheck(manifestFile) {
             errors.push('Rule 69 Violation: Missing "target"');
         } else if (data.target !== 'runtime') {
             errors.push('Rule 69 Violation: "target" must strictly be "runtime"');
+        }
+
+        // Dependency naming governance: must use real name of project, not @ alias
+        if (data.dependencies && typeof data.dependencies === 'object') {
+            for (const depName of Object.keys(data.dependencies)) {
+                if (depName.startsWith('@')) {
+                    errors.push(`Dependency Naming Violation: "${depName}" uses "@" alias. Use real name of project instead (e.g. cex-cli, cexr, cex-service).`);
+                }
+            }
         }
     } catch (e) {
         errors.push(`Syntax Error: ${e.message}`);

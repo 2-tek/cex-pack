@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "cex-cli": "1.0.0",
-    "@cex-r": "1.0.0",
-    "@cex-s": "1.0.0",
+    "cexr": "1.0.0",
+    "cex-service": "1.0.0",
     "cex-test": "1.0.0"
   },
   "includeDirs": [

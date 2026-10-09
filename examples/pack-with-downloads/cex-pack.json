@@ -12,7 +12,7 @@
     "start": "cexr run src/main.cex"
   },
   "dependencies": {
-    "@2tek/cli": "1.0.0",
+    "cex-cli": "1.0.0",
     "cexr": "1.0.0",
     "cexp": "1.0.0",
     "cex-test": "1.0.0"

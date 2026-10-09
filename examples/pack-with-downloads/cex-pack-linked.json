@@ -7,25 +7,25 @@
     "scope": "project"
   },
   "dependencies": {
-    "@2tek/cli": {
-      "version": "1.0.0",
-      "url": "cex-enc:1031f8219144a2e4d34b264ea78d0777:62535b17ee387ee55fc11319834df9e8895d20477f75e273d854dcd9ba410ee4f544b78bf66f9cf74790dd66300aef07b8ad7a6dcefca8fab3f66ce47fa42836",
-      "updatedAt": "2026-10-09T04:15:01.657Z"
-    },
     "cexr": {
       "version": "1.0.0",
-      "url": "cex-enc:3726758e935b97dd338db36620f8777b:c707960ca9519f40cff68e2ca89033156d98e5f4975a84718da998b3bfd5d33df2791fe2dc41e989fb7be5d97aa0760f",
-      "updatedAt": "2026-10-09T04:15:01.798Z"
+      "url": "cex-enc:69755f5dfbe64938aad3dcff7d61130d:2cc6ef4c53a591725e17f6df796c1defd6db65ca61b3711b2899f5ab99fff34e6dc2513f771d4130d59acd62048e6f21",
+      "updatedAt": "2026-10-09T04:18:23.375Z"
     },
     "cexp": {
       "version": "1.0.0",
-      "url": "cex-enc:cf836ae4e94478c97fcac37ad21475c4:df12279e58a2e2e81e6ca642f91ecd9d2b433b391e921b0e66bc306cecc40ef484e458d47fc989d8943d8b7948c49227",
-      "updatedAt": "2026-10-09T04:15:03.902Z"
+      "url": "cex-enc:f52c96669697b25236ef97e7291b27d5:c641ec02057a2b5ce3b4ad31837c0eb7313107ce2950f0acd5240ecd0e1fb4d6d87a934a7b774bd25e941be0c3363ba3",
+      "updatedAt": "2026-10-09T04:18:23.375Z"
     },
     "cex-test": {
       "version": "1.0.0",
-      "url": "cex-enc:dde0f5cb195b70fa61bcc2e5ddc8c2d3:76f005d52320232cb5575ed31cf2abe6de825f824ddc680398630b785b095cff1c2e3b01c40c60a8b84f6270f36e885c",
-      "updatedAt": "2026-10-09T04:15:05.561Z"
+      "url": "cex-enc:fe4134ee06de9b31c7f4ecc5c6d27f87:8bdc04374eb307a23a3d09cc1057b3b923e1ff45a7f554027bfa2f977336f856c154a6f3b4390e514af4ada2a0b24a40",
+      "updatedAt": "2026-10-09T04:18:23.375Z"
+    },
+    "cex-cli": {
+      "version": "1.0.0",
+      "url": "cex-enc:55104e718d0bbe937d5ccd3e67cb96cc:1ac24cc9e39dc6cf04476c12bd305b5020490d21bb0968e06bc059d355d01fd5164360b14399fdc1d93f2f432823c7f672e17d194d3ca04c42c9f52335a58095",
+      "updatedAt": "2026-10-09T04:18:23.373Z"
     }
   }
 }
