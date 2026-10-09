@@ -1,0 +1,16 @@
+// Example Internal UI Package (C-ext)
+
+class UIComponent {
+    private title: string;
+
+    public constructor(title: string) {
+        this.title = title;
+    }
+
+    public render(): void {
+        println("----------------------------------------------------------------");
+        println("[UI View] Window: " + this.title);
+        println("Status: Rendered using Pure Cex internal package architecture");
+        println("----------------------------------------------------------------");
+    }
+}

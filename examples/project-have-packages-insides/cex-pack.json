@@ -1,0 +1,35 @@
+{
+  "name": "@2tek/project-have-packages-insides",
+  "version": "1.0.0",
+  "description": "Example Cex workspace demonstrating a project with internal packages inside packages/ directory",
+  "main": "src/main.cex",
+  "target": "runtime",
+  "required": {
+    "cexr": "^8",
+    "cexp": "^8"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "packages": [
+    "packages/core",
+    "packages/ui"
+  ],
+  "scripts": {
+    "install": "cex-pack downloads",
+    "downloads": "cex-pack downloads",
+    "start": "cexr run src/main.cex",
+    "test": "cexr run tests/workspace.test.cex"
+  },
+  "dependencies": {
+    "cex-cli": "1.0.0",
+    "cexr": "1.0.0",
+    "cex-service": "1.0.0",
+    "cex-test": "1.0.0"
+  },
+  "includeDirs": [
+    "./src",
+    "./packages/core/src",
+    "./packages/ui/src"
+  ]
+}

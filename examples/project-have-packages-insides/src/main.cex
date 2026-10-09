@@ -1,0 +1,24 @@
+// Main Entrypoint for project-have-packages-insides
+// Demonstrates workspace project consuming internal packages and .cex_boxes dependencies
+
+import "../packages/core/src/index.cex";
+import "../packages/ui/src/index.cex";
+
+function main(): int {
+    println("================================================================");
+    println("   Project With Internal Packages (project-have-packages-insides)   ");
+    println("================================================================");
+
+    let core: CoreService* = new CoreService("TelemetryEngine");
+    println(core->getStatus());
+
+    let result: int = core->calculate(40, 2);
+    println("Core Calculation Result: " + to_string(result));
+
+    let ui: UIComponent* = new UIComponent("System Dashboard");
+    ui->render();
+
+    println("All internal packages and .cex_boxes dependencies verified!");
+    println("================================================================");
+    return 0;
+}

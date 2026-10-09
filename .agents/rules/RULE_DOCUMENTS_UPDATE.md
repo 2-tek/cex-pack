@@ -32,3 +32,5 @@ trigger: always_on
    - Conformance with **Rule 29 (EOF Integrity)**: All markdown and configuration files must end with exactly one newline character (`\n`).
    - Conformance with **Rule (No Symbols)**: Pure ASCII text only. Do not use emojis or unicode decorative symbols.
    - Conformance with **Rule 72 (Dynamic Paths)**: No hardcoded absolute user paths; use relative references (`../{projectName}`).
+6. **Pure Cex Toolchain**:
+   - Documentation generators, readers, scripts, and validators must be built in `.cex` utilizing Cex ecosystem libraries (`cexr`, `cexp`, `cex-view`, `cex-service`, `cex-pack`). No Node.js or JavaScript runtime dependencies.

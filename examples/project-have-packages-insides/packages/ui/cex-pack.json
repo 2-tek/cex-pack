@@ -1,0 +1,11 @@
+{
+  "name": "@2tek/example-ui",
+  "version": "1.0.0",
+  "description": "Internal UI Package for project-have-packages-insides",
+  "main": "src/index.cex",
+  "target": "runtime",
+  "required": {
+    "cexr": "^8"
+  },
+  "dependencies": {}
+}

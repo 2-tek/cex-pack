@@ -82,10 +82,18 @@ cex-pack link
 
 ---
 
+## Examples
+
+- **`examples/pack-with-downloads`**: Basic standalone Cex application installing dependencies via Git into `.cex_boxes/`.
+- **`examples/project-have-packages-insides`**: Multi-package workspace project containing internal modular packages nested under `packages/` (`packages/core`, `packages/ui`) alongside external `.cex_boxes/` dependencies.
+
+---
+
 ## Governance & Integrity
 
 This package is managed under `.agents` rule governance:
 - **`PRODUCT_TARGET.md`**: Specification & Target Definition
 - **`standards/`**: Architectural and Manifest Specifications
 - **`rules/`**: Enforcement Rules (`Rule 29`, `Rule 69`, `Rule 72`, `Rule Pure Cex Binaries`, `Rule Syntax Validation`)
+
 
