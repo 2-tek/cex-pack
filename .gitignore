@@ -2,8 +2,6 @@
 .cex_boxes/
 dist/
 bin/*
-!bin/cex-pack
-!bin/cex-log
 !bin/cex-pack.cex
 !bin/cex-log.cex
 build/
