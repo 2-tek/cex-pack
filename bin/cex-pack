@@ -97,12 +97,12 @@ function decryptUrl(payload, projectName) {
 // -----------------------------------------------------------------------------
 // Default Canonical 2-TEK Repository Resolver
 // -----------------------------------------------------------------------------
-function resolveRepoUrl(pkgName, versionOrUrl) {
+function resolveRepoUrl(pkgName, versionOrUrl, projectDir) {
     // 1. Direct Git or CVM URL
     if (versionOrUrl.startsWith('http://') || 
         versionOrUrl.startsWith('https://') || 
         versionOrUrl.startsWith('git@') || 
-        versionOrUrl.startsWith('git+') ||
+        versionOrUrl.startsWith('git+') || 
         versionOrUrl.startsWith('cvm://')) {
         return versionOrUrl.replace(/^git\+/, '');
     }
@@ -127,16 +127,23 @@ function resolveRepoUrl(pkgName, versionOrUrl) {
 
     // 3. Local Workspace Git Repositories (Sibling lookup in monorepo)
     const baseName = path.basename(clean);
+    const rootDir = projectDir || process.cwd();
     const workspaceCandidates = [
+        path.resolve(rootDir, 'packages', baseName),
+        path.resolve(rootDir, 'packages', 'cex-' + baseName),
         path.resolve(__dirname, '../../../', baseName),
         path.resolve(__dirname, '../../../packages', baseName),
         path.resolve(__dirname, '../../../packages', 'cex-' + baseName),
         path.resolve(__dirname, '../../', baseName),
         path.resolve(__dirname, '../../', 'cex-' + baseName),
+        path.resolve(rootDir, '../', baseName),
+        path.resolve(rootDir, '../../', baseName),
+        path.resolve(rootDir, '../../packages', baseName),
+        path.resolve(rootDir, '../../packages', 'cex-' + baseName),
+        path.resolve(process.cwd(), 'packages', baseName),
+        path.resolve(process.cwd(), 'packages', 'cex-' + baseName),
         path.resolve(process.cwd(), '../', baseName),
-        path.resolve(process.cwd(), '../../', baseName),
-        path.resolve(process.cwd(), '../../packages', baseName),
-        path.resolve(process.cwd(), '../../packages', 'cex-' + baseName)
+        path.resolve(process.cwd(), '../../', baseName)
     ];
 
     for (const candidate of workspaceCandidates) {
@@ -198,6 +205,93 @@ function saveLinkedManifest(linkedPath, linkedData) {
 }
 
 // -----------------------------------------------------------------------------
+// cex-log & PROGESS.md Progress Tracker
+// -----------------------------------------------------------------------------
+const CEX_LOG_PREFIX = '\x1b[1;35m[cex-log]\x1b[0m';
+
+function cexLog(level, message, percent) {
+    const timestamp = new Date().toISOString().substring(11, 19);
+    let levelTag = '';
+    switch (level.toLowerCase()) {
+        case 'info':
+            levelTag = '\x1b[1;36m[INFO]\x1b[0m';
+            break;
+        case 'success':
+        case 'ok':
+            levelTag = '\x1b[1;32m[SUCCESS]\x1b[0m';
+            break;
+        case 'warn':
+        case 'warning':
+            levelTag = '\x1b[1;33m[WARN]\x1b[0m';
+            break;
+        case 'error':
+        case 'fail':
+            levelTag = '\x1b[1;31m[ERROR]\x1b[0m';
+            break;
+        case 'progress':
+            levelTag = '\x1b[1;34m[PROGRESS]\x1b[0m';
+            break;
+        default:
+            levelTag = `[${level.toUpperCase()}]`;
+            break;
+    }
+
+    const percentTag = (typeof percent === 'number') ? ` \x1b[1;33m(${percent}%)\x1b[0m` : '';
+    console.log(`${CEX_LOG_PREFIX} [${timestamp}] ${levelTag}${percentTag} ${message}`);
+}
+
+function renderProgressBar(percent, length = 20) {
+    const filled = Math.min(length, Math.max(0, Math.round((percent / 100) * length)));
+    const empty = length - filled;
+    return '█'.repeat(filled) + '░'.repeat(empty);
+}
+
+function updateProgressFile(projectDir, manifestData, depList, currentStatus, currentPercent) {
+    const progressFiles = [
+        path.join(projectDir, 'PROGESS.md'),
+        path.join(projectDir, 'PROGRESS.md')
+    ];
+
+    const bar = renderProgressBar(currentPercent, 20);
+    const dateStr = new Date().toISOString();
+    const installedCount = depList.filter(d => d.status === 'INSTALLED' || d.status === 'UPDATED').length;
+
+    let content = `# CexPack Download Progress\n\n`;
+    content += `> **Project**: \`${manifestData.name || 'unnamed-project'}\` v${manifestData.version || '1.0.0'}\n`;
+    content += `> **Target Directory**: \`.cex_boxes/\`\n`;
+    content += `> **Last Updated**: \`${dateStr}\`\n\n`;
+    content += `## Status: **${currentStatus}** (${currentPercent}%)\n\n`;
+    content += `\`\`\`text\n`;
+    content += `[${bar}] ${currentPercent}%\n`;
+    content += `\`\`\`\n\n`;
+    content += `### Dependencies Status (${installedCount}/${depList.length})\n\n`;
+    content += `| Package | Version | Destination | Source URL | Status |\n`;
+    content += `|---|---|---|---|---|\n`;
+
+    for (const dep of depList) {
+        let statusBadge = '⏳ PENDING';
+        if (dep.status === 'DOWNLOADING') statusBadge = '⚙️ DOWNLOADING';
+        if (dep.status === 'INSTALLED') statusBadge = '✅ INSTALLED';
+        if (dep.status === 'UPDATED') statusBadge = '🔄 UPDATED';
+        if (dep.status === 'FAILED') statusBadge = '❌ FAILED';
+
+        const destDisplay = `.cex_boxes/${dep.cleanName}`;
+        const sourceDisplay = dep.source ? `\`${dep.source}\`` : '`-`';
+        content += `| **${dep.name}** | \`${dep.version}\` | \`${destDisplay}\` | ${sourceDisplay} | ${statusBadge} |\n`;
+    }
+
+    content += `\n---\n*Updated automatically by \`cex-pack downloads\` & \`cex-log\` engine*\n`;
+
+    for (const file of progressFiles) {
+        try {
+            fs.writeFileSync(file, content);
+        } catch (e) {
+            // ignore error
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
 // Downloads Engine (Reading from cex-pack-linked.json for Version to Download URL)
 // -----------------------------------------------------------------------------
 function runDownloads(manifestFile) {
@@ -217,13 +311,6 @@ function runDownloads(manifestFile) {
     const projectDir = path.dirname(manifestPath);
     const targetBoxDir = path.join(projectDir, '.cex_boxes');
 
-    console.log('\x1b[1;34m================================================------------------\x1b[0m');
-    console.log('\x1b[1;36m   2-TEK CexPack Git/CVM Dependency Downloader (.cex_boxes)       \x1b[0m');
-    console.log('   Linked Version Resolution Engine (cex-pack-linked.json)        ');
-    console.log('\x1b[1;34m================================================------------------\x1b[0m');
-    console.log(`Target Manifest : ${manifestPath}`);
-    console.log(`Target Directory: ${targetBoxDir}/\n`);
-
     let manifestData;
     try {
         const rawContent = fs.readFileSync(manifestPath, 'utf8');
@@ -236,23 +323,50 @@ function runDownloads(manifestFile) {
     const dependencies = manifestData.dependencies || {};
     const depNames = Object.keys(dependencies);
 
+    console.log('\x1b[1;34m================================================------------------\x1b[0m');
+    console.log('\x1b[1;36m   2-TEK CexPack Git/CVM Dependency Downloader (.cex_boxes)       \x1b[0m');
+    console.log('   Linked Version Resolution Engine (cex-pack-linked.json)        ');
+    console.log('\x1b[1;34m================================================------------------\x1b[0m');
+    console.log(`Target Manifest : ${manifestPath}`);
+    console.log(`Target Directory: ${targetBoxDir}/\n`);
+
     if (depNames.length === 0) {
-        console.log(`\x1b[1;33m[WARN] No dependencies defined in ${manifestPath}\x1b[0m`);
+        cexLog('warn', `No dependencies defined in ${manifestPath}`, 100);
         process.exit(0);
     }
+
+    const depList = depNames.map(name => ({
+        name: name,
+        cleanName: stripScopeAlias(name),
+        version: dependencies[name],
+        source: '',
+        status: 'PENDING'
+    }));
+
+    // Initialize PROGESS.md at 0%
+    updateProgressFile(projectDir, manifestData, depList, 'INITIALIZING', 0);
+    cexLog('info', `Starting download pipeline for ${depNames.length} dependencies into ${targetBoxDir}/`, 0);
 
     // 1. Load or initialize project cex-pack-linked.json
     const { linkedPath, linkedData } = loadOrCreateLinkedManifest(projectDir, manifestData);
     const projectName = manifestData.name || 'default-project';
     let linkedUpdated = false;
 
-    console.log(`[CexPack Linked] Checking lockfile: ${linkedPath}`);
+    cexLog('info', `Checking lockfile: ${linkedPath}`, 0);
 
     fs.mkdirSync(targetBoxDir, { recursive: true });
 
     let downloadedCount = 0;
-    for (const pkgName of depNames) {
+    for (let i = 0; i < depNames.length; i++) {
+        const pkgName = depNames[i];
         const declaredVersion = dependencies[pkgName];
+        const depItem = depList[i];
+        const startPercent = Math.round((i / depNames.length) * 100);
+
+        depItem.status = 'DOWNLOADING';
+        updateProgressFile(projectDir, manifestData, depList, 'DOWNLOADING', startPercent);
+        cexLog('info', `[${i + 1}/${depNames.length}] Resolving & downloading ${pkgName}@${declaredVersion} ...`, startPercent);
+
         let resolvedDownloadUrl = '';
 
         // 2. Read from cex-pack-linked.json for version
@@ -263,7 +377,7 @@ function runDownloads(manifestFile) {
             if (encUrl && encUrl.startsWith('cex-enc:')) {
                 // Decrypt project-encrypted URL
                 resolvedDownloadUrl = decryptUrl(encUrl, projectName);
-                console.log(`  • [Linked] ${pkgName}@${declaredVersion} -> Decrypted project download URL`);
+                cexLog('info', `[${i + 1}/${depNames.length}] Decrypted project download URL for ${pkgName}@${declaredVersion}`, startPercent);
             } else if (encUrl) {
                 // Plain URL found -> encrypt for project and update
                 resolvedDownloadUrl = encUrl;
@@ -271,13 +385,13 @@ function runDownloads(manifestFile) {
                 linkedEntry.url = encrypted;
                 delete linkedEntry.encryptedUrl;
                 linkedUpdated = true;
-                console.log(`  • [Linked] ${pkgName}@${declaredVersion} -> Encrypted project URL`);
+                cexLog('info', `[${i + 1}/${depNames.length}] Encrypted project URL for ${pkgName}@${declaredVersion}`, startPercent);
             }
         }
 
         // 3. If version not found or updated, resolve and write to dependencies url in cex-pack-linked.json
         if (!resolvedDownloadUrl) {
-            resolvedDownloadUrl = resolveRepoUrl(pkgName, declaredVersion);
+            resolvedDownloadUrl = resolveRepoUrl(pkgName, declaredVersion, projectDir);
             const encryptedUrl = encryptUrl(resolvedDownloadUrl, projectName);
             linkedData.dependencies[pkgName] = {
                 version: declaredVersion,
@@ -285,19 +399,23 @@ function runDownloads(manifestFile) {
                 updatedAt: new Date().toISOString()
             };
             linkedUpdated = true;
-            console.log(`  • [New Link] Encrypted and wrote ${pkgName}@${declaredVersion} to cex-pack-linked.json`);
+            cexLog('info', `[${i + 1}/${depNames.length}] Encrypted and saved ${pkgName}@${declaredVersion} to cex-pack-linked.json`, startPercent);
         }
 
         // 4. Write to dependencies url for version download then downloads
         const depDownloadUrl = resolvedDownloadUrl;
-        const cleanName = stripScopeAlias(pkgName);
+        depItem.source = depDownloadUrl;
+        const cleanName = depItem.cleanName;
         const destPath = path.join(targetBoxDir, cleanName);
+
+        const currentStepPercent = Math.round(((i + 1) / depNames.length) * 100);
 
         try {
             if (fs.existsSync(destPath) && fs.existsSync(path.join(destPath, '.git'))) {
                 // Real Git repository already cloned -> pull latest
                 execSync(`git -C "${destPath}" pull --quiet`, { stdio: 'inherit' });
-                console.log(`    -> Updated existing repository in ${destPath} \x1b[1;32m[ OK ]\x1b[0m`);
+                depItem.status = 'UPDATED';
+                cexLog('success', `[${i + 1}/${depNames.length}] Updated repository in .cex_boxes/${cleanName}`, currentStepPercent);
             } else {
                 // Ensure parent directory exists (e.g. for scoped 2tek/cli)
                 fs.mkdirSync(path.dirname(destPath), { recursive: true });
@@ -306,24 +424,31 @@ function runDownloads(manifestFile) {
                 }
 
                 // Execute real git clone from resolved/decrypted URL
-                execSync(`git clone --depth 1 "${depDownloadUrl}" "${destPath}" --quiet`, { stdio: 'inherit' });
-                console.log(`    -> Cloned from ${depDownloadUrl} to ${destPath} \x1b[1;32m[ OK ]\x1b[0m`);
+                const cloneUrl = (depDownloadUrl.startsWith('/') && !depDownloadUrl.startsWith('file://')) ? 'file://' + depDownloadUrl : depDownloadUrl;
+                execSync(`git clone --depth 1 "${cloneUrl}" "${destPath}" --quiet`, { stdio: 'inherit' });
+                depItem.status = 'INSTALLED';
+                cexLog('success', `[${i + 1}/${depNames.length}] Cloned ${pkgName} into .cex_boxes/${cleanName}`, currentStepPercent);
             }
             downloadedCount++;
         } catch (err) {
-            console.error(`    \x1b[1;31m-> [FAIL] Git clone failed for ${pkgName} from ${depDownloadUrl}: ${err.message}\x1b[0m`);
+            depItem.status = 'FAILED';
+            cexLog('error', `[${i + 1}/${depNames.length}] Git download failed for ${pkgName}: ${err.message}`, currentStepPercent);
         }
+
+        updateProgressFile(projectDir, manifestData, depList, currentStepPercent === 100 ? 'COMPLETED' : 'DOWNLOADING', currentStepPercent);
+        cexLog('progress', `Download Progress: [${renderProgressBar(currentStepPercent, 20)}] ${currentStepPercent}%`, currentStepPercent);
     }
 
     // Save updated cex-pack-linked.json
     if (linkedUpdated || !fs.existsSync(linkedPath)) {
         saveLinkedManifest(linkedPath, linkedData);
-        console.log(`\n\x1b[1;36m[CexPack Linked] Updated encrypted lockfile: ${linkedPath}\x1b[0m`);
+        cexLog('info', `Updated encrypted lockfile: ${linkedPath}`, 100);
     }
 
-    console.log('\n\x1b[1;32m+------------------------------------------------------------------------------+\x1b[0m');
-    console.log(`\x1b[1;32m| [CexPack] Downloaded ${downloadedCount}/${depNames.length} dependencies via cex-pack-linked.json into ${targetBoxDir}/\x1b[0m`);
-    console.log('\x1b[1;32m+------------------------------------------------------------------------------+\x1b[0m');
+    // Final PROGESS.md update at 100%
+    updateProgressFile(projectDir, manifestData, depList, 'COMPLETED', 100);
+    cexLog('success', `Downloaded ${downloadedCount}/${depNames.length} dependencies via cex-pack-linked.json into ${targetBoxDir}/`, 100);
+    cexLog('info', `State and progress percent successfully written to PROGESS.md`, 100);
 }
 
 function runCheck(manifestFile) {
@@ -399,7 +524,7 @@ function runLink(manifestFile) {
     const dependencies = manifestData.dependencies || {};
 
     for (const [pkgName, versionOrUrl] of Object.entries(dependencies)) {
-        const repoUrl = resolveRepoUrl(pkgName, versionOrUrl);
+        const repoUrl = resolveRepoUrl(pkgName, versionOrUrl, projectDir);
         const encryptedUrl = encryptUrl(repoUrl, projectName);
         linkedData.dependencies[pkgName] = {
             version: versionOrUrl,

@@ -8,8 +8,10 @@
 
 ## Features
 
+- **Real-Time Progress Tracking (`PROGESS.md`)**: Automatically updates `PROGESS.md` with visual progress bars (`[█████░░░░░] 50%`), percentages, dependency download statuses, and timestamps.
+- **Terminal Progress Logger (`cex-log`)**: Outputs styled and timestamped progress logs (`[cex-log] [INFO] (50%)`) into the terminal during downloads.
 - **`cex-pack-linked.json` Encrypted Lockfile**: Links package versions to AES-256 encrypted repository download URLs (`cex-enc:...`) specifically scoped for the project.
-- **Git & CVM Dependency Downloader (`.cex_boxes`)**: Downloads package dependencies declared in `cex-pack.json` and resolved in `cex-pack-linked.json` via real `git clone --depth 1` into `.cex_boxes/{dependencyName}` without `@` alias symbols.
+- **Git & CVM Dependency Downloader (`.cex_boxes`)**: Downloads package dependencies declared in `cex-pack.json` and resolved in `cex-pack-linked.json` via real `git clone --depth 1` into `.cex_boxes/{dependencyName}` using real canonical project names without `@` alias symbols.
 - **Integrated with `cex-cli`**: Full integration with the `cex-cli` task dispatcher and terminal UI engine.
 - **Package Manifest Script Lifecycle**: Supports `"install": "cex-pack downloads"` in `cex-pack.json` scripts section for automated dependency installation.
 - **JSON Syntax & Structure Validation**: Strict checks for proper brace pairing, quotes, comma separators, and JSON type integrity.

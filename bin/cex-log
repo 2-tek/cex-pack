@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+// 2-TEK CexLog - Terminal Logger for Cex Ecosystem & Cex-Pack
+const args = process.argv.slice(2);
+const timestamp = new Date().toISOString().substring(11, 19);
+
+let level = 'INFO';
+let percent = null;
+const messageParts = [];
+
+for (const arg of args) {
+    if (arg.startsWith('--level=')) {
+        level = arg.substring(8).toUpperCase();
+    } else if (arg.startsWith('--percent=')) {
+        percent = parseInt(arg.substring(10), 10);
+    } else {
+        messageParts.push(arg);
+    }
+}
+
+const message = messageParts.join(' ');
+let levelTag = `\x1b[1;36m[${level}]\x1b[0m`;
+if (level === 'SUCCESS' || level === 'OK') levelTag = '\x1b[1;32m[SUCCESS]\x1b[0m';
+if (level === 'WARN' || level === 'WARNING') levelTag = '\x1b[1;33m[WARN]\x1b[0m';
+if (level === 'ERROR' || level === 'FAIL') levelTag = '\x1b[1;31m[ERROR]\x1b[0m';
+if (level === 'PROGRESS') levelTag = '\x1b[1;34m[PROGRESS]\x1b[0m';
+
+const percentTag = (percent !== null && !isNaN(percent)) ? ` \x1b[1;33m(${percent}%)\x1b[0m` : '';
+console.log(`\x1b[1;35m[cex-log]\x1b[0m [${timestamp}] ${levelTag}${percentTag} ${message}`);
