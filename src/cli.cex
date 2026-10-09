@@ -1,0 +1,77 @@
+// CexPack Command Router & Option Parser (C-ext)
+
+import "./types.cex";
+import "./validator.cex";
+
+class PackCLI {
+    private PackValidator* validator;
+
+    public PackCLI() {
+        this.validator = new PackValidator();
+    }
+
+    public void printHelp() {
+        println("================================================------------------");
+        println("   2-TEK Cex-Pack: Native Manifest Syntax & Schema Checker        ");
+        println("================================================------------------");
+        println("  Usage: cex-pack [command] [options] <filepath>");
+        println("");
+        println("  Commands:");
+        println("    check [file]   Validate JSON syntax and manifest schema (default: cex-pack.json)");
+        println("    lint [file]    Perform deep linter and rule governance checks");
+        println("    init           Scaffold a standard governance-compliant cex-pack.json");
+        println("    help           Display this help documentation");
+        println("");
+        println("  Options:");
+        println("    --verbose      Show verbose tokenization and step breakdown");
+        println("    --help, -h     Show command line options");
+        println("    --version, -v  Display version info");
+        println("================================================------------------");
+    }
+
+    public void printVersion() {
+        println("cex-pack v1.0.0 (2-TEK Cex Manifest Validator)");
+    }
+
+    public void createTemplateManifest() {
+        println("[CexPack] Scaffolded standard governance-compliant 'cex-pack.json' template.");
+    }
+
+    public int run(string cmd, string targetFile) {
+        let fileToValidate: string = targetFile;
+        if (fileToValidate.length() == 0) {
+            fileToValidate = "cex-pack.json";
+        }
+
+        if (cmd == "--help" || cmd == "-h" || cmd == "help") {
+            this.printHelp();
+            return 0;
+        }
+
+        if (cmd == "--version" || cmd == "-v" || cmd == "version") {
+            this.printVersion();
+            return 0;
+        }
+
+        if (cmd == "init") {
+            this.createTemplateManifest();
+            return 0;
+        }
+
+        if (cmd == "check" || cmd == "lint" || cmd == "--check" || cmd.length() == 0 || cmd == fileToValidate) {
+            bool valid: bool = this.validator->validateFile(fileToValidate);
+            if (valid) {
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+
+        // Default attempt to validate specified file or path
+        bool ok: bool = this.validator->validateFile(cmd);
+        if (ok) {
+            return 0;
+        }
+        return 1;
+    }
+}

@@ -1,0 +1,44 @@
+// CexPack Manifest Validator Engine (C-ext)
+
+import "./types.cex";
+import "./parser.cex";
+import "./schema.cex";
+import "./reporter.cex";
+
+class PackValidator {
+    private SchemaValidator* schemaVal;
+    private DiagnosticReporter* reporter;
+
+    public PackValidator() {
+        this.schemaVal = new SchemaValidator();
+        this.reporter = new DiagnosticReporter();
+    }
+
+    public ValidationResult* validateContent(string manifestContent) {
+        // 1. JSON Syntax & Structural Token Parsing
+        let parser: JsonParser* = new JsonParser(manifestContent);
+        let result: ValidationResult* = parser->parseAndValidateSyntax();
+
+        // 2. Schema and Rule 69 Validation
+        this.schemaVal->validateManifestSchema(manifestContent, result);
+
+        // 3. Rule 29 EOF Newline Check
+        this.schemaVal->validateEofNewline(manifestContent, result);
+
+        return result;
+    }
+
+    public bool validateFile(string filepath) {
+        let content: string = File::read(filepath);
+        if (content.length() == 0) {
+            let emptyRes: ValidationResult* = new ValidationResult();
+            emptyRes->addError("FILE_NOT_FOUND", "Could not read file or file is empty: " + filepath, 1, 1);
+            this.reporter->printResult(filepath, emptyRes);
+            return false;
+        }
+
+        let result: ValidationResult* = this.validateContent(content);
+        this.reporter->printResult(filepath, result);
+        return result->isValid;
+    }
+}

@@ -1,0 +1,11 @@
+# Git ignore rules for cex-pack
+.cex_boxes/
+dist/
+bin/
+build/
+*.o
+*.so
+*.dylib
+*.a
+*.log
+.DS_Store

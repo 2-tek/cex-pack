@@ -1,0 +1,58 @@
+// CexPack ANSI Diagnostic Error Reporter (C-ext)
+
+import "./types.cex";
+
+class DiagnosticReporter {
+    public DiagnosticReporter() {}
+
+    public void printResult(string filepath, ValidationResult* result) {
+        println("------------------------------------------------------------------");
+        print("  CexPack Manifest Diagnostics for: "); println(filepath);
+        println("------------------------------------------------------------------");
+
+        if (result->isValid && result->warningCount == 0) {
+            println("  \033[1;32m[OK] Manifest syntax and schema validation PASSED!\033[0m");
+            println("  Status: 0 syntax errors, 0 schema warnings.");
+            println("------------------------------------------------------------------");
+            return;
+        }
+
+        if (result->errorCount > 0) {
+            println("  \033[1;31mERRORS DETECTED:\033[0m");
+            for (let i: int = 0; i < result->errors->length(); i = i + 1) {
+                let err: ValidationError* = result->errors->get(i);
+                print("  \033[31m[ERROR]\033[0m Line ");
+                print(err->line);
+                print(":");
+                print(err->column);
+                print(" [");
+                print(err->ruleId);
+                print("] - ");
+                println(err->message);
+            }
+        }
+
+        if (result->warningCount > 0) {
+            println("\n  \033[1;33mWARNINGS:\033[0m");
+            for (let j: int = 0; j < result->warnings->length(); j = j + 1) {
+                let warn: ValidationError* = result->warnings->get(j);
+                print("  \033[33m[WARN]\033[0m Line ");
+                print(warn->line);
+                print(":");
+                print(warn->column);
+                print(" [");
+                print(warn->ruleId);
+                print("] - ");
+                println(warn->message);
+            }
+        }
+
+        println("------------------------------------------------------------------");
+        print("  Summary: ");
+        print(result->errorCount);
+        print(" error(s), ");
+        print(result->warningCount);
+        println(" warning(s).");
+        println("------------------------------------------------------------------");
+    }
+}

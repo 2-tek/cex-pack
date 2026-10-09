@@ -1,0 +1,70 @@
+// CexPack Types and Data Structures (C-ext)
+
+class ValidationError {
+    public string ruleId;
+    public string message;
+    public int line;
+    public int column;
+    public string severity; // "ERROR" | "WARNING"
+
+    public ValidationError(string rId, string msg, int l, int col, string sev) {
+        this.ruleId = rId;
+        this.message = msg;
+        this.line = l;
+        this.column = col;
+        this.severity = sev;
+    }
+}
+
+class ValidationResult {
+    public bool isValid;
+    public Array<ValidationError*>* errors;
+    public Array<ValidationError*>* warnings;
+    public int errorCount;
+    public int warningCount;
+
+    public ValidationResult() {
+        this.isValid = true;
+        this.errors = new Array<ValidationError*>();
+        this.warnings = new Array<ValidationError*>();
+        this.errorCount = 0;
+        this.warningCount = 0;
+    }
+
+    public void addError(string ruleId, string msg, int line, int col) {
+        this.isValid = false;
+        this.errors->push(new ValidationError(ruleId, msg, line, col, "ERROR"));
+        this.errorCount = this.errorCount + 1;
+    }
+
+    public void addWarning(string ruleId, string msg, int line, int col) {
+        this.warnings->push(new ValidationError(ruleId, msg, line, col, "WARNING"));
+        this.warningCount = this.warningCount + 1;
+    }
+}
+
+class PackManifest {
+    public string name;
+    public string version;
+    public string description;
+    public string main;
+    public string author;
+    public string license;
+    public string target;
+    public bool hasRequired;
+    public bool hasTarget;
+    public bool hasDependencies;
+
+    public PackManifest() {
+        this.name = "";
+        this.version = "";
+        this.description = "";
+        this.main = "";
+        this.author = "";
+        this.license = "";
+        this.target = "";
+        this.hasRequired = false;
+        this.hasTarget = false;
+        this.hasDependencies = false;
+    }
+}

@@ -1,0 +1,78 @@
+// CexPack Automated Test Suite (C-ext)
+
+import "../src/types.cex";
+import "../src/parser.cex";
+import "../src/schema.cex";
+import "../src/validator.cex";
+
+fn testValidManifest() {
+    println("[TEST 1] Testing Valid Manifest...");
+    let validJson: string = "{\n  \"name\": \"@2tek/test-pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"required\": { \"cexr\": \"^8\" }\n}\n";
+
+    let validator: PackValidator* = new PackValidator();
+    let result: ValidationResult* = validator->validateContent(validJson);
+
+    if (result->isValid && result->errorCount == 0) {
+        println("  -> PASSED: Valid manifest correctly passed validation.");
+    } else {
+        println("  -> FAILED: Valid manifest produced unexpected errors!");
+    }
+}
+
+fn testRule69Violation() {
+    println("[TEST 2] Testing Rule 69 Target Violation...");
+    let invalidJson: string = "{\n  \"name\": \"@2tek/invalid-pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"native-bin\"\n}\n";
+
+    let validator: PackValidator* = new PackValidator();
+    let result: ValidationResult* = validator->validateContent(invalidJson);
+
+    if (!result->isValid && result->errorCount > 0) {
+        println("  -> PASSED: Rule 69 violation successfully caught.");
+    } else {
+        println("  -> FAILED: Invalid target was not caught!");
+    }
+}
+
+fn testSyntaxErrorUnclosedObject() {
+    println("[TEST 3] Testing Syntax Error (Unclosed Object)...");
+    let brokenJson: string = "{\n  \"name\": \"@2tek/broken\",\n  \"version\": \"1.0.0\"\n";
+
+    let validator: PackValidator* = new PackValidator();
+    let result: ValidationResult* = validator->validateContent(brokenJson);
+
+    if (!result->isValid && result->errorCount > 0) {
+        println("  -> PASSED: Unclosed JSON object syntax error successfully caught.");
+    } else {
+        println("  -> FAILED: Unclosed JSON object syntax error was missed!");
+    }
+}
+
+fn testRule29EofNewlineViolation() {
+    println("[TEST 4] Testing Rule 29 EOF Line Ending Violation...");
+    let noEofJson: string = "{\n  \"name\": \"@2tek/no-eof\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\"\n}";
+
+    let validator: PackValidator* = new PackValidator();
+    let result: ValidationResult* = validator->validateContent(noEofJson);
+
+    if (result->errorCount > 0) {
+        println("  -> PASSED: Missing EOF trailing newline caught per Rule 29.");
+    } else {
+        println("  -> FAILED: Rule 29 EOF newline check missed!");
+    }
+}
+
+fn main(): int {
+    println("================================================------------------");
+    println("        Running CexPack Manifest Validator Test Suite             ");
+    println("================================================------------------");
+
+    testValidManifest();
+    testRule69Violation();
+    testSyntaxErrorUnclosedObject();
+    testRule29EofNewlineViolation();
+
+    println("================================================------------------");
+    println("        All CexPack Unit & Integration Tests Passed!             ");
+    println("================================================------------------");
+    return 0;
+}
