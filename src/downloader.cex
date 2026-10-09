@@ -150,6 +150,8 @@ class DependencyDownloader {
 
         let downloadedCount: int = 0;
 
+        let totalKb: int = 0;
+
         for (let i: int = 0; i < total; i++) {
             let dep: PackageDependency* = deps->get(i);
             let cleanPkgName: string = this.stripScopeAlias(dep->packageName);
@@ -162,21 +164,39 @@ class DependencyDownloader {
             if (cleanPkgName == "cex-cli") {
                 dep->currentSize = "0.28Mb";
                 dep->totalSize = "0.28Mb";
+                totalKb = totalKb + 28;
             } else if (cleanPkgName == "cex-log") {
                 dep->currentSize = "0.14Mb";
                 dep->totalSize = "0.14Mb";
+                totalKb = totalKb + 14;
             } else if (cleanPkgName == "cexr") {
                 dep->currentSize = "1.74Mb";
                 dep->totalSize = "1.74Mb";
+                totalKb = totalKb + 174;
             } else if (cleanPkgName == "cex-service") {
                 dep->currentSize = "0.21Mb";
                 dep->totalSize = "0.21Mb";
+                totalKb = totalKb + 21;
             } else if (cleanPkgName == "cex-test") {
                 dep->currentSize = "0.25Mb";
                 dep->totalSize = "0.25Mb";
+                totalKb = totalKb + 25;
+            } else if (cleanPkgName == "cex-lint") {
+                dep->currentSize = "0.24Mb";
+                dep->totalSize = "0.24Mb";
+                totalKb = totalKb + 24;
+            } else if (cleanPkgName == "cex-pack") {
+                dep->currentSize = "0.30Mb";
+                dep->totalSize = "0.30Mb";
+                totalKb = totalKb + 30;
+            } else if (cleanPkgName == "cexp") {
+                dep->currentSize = "0.99Mb";
+                dep->totalSize = "0.99Mb";
+                totalKb = totalKb + 99;
             } else {
                 dep->currentSize = "0.50Mb";
                 dep->totalSize = "0.50Mb";
+                totalKb = totalKb + 50;
             }
 
             println("  • [cex-log] Resolving " + dep->packageName + "@" + dep->versionSpec + " from " + linkedPath);
@@ -184,7 +204,15 @@ class DependencyDownloader {
             downloadedCount++;
         }
 
-        this->writeProgressFile(resolvedBoxDir, deps, "2.62Mb", 100);
+        let wholeMb: int = totalKb / 100;
+        let fracMb: int = totalKb % 100;
+        let fracStr: string = to_string(fracMb);
+        if (fracMb < 10) {
+            fracStr = "0" + fracStr;
+        }
+        let totalSizeStr: string = to_string(wholeMb) + "." + fracStr + "Mb";
+
+        this->writeProgressFile(resolvedBoxDir, deps, totalSizeStr, 100);
 
         println("");
         println("\x1b[1;32m+------------------------------------------------------------------------------+\x1b[0m");
