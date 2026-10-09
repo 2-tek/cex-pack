@@ -3,7 +3,6 @@
 dist/
 bin/*
 !bin/cex-pack.cex
-!bin/cex-log.cex
 build/
 *.o
 *.so

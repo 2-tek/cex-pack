@@ -162,6 +162,9 @@ class DependencyDownloader {
             if (cleanPkgName == "cex-cli") {
                 dep->currentSize = "0.28Mb";
                 dep->totalSize = "0.28Mb";
+            } else if (cleanPkgName == "cex-log") {
+                dep->currentSize = "0.14Mb";
+                dep->totalSize = "0.14Mb";
             } else if (cleanPkgName == "cexr") {
                 dep->currentSize = "1.74Mb";
                 dep->totalSize = "1.74Mb";
@@ -176,12 +179,12 @@ class DependencyDownloader {
                 dep->totalSize = "0.50Mb";
             }
 
-            println("  • [Linked] Resolving " + dep->packageName + "@" + dep->versionSpec + " from " + linkedPath);
+            println("  • [cex-log] Resolving " + dep->packageName + "@" + dep->versionSpec + " from " + linkedPath);
             println("    -> Destination: " + targetPath + " \x1b[1;32m[ OK ]\x1b[0m");
             downloadedCount++;
         }
 
-        this->writeProgressFile(resolvedBoxDir, deps, "2.48Mb", 100);
+        this->writeProgressFile(resolvedBoxDir, deps, "2.62Mb", 100);
 
         println("");
         println("\x1b[1;32m+------------------------------------------------------------------------------+\x1b[0m");

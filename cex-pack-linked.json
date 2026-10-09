@@ -12,6 +12,11 @@
       "url": "cex-enc:9b4c929272cfefcf2d6613ee59e72228:fcd46873389e43e0384735261cbfc2790a269ddde9f80cbe1055a4e9007fafc9ff12ab80692836f51c10e593cb4dd863b2bb6432aba52c7d90e3b98a152cbe7c",
       "updatedAt": "2026-10-09T04:18:48.189Z"
     },
+    "cex-log": {
+      "version": "1.0.0",
+      "url": "cex-enc:72fcf00b0bb311b200edcd4d2006d0ea:888cf7264085aca48d746f5a8c5b544b9cc4ef3d706fd0dd2ef36aabe52d731e4837645adfd5d6e7917aa51277f3a8d5",
+      "updatedAt": "2026-10-09T04:43:00.000Z"
+    },
     "cexr": {
       "version": "1.0.0",
       "url": "cex-enc:f11d462002b9f49b84c4ae6f317fe4ca:dc05e32f610db9cfc0e820e4f8d6eda2edd3ab5fda2d927d2f4007d5e3f6627a2dc50483facb45e812d5214b4fcbc69b",
