@@ -1,55 +1,49 @@
 {
-  "name": "cex-pack",
-  "version": "1.0.0",
-  "description": "CexPack: Native Syntax Checker, Manifest Validator & Dependency Downloader for cex-pack.json configuration files in C-ext (Cex)",
-  "main": "src/index.cex",
-  "author": "2-TEK Ecosystem",
-  "license": "MIT",
-  "target": "runtime",
-  "required": {
-    "cexr": "^8",
-    "cexp": "^8"
-  },
-  "scripts": {
-    "build": "cexp build src/index.cex -o bin/cex-pack",
-    "start": "cex-pack check",
-    "dev": "cex-pack check",
-    "lint": "cex-pack lint",
-    "downloads": "cex-pack downloads",
-    "download": "cex-pack downloads",
-    "test": "cxvm test",
-    "example:download": "cex-pack downloads examples/pack-with-downloads/cex-pack.json"
-  },
-  "dependencies": {
-    "cex-cli": "1.0.0",
-    "cex-log": "1.0.0",
-    "cexr": "1.0.0",
-    "cex-service": "1.0.0",
-    "cex-test": "1.0.0"
-  },
-  "includeDirs": [
-    "./src"
-  ],
-  "lint": {
-    "onBuild": true,
-    "include": [
-      "src",
-      "tests",
-      "examples"
-    ],
-    "rules": {
-      "indent": {
-        "level": "error",
-        "size": 4
-      },
-      "quotes": {
-        "level": "error",
-        "style": "double"
-      },
-      "semi": "error",
-      "no-tabs": "error",
-      "no-trailing-spaces": "error",
-      "eol-last": "error"
+    "name": "cex-pack",
+    "version": "1.0.0",
+    "description": "CexPack: Native Syntax Checker, Manifest Validator & Dependency Downloader for cex-pack.json configuration files in C-ext (Cex)",
+    "main": "src/index.cex",
+    "author": "2-TEK Ecosystem",
+    "license": "MIT",
+    "target": "runtime",
+    "required": {
+        "cexr": "^8",
+        "cexp": "^8"
+    },
+    "scripts": {
+        "build": "cexp build src/index.cex -o bin/cex-pack",
+        "start": "cex-pack check",
+        "dev": "cex-pack check",
+        "lint": "cex-pack lint",
+        "downloads": "cex-pack downloads",
+        "download": "cex-pack downloads",
+        "test": "cxvm test",
+        "example:download": "cex-pack downloads examples/pack-with-downloads/cex-pack.json"
+    },
+    "dependencies": {
+        "cex-cli": "1.0.0",
+        "cex-log": "1.0.0",
+        "cexr": "1.0.0",
+        "cex-service": "1.0.0",
+        "cex-test": "1.0.0"
+    },
+    "includeDirs": ["./src"],
+    "lint": {
+        "onBuild": true,
+        "include": ["src", "tests", "examples"],
+        "rules": {
+            "indent": {
+                "level": "error",
+                "size": 4
+            },
+            "quotes": {
+                "level": "error",
+                "style": "double"
+            },
+            "semi": "error",
+            "no-tabs": "error",
+            "no-trailing-spaces": "error",
+            "eol-last": "error"
+        }
     }
-  }
 }
