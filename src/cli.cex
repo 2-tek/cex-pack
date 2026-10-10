@@ -5,15 +5,15 @@ import "./validator.cex";
 import "./downloader.cex";
 
 class PackCLI {
-    private PackValidator* validator;
-    private DependencyDownloader* downloader;
+    private validator: PackValidator*;
+    private downloader: DependencyDownloader*;
 
-    public PackCLI() {
+    public constructor() {
         this.validator = new PackValidator();
         this.downloader = new DependencyDownloader();
     }
 
-    public void printHelp() {
+    public printHelp(): void {
         println("================================================------------------");
         println("   2-TEK Cex-Pack: Native Manifest Validator & Package Manager    ");
         println("   Integrated with @2tek/cli Task Dispatcher Engine               ");
@@ -34,16 +34,16 @@ class PackCLI {
         println("================================================------------------");
     }
 
-    public void printVersion() {
+    public printVersion(): void {
         println("cex-pack v1.0.0 (2-TEK Cex Manifest Validator & Package Manager)");
         println("  • Integrated Engine: @2tek/cli v1.0.0");
     }
 
-    public void createTemplateManifest() {
+    public createTemplateManifest(): void {
         println("[CexPack] Scaffolded standard governance-compliant 'cex-pack.json' template.");
     }
 
-    public int run(string cmd, string targetFile) {
+    public run(cmd: string, targetFile: string): int {
         let fileToValidate: string = targetFile;
         if (fileToValidate.length() == 0) {
             fileToValidate = "cex-pack.json";
@@ -65,15 +65,25 @@ class PackCLI {
         }
 
         if (cmd == "downloads" || cmd == "download" || cmd == "--downloads" || cmd == "--download") {
-            bool ok: bool = this.downloader->downloadDependencies(fileToValidate, ".cex_boxes");
+            let ok: bool = this.downloader->downloadDependencies(fileToValidate, ".cex_boxes");
             if (ok) {
                 return 0;
             }
             return 1;
         }
 
+        if (cmd == "thunder" || cmd == "--thunder") {
+            let valid: bool = this.validator->validateFile(fileToValidate);
+            if (valid) {
+                println("[CexPack] Zero-file Thunder build configuration in " + fileToValidate + " is valid and ready for auto-load.");
+                return 0;
+            } else {
+                return 1;
+            }
+        }
+
         if (cmd == "check" || cmd == "lint" || cmd == "--check" || cmd.length() == 0 || cmd == fileToValidate) {
-            bool valid: bool = this.validator->validateFile(fileToValidate);
+            let valid: bool = this.validator->validateFile(fileToValidate);
             if (valid) {
                 return 0;
             } else {
@@ -82,7 +92,7 @@ class PackCLI {
         }
 
         // Default attempt to validate specified file or path
-        bool ok: bool = this.validator->validateFile(cmd);
+        let ok: bool = this.validator->validateFile(cmd);
         if (ok) {
             return 0;
         }

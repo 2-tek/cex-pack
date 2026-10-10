@@ -8,17 +8,16 @@ import "./validator.cex";
 import "./downloader.cex";
 import "./cli.cex";
 
-function main(args: Array<string>*): int {
+fn main(argc: int, argv: char**): int {
     let cli: PackCLI* = new PackCLI();
     let cmd: string = "check";
     let targetFile: string = "cex-pack.json";
 
-    let argc: int = (int)args->length();
     if (argc > 1) {
-        cmd = args->get(1);
+        cmd = argv[1];
     }
     if (argc > 2) {
-        targetFile = args->get(2);
+        targetFile = argv[2];
     }
 
     return cli->run(cmd, targetFile);

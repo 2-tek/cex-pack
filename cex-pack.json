@@ -17,7 +17,7 @@
     "lint": "cex-pack lint",
     "downloads": "cex-pack downloads",
     "download": "cex-pack downloads",
-    "test": "cexr run tests/cex_pack.test.cex",
+    "test": "cxvm test",
     "example:download": "cex-pack downloads examples/pack-with-downloads/cex-pack.json"
   },
   "dependencies": {

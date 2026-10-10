@@ -1,0 +1,20 @@
+{
+  "name": "@2tek/all-branches-test",
+  "version": "1.0.0",
+  "main": "src/index.cex",
+  "target": "runtime",
+  "required": {
+    "cexr": "^8"
+  },
+  "dependencies": {
+    "cex-cli": "1.0.0",
+    "cex-log": "1.0.0",
+    "cexr": "1.0.0",
+    "cex-service": "1.0.0",
+    "cex-test": "1.0.0",
+    "cex-lint": "1.0.0",
+    "cex-pack": "1.0.0",
+    "cexp": "1.0.0",
+    "custom-pkg": "1.0.0"
+  }
+}

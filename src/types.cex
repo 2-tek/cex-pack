@@ -1,13 +1,13 @@
 // CexPack Types and Data Structures (C-ext)
 
 class ValidationError {
-    public string ruleId;
-    public string message;
-    public int line;
-    public int column;
-    public string severity; // "ERROR" | "WARNING"
+    public ruleId: string;
+    public message: string;
+    public line: int;
+    public column: int;
+    public severity: string; // "ERROR" | "WARNING"
 
-    public ValidationError(string rId, string msg, int l, int col, string sev) {
+    public constructor(rId: string, msg: string, l: int, col: int, sev: string) {
         this.ruleId = rId;
         this.message = msg;
         this.line = l;
@@ -17,13 +17,13 @@ class ValidationError {
 }
 
 class ValidationResult {
-    public bool isValid;
-    public Array<ValidationError*>* errors;
-    public Array<ValidationError*>* warnings;
-    public int errorCount;
-    public int warningCount;
+    public isValid: bool;
+    public errors: Array<ValidationError*>*;
+    public warnings: Array<ValidationError*>*;
+    public errorCount: int;
+    public warningCount: int;
 
-    public ValidationResult() {
+    public constructor() {
         this.isValid = true;
         this.errors = new Array<ValidationError*>();
         this.warnings = new Array<ValidationError*>();
@@ -31,31 +31,64 @@ class ValidationResult {
         this.warningCount = 0;
     }
 
-    public void addError(string ruleId, string msg, int line, int col) {
+    public addError(ruleId: string, msg: string, line: int, col: int): void {
         this.isValid = false;
         this.errors->push(new ValidationError(ruleId, msg, line, col, "ERROR"));
         this.errorCount = this.errorCount + 1;
     }
 
-    public void addWarning(string ruleId, string msg, int line, int col) {
+    public addWarning(ruleId: string, msg: string, line: int, col: int): void {
         this.warnings->push(new ValidationError(ruleId, msg, line, col, "WARNING"));
         this.warningCount = this.warningCount + 1;
     }
 }
 
-class PackManifest {
-    public string name;
-    public string version;
-    public string description;
-    public string main;
-    public string author;
-    public string license;
-    public string target;
-    public bool hasRequired;
-    public bool hasTarget;
-    public bool hasDependencies;
+class ThunderOutputPort {
+    public containerPort: int;
+    public containerPortStr: string;
+    public outPort: int;
+    public outPortStr: string;
+    public name: string;
 
-    public PackManifest() {
+    public constructor(cPort: int, cPortStr: string, oPort: int, oPortStr: string, name: string) {
+        this.containerPort = cPort;
+        this.containerPortStr = cPortStr;
+        this.outPort = oPort;
+        this.outPortStr = oPortStr;
+        this.name = name;
+    }
+}
+
+class ThunderConfig {
+    public isDefined: bool;
+    public env: string;
+    public outputs: Array<ThunderOutputPort*>*;
+
+    public constructor() {
+        this.isDefined = false;
+        this.env = "";
+        this.outputs = new Array<ThunderOutputPort*>();
+    }
+
+    public addOutput(cPort: int, cPortStr: string, oPort: int, oPortStr: string, name: string): void {
+        this.outputs->push(new ThunderOutputPort(cPort, cPortStr, oPort, oPortStr, name));
+    }
+}
+
+class PackManifest {
+    public name: string;
+    public version: string;
+    public description: string;
+    public main: string;
+    public author: string;
+    public license: string;
+    public target: string;
+    public hasRequired: bool;
+    public hasTarget: bool;
+    public hasDependencies: bool;
+    public thunder: ThunderConfig*;
+
+    public constructor() {
         this.name = "";
         this.version = "";
         this.description = "";
@@ -66,5 +99,6 @@ class PackManifest {
         this.hasRequired = false;
         this.hasTarget = false;
         this.hasDependencies = false;
+        this.thunder = new ThunderConfig();
     }
 }

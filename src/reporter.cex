@@ -3,9 +3,9 @@
 import "./types.cex";
 
 class DiagnosticReporter {
-    public DiagnosticReporter() {}
+    public constructor() {}
 
-    public void printResult(string filepath, ValidationResult* result) {
+    public printResult(filepath: string, result: ValidationResult*): void {
         println("------------------------------------------------------------------");
         print("  CexPack Manifest Diagnostics for: "); println(filepath);
         println("------------------------------------------------------------------");

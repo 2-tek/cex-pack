@@ -95,5 +95,3 @@ This package is managed under `.agents` rule governance:
 - **`PRODUCT_TARGET.md`**: Specification & Target Definition
 - **`standards/`**: Architectural and Manifest Specifications
 - **`rules/`**: Enforcement Rules (`Rule 29`, `Rule 69`, `Rule 72`, `Rule Pure Cex Binaries`, `Rule Syntax Validation`)
-
-

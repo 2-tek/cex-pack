@@ -4,17 +4,18 @@ import "./types.cex";
 import "./parser.cex";
 import "./schema.cex";
 import "./reporter.cex";
+import fs from "fs";
 
 class PackValidator {
-    private SchemaValidator* schemaVal;
-    private DiagnosticReporter* reporter;
+    private schemaVal: SchemaValidator*;
+    private reporter: DiagnosticReporter*;
 
-    public PackValidator() {
+    public constructor() {
         this.schemaVal = new SchemaValidator();
         this.reporter = new DiagnosticReporter();
     }
 
-    public ValidationResult* validateContent(string manifestContent) {
+    public validateContent(manifestContent: string): ValidationResult* {
         // 1. JSON Syntax & Structural Token Parsing
         let parser: JsonParser* = new JsonParser(manifestContent);
         let result: ValidationResult* = parser->parseAndValidateSyntax();
@@ -25,11 +26,21 @@ class PackValidator {
         // 3. Rule 29 EOF Newline Check
         this.schemaVal->validateEofNewline(manifestContent, result);
 
+        // 4. Thunder Quick-Define Build Validation
+        this.schemaVal->validateThunderRule(manifestContent, result);
+
         return result;
     }
 
-    public bool validateFile(string filepath) {
-        let content: string = File::read(filepath);
+    public validateFile(filepath: string): bool {
+        if (!fs.exists(filepath)) {
+            let emptyRes: ValidationResult* = new ValidationResult();
+            emptyRes->addError("FILE_NOT_FOUND", "Could not read file or file is empty: " + filepath, 1, 1);
+            this.reporter->printResult(filepath, emptyRes);
+            return false;
+        }
+
+        let content: string = fs.readFile(filepath);
         if (content.length() == 0) {
             let emptyRes: ValidationResult* = new ValidationResult();
             emptyRes->addError("FILE_NOT_FOUND", "Could not read file or file is empty: " + filepath, 1, 1);

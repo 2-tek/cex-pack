@@ -3,13 +3,13 @@
 import "./types.cex";
 
 class JsonParser {
-    public string content;
-    public int length;
-    public int position;
-    public int line;
-    public int column;
+    public content: string;
+    public length: int;
+    public position: int;
+    public line: int;
+    public column: int;
 
-    public JsonParser(string jsonStr) {
+    public constructor(jsonStr: string) {
         this.content = jsonStr;
         this.length = (int)jsonStr.length();
         this.position = 0;
@@ -17,7 +17,7 @@ class JsonParser {
         this.column = 1;
     }
 
-    public ValidationResult* parseAndValidateSyntax() {
+    public parseAndValidateSyntax(): ValidationResult* {
         let result: ValidationResult* = new ValidationResult();
 
         if (this.length == 0) {
@@ -33,9 +33,9 @@ class JsonParser {
         let currentCol: int = 1;
 
         for (let i: int = 0; i < this.length; i = i + 1) {
-            let ch: char = this.content[i];
+            let ch: string = this.content.substr(i, 1);
 
-            if (ch == '\n') {
+            if (ch == "\n") {
                 currentLine = currentLine + 1;
                 currentCol = 1;
             } else {
@@ -45,24 +45,24 @@ class JsonParser {
             if (inString) {
                 if (isEscaped) {
                     isEscaped = false;
-                } else if (ch == '\\') {
+                } else if (ch == "\\") {
                     isEscaped = true;
-                } else if (ch == '"') {
+                } else if (ch == "\"") {
                     inString = false;
                 }
             } else {
-                if (ch == '"') {
+                if (ch == "\"") {
                     inString = true;
-                } else if (ch == '{') {
+                } else if (ch == "{") {
                     braceDepth = braceDepth + 1;
-                } else if (ch == '}') {
+                } else if (ch == "}") {
                     braceDepth = braceDepth - 1;
                     if (braceDepth < 0) {
                         result->addError("SYNTAX_BRACE_UNMATCHED", "Unexpected closing brace '}' without opening '{'", currentLine, currentCol);
                     }
-                } else if (ch == '[') {
+                } else if (ch == "[") {
                     bracketDepth = bracketDepth + 1;
-                } else if (ch == ']') {
+                } else if (ch == "]") {
                     bracketDepth = bracketDepth - 1;
                     if (bracketDepth < 0) {
                         result->addError("SYNTAX_BRACKET_UNMATCHED", "Unexpected closing bracket ']' without opening '['", currentLine, currentCol);

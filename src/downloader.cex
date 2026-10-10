@@ -5,6 +5,8 @@ import "./types.cex";
 import "./parser.cex";
 import "./schema.cex";
 import "./validator.cex";
+import fs from "fs";
+import "C.{string}";
 
 class PackageDependency {
     public packageName: string;
@@ -42,13 +44,13 @@ class DependencyDownloader {
     private resolveProjectTargetBoxDir(manifestPath: string, targetBoxDir: string): string {
         let lastSlash: int = -1;
         let len: int = (int)manifestPath.length();
-        for (let i: int = 0; i < len; i++) {
-            if (manifestPath.substring(i, i + 1) == "/") {
+        for (let i: int = 0; i < len; i = i + 1) {
+            if (manifestPath.substr(i, 1) == "/") {
                 lastSlash = i;
             }
         }
         if (lastSlash != -1) {
-            let parentDir: string = manifestPath.substring(0, lastSlash);
+            let parentDir: string = manifestPath.substr(0, lastSlash);
             return parentDir + "/" + targetBoxDir;
         }
         return targetBoxDir;
@@ -57,13 +59,13 @@ class DependencyDownloader {
     private resolveLinkedManifestPath(manifestPath: string): string {
         let lastSlash: int = -1;
         let len: int = (int)manifestPath.length();
-        for (let i: int = 0; i < len; i++) {
-            if (manifestPath.substring(i, i + 1) == "/") {
+        for (let i: int = 0; i < len; i = i + 1) {
+            if (manifestPath.substr(i, 1) == "/") {
                 lastSlash = i;
             }
         }
         if (lastSlash != -1) {
-            let parentDir: string = manifestPath.substring(0, lastSlash);
+            let parentDir: string = manifestPath.substr(0, lastSlash);
             return parentDir + "/cex-pack-linked.json";
         }
         return "cex-pack-linked.json";
@@ -71,8 +73,8 @@ class DependencyDownloader {
 
     private stripScopeAlias(pkgName: string): string {
         let result: string = pkgName;
-        if (result.length() > 0 && result.substring(0, 1) == "@") {
-            result = result.substring(1);
+        if (result.length() > 0 && result.substr(0, 1) == "@") {
+            result = result.substr(1, result.length() - 1);
         }
         return result;
     }
@@ -91,7 +93,7 @@ class DependencyDownloader {
             return deps;
         }
 
-        let depBlock: string = manifestContent.substring(openBrace + 1, closeBrace);
+        let depBlock: string = manifestContent.substr(openBrace + 1, closeBrace - openBrace - 1);
         let len: int = (int)depBlock.length();
         let pos: int = 0;
 
@@ -102,7 +104,7 @@ class DependencyDownloader {
             let keyEnd: int = depBlock.find("\"", keyStart + 1);
             if (keyEnd == -1) break;
 
-            let pkgName: string = depBlock.substring(keyStart + 1, keyEnd);
+            let pkgName: string = depBlock.substr(keyStart + 1, keyEnd - keyStart - 1);
 
             let colonPos: int = depBlock.find(":", keyEnd + 1);
             if (colonPos == -1) break;
@@ -113,13 +115,29 @@ class DependencyDownloader {
             let valEnd: int = depBlock.find("\"", valStart + 1);
             if (valEnd == -1) break;
 
-            let versionSpec: string = depBlock.substring(valStart + 1, valEnd);
+            let versionSpec: string = depBlock.substr(valStart + 1, valEnd - valStart - 1);
 
             deps->push(new PackageDependency(pkgName, versionSpec));
             pos = valEnd + 1;
         }
 
         return deps;
+    }
+
+    public writeProgressFile(resolvedBoxDir: string, deps: Array<PackageDependency*>*, totalSizeStr: string, overallPercent: int): void {
+        let progressPath: string = resolvedBoxDir + "/PROGRESS.md";
+        let content: string = "current: " + totalSizeStr + "\n";
+        content = content + ".cex_boxes -> PROGRESS.md\n\n";
+
+        let len: int = (int)deps->length();
+        for (let i: int = 0; i < len; i = i + 1) {
+            let dep: PackageDependency* = deps->get(i);
+            let line: string = "[" + dep->status + "][" + std::to_string(dep->percent) + "%][" + dep->currentSize + "][" + dep->totalSize + "][" + dep->packageName + "][" + dep->linkedRef + "]\n";
+            content = content + line;
+        }
+
+        content = content + "\nsummary:[" + totalSizeStr + "][" + totalSizeStr + "][" + std::to_string(overallPercent) + "%]\n";
+        fs.writeFile(progressPath, content);
     }
 
     public downloadDependencies(manifestPath: string, targetBoxDir: string): bool {
@@ -134,7 +152,12 @@ class DependencyDownloader {
         println("Linked Manifest : " + linkedPath);
         println("Target Directory: " + resolvedBoxDir + "/\n");
 
-        let manifestContent: string = File::read(manifestPath);
+        if (!fs.exists(manifestPath)) {
+            println("\x1b[1;31m[ERROR] Could not read manifest file: " + manifestPath + "\x1b[0m");
+            return false;
+        }
+
+        let manifestContent: string = fs.readFile(manifestPath);
         if (manifestContent.length() == 0) {
             println("\x1b[1;31m[ERROR] Could not read manifest file: " + manifestPath + "\x1b[0m");
             return false;
@@ -149,10 +172,9 @@ class DependencyDownloader {
         }
 
         let downloadedCount: int = 0;
-
         let totalKb: int = 0;
 
-        for (let i: int = 0; i < total; i++) {
+        for (let i: int = 0; i < total; i = i + 1) {
             let dep: PackageDependency* = deps->get(i);
             let cleanPkgName: string = this.stripScopeAlias(dep->packageName);
             let targetPath: string = resolvedBoxDir + "/" + cleanPkgName;
@@ -201,60 +223,24 @@ class DependencyDownloader {
 
             println("  • [cex-log] Resolving " + dep->packageName + "@" + dep->versionSpec + " from " + linkedPath);
             println("    -> Destination: " + targetPath + " \x1b[1;32m[ OK ]\x1b[0m");
-            downloadedCount++;
+            downloadedCount = downloadedCount + 1;
         }
 
         let wholeMb: int = totalKb / 100;
         let fracMb: int = totalKb % 100;
-        let fracStr: string = to_string(fracMb);
+        let fracStr: string = std::to_string(fracMb);
         if (fracMb < 10) {
             fracStr = "0" + fracStr;
         }
-        let totalSizeStr: string = to_string(wholeMb) + "." + fracStr + "Mb";
+        let totalSizeStr: string = std::to_string(wholeMb) + "." + fracStr + "Mb";
 
-        this->writeProgressFile(resolvedBoxDir, deps, totalSizeStr, 100);
+        this.writeProgressFile(resolvedBoxDir, deps, totalSizeStr, 100);
 
         println("");
         println("\x1b[1;32m+------------------------------------------------------------------------------+\x1b[0m");
-        println("\x1b[1;32m| [CexPack] Cloned " + to_string(downloadedCount) + " dependencies via Git into " + resolvedBoxDir + "/\x1b[0m");
+        println("\x1b[1;32m| [CexPack] Cloned " + std::to_string(downloadedCount) + " dependencies via Git into " + resolvedBoxDir + "/\x1b[0m");
         println("\x1b[1;32m+------------------------------------------------------------------------------+\x1b[0m");
 
         return true;
     }
-
-    public void writeProgressFile(string resolvedBoxDir, Array<PackageDependency*>* deps, string totalSizeStr, int overallPercent): void {
-        let progressPath: string = resolvedBoxDir + "/PROGRESS.md";
-        let content: string = "current: " + totalSizeStr + "\n";
-        content = content + ".cex_boxes -> PROGRESS.md\n\n";
-
-        let len: int = (int)deps->length();
-        for (let i: int = 0; i < len; i++) {
-            let dep: PackageDependency* = deps->get(i);
-            let line: string = "[" + dep->status + "][" + to_string(dep->percent) + "%][" + dep->currentSize + "][" + dep->totalSize + "][" + dep->packageName + "][" + dep->linkedRef + "]\n";
-            content = content + line;
-        }
-
-        content = content + "\nsummary:[" + totalSizeStr + "][" + totalSizeStr + "][" + to_string(overallPercent) + "%]\n";
-        File::write(progressPath, content);
-    }
-}
-
-function main(args: Array<string>*): int {
-    let manifest: string = "cex-pack.json";
-    let targetDir: string = ".cex_boxes";
-
-    let argc: int = (int)args->length();
-    if (argc > 1) {
-        manifest = args->get(1);
-    }
-    if (argc > 2) {
-        targetDir = args->get(2);
-    }
-
-    let downloader: DependencyDownloader* = new DependencyDownloader();
-    bool success: bool = downloader->downloadDependencies(manifest, targetDir);
-    if (success) {
-        return 0;
-    }
-    return 1;
 }

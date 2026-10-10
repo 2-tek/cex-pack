@@ -10,3 +10,5 @@ build/
 *.a
 *.log
 .DS_Store
+.cex_cache/
+/cex-pack
