@@ -3,6 +3,10 @@
     "version": "1.0.0",
     "main": "src/index.cex",
     "target": "runtime",
+    "required": {
+        "cexr": "^8",
+        "cexp": "^8"
+    },
     "options": {
         "envs": {
             "development": "./tests/fixtures/.env.dev",

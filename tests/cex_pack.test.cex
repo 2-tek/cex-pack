@@ -189,11 +189,11 @@ fn testSchemaModule(): void {
     // Valid target with space and compact
     let res6: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"required\": { \"cexr\": \"^8\" }\n}\n", res6);
-    assertTrue(res6->isValid && res6->errorCount == 0, "Valid target with space passes");
+    assertTrue(res6->isValid && res6->errorCount == 0 && res6->warningCount == 0, "Valid target with space passes with 0 errors and 0 warnings");
 
     let res7: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\"name\":\"@2tek/pkg\",\"version\":\"1.0.0\",\"main\":\"src/index.cex\",\"target\":\"runtime\",\"required\":{\"cexr\":\"^8\"}}\n", res7);
-    assertTrue(res7->isValid && res7->errorCount == 0, "Valid compact target passes");
+    assertTrue(res7->isValid && res7->errorCount == 0 && res7->warningCount == 0, "Valid compact target passes with 0 errors and 0 warnings");
 
     // Missing required warning
     let res8: ValidationResult* = new ValidationResult();
@@ -359,7 +359,7 @@ fn testValidatorModule(): void {
     // Validate valid string content
     let validContent: string = "{\n  \"name\": \"@2tek/valid-pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"required\": { \"cexr\": \"^8\" }\n}\n";
     let resValid: ValidationResult* = validator->validateContent(validContent);
-    assertTrue(resValid->isValid && resValid->errorCount == 0, "Validator engine passes valid manifest content");
+    assertTrue(resValid->isValid && resValid->errorCount == 0 && resValid->warningCount == 0, "Validator engine passes valid manifest content with 0 warnings");
 
     // Validate invalid string content
     let invalidContent: string = "{\n  \"name\": \"@2tek/bad-target\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"unknown\"\n}\n";
@@ -369,6 +369,26 @@ fn testValidatorModule(): void {
     // Validate existing valid file
     let fileOk: bool = validator->validateFile("cex-pack.json");
     assertTrue(fileOk, "Validator correctly validates existing 'cex-pack.json'");
+
+    // Validate root cex-pack.json with 0 errors and 0 warnings
+    let rootContent: string = fs.readFile("cex-pack.json");
+    let rootRes: ValidationResult* = validator->validateContent(rootContent);
+    assertTrue(rootRes->isValid && rootRes->errorCount == 0 && rootRes->warningCount == 0, "cex-pack.json validates with 100% success and 0 warnings");
+
+    // Validate tests/fixtures/env-manifest.json with 0 errors and 0 warnings
+    let envContent: string = fs.readFile("tests/fixtures/env-manifest.json");
+    let envRes: ValidationResult* = validator->validateContent(envContent);
+    assertTrue(envRes->isValid && envRes->errorCount == 0 && envRes->warningCount == 0, "tests/fixtures/env-manifest.json validates with 100% success and 0 warnings");
+
+    // Validate tests/fixtures/no-deps.json with 0 errors and 0 warnings
+    let noDepsContent: string = fs.readFile("tests/fixtures/no-deps.json");
+    let noDepsRes: ValidationResult* = validator->validateContent(noDepsContent);
+    assertTrue(noDepsRes->isValid && noDepsRes->errorCount == 0 && noDepsRes->warningCount == 0, "tests/fixtures/no-deps.json validates with 100% success and 0 warnings");
+
+    // Validate tests/fixtures/all-branches.json with 0 errors and 0 warnings
+    let allBranchesContent: string = fs.readFile("tests/fixtures/all-branches.json");
+    let allBranchesRes: ValidationResult* = validator->validateContent(allBranchesContent);
+    assertTrue(allBranchesRes->isValid && allBranchesRes->errorCount == 0 && allBranchesRes->warningCount == 0, "tests/fixtures/all-branches.json validates with 100% success and 0 warnings");
 
     // Validate existing invalid file fixture
     let fileBad: bool = validator->validateFile("tests/fixtures/invalid.json");
@@ -480,12 +500,20 @@ fn testExamplesIntegration(): void {
     let ex1Ok: bool = validator->validateFile("examples/pack-with-downloads/cex-pack.json");
     assertTrue(ex1Ok, "examples/pack-with-downloads/cex-pack.json validates successfully");
 
+    let ex1Content: string = fs.readFile("examples/pack-with-downloads/cex-pack.json");
+    let ex1Res: ValidationResult* = validator->validateContent(ex1Content);
+    assertTrue(ex1Res->isValid && ex1Res->errorCount == 0 && ex1Res->warningCount == 0, "examples/pack-with-downloads validates with 0 warnings");
+
     let ex1Dl: bool = downloader->downloadDependencies("examples/pack-with-downloads/cex-pack.json", "examples/pack-with-downloads/.cex_boxes");
     assertTrue(ex1Dl, "examples/pack-with-downloads dependencies download successfully");
 
     // 2. examples/project-have-packages-insides
     let ex2Ok: bool = validator->validateFile("examples/project-have-packages-insides/cex-pack.json");
     assertTrue(ex2Ok, "examples/project-have-packages-insides/cex-pack.json validates successfully");
+
+    let ex2Content: string = fs.readFile("examples/project-have-packages-insides/cex-pack.json");
+    let ex2Res: ValidationResult* = validator->validateContent(ex2Content);
+    assertTrue(ex2Res->isValid && ex2Res->errorCount == 0 && ex2Res->warningCount == 0, "examples/project-have-packages-insides validates with 0 warnings");
 }
 
 fn testEnvAndProcessEnvModule(): void {

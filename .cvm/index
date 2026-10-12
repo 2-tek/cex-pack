@@ -211,10 +211,10 @@
   },
   {
     "path": "cex-pack.json",
-    "hash": "f1e7f40a27a8d45875a4b2bfe2c7b779cbec16d5",
-    "size": 1436,
+    "hash": "8a5769291acee1b3500c8c6ec6db8d37d1802f33",
+    "size": 1442,
     "mode": "100644",
-    "mtime": 1791647812644.6558
+    "mtime": 1791774985762.1943
   },
   {
     "path": "examples/pack-with-downloads/cex-pack-linked.json",
@@ -365,10 +365,10 @@
   },
   {
     "path": "tests/cex_pack.test.cex",
-    "hash": "c2b58b4d9c91f7903782e38716543eaed7045419",
-    "size": 38132,
+    "hash": "6eb54c660e686e160faa8b1a48c191a5885f9598",
+    "size": 40544,
     "mode": "100644",
-    "mtime": 1791774379479.261
+    "mtime": 1791775037343.587
   },
   {
     "path": "tests/fixtures/.env.dev",
@@ -400,10 +400,10 @@
   },
   {
     "path": "tests/fixtures/env-manifest.json",
-    "hash": "fd4c48b808b7a01ed0875175d5914a864f543913",
-    "size": 452,
+    "hash": "c7947cbc692f1a2d140d19ceb955752f3546ce4d",
+    "size": 520,
     "mode": "100644",
-    "mtime": 1791774721876.9832
+    "mtime": 1791774996894.2769
   },
   {
     "path": "tests/fixtures/invalid.json",

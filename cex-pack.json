@@ -1,5 +1,5 @@
 {
-    "name": "cex-pack",
+    "name": "@2tek/cex-pack",
     "version": "1.0.0",
     "description": "CexPack: Native Syntax Checker, Manifest Validator & Dependency Downloader for cex-pack.json configuration files in C-ext (Cex)",
     "main": "src/index.cex",
