@@ -154,6 +154,156 @@ class SchemaValidator {
         }
     }
 
+    public validateCvmRepositoryRule(content: string, result: ValidationResult*): void {
+        let cvmIdx: int = (int)content.find("\"cvm_repository\"");
+        if (cvmIdx == -1) {
+            return;
+        }
+
+        let colonIdx: int = (int)content.find(":", cvmIdx);
+        if (colonIdx == -1) {
+            result->addError("RULE_CVM_REPO_INVALID", "Invalid cvm_repository definition in manifest", 1, 1);
+            return;
+        }
+
+        let cLen: int = (int)content.length();
+        let valStart: int = -1;
+        for (let i: int = colonIdx + 1; i < cLen; i = i + 1) {
+            let ch: string = content.substr(i, 1);
+            if (ch != " " && ch != "\t" && ch != "\r" && ch != "\n") {
+                valStart = i;
+                break;
+            }
+        }
+
+        if (valStart == -1) {
+            result->addError("RULE_CVM_REPO_EMPTY", "Empty cvm_repository configuration in manifest", 1, 1);
+            return;
+        }
+
+        let firstChar: string = content.substr(valStart, 1);
+        if (firstChar == "\"") {
+            let endQuote: int = (int)content.find("\"", valStart + 1);
+            if (endQuote == -1) {
+                result->addError("RULE_CVM_REPO_UNCLOSED_STRING", "Unclosed string literal in cvm_repository", 1, 1);
+                return;
+            }
+            let repoUrl: string = content.substr(valStart + 1, endQuote - valStart - 1);
+            if (repoUrl.length() == 0) {
+                result->addError("RULE_CVM_REPO_EMPTY_URL", "cvm_repository URL cannot be empty", 1, 1);
+            }
+        } else if (firstChar == "{") {
+            let openBrace: int = valStart;
+            let closeBrace: int = (int)content.find("}", openBrace);
+            if (closeBrace == -1) {
+                result->addError("RULE_CVM_REPO_UNCLOSED_OBJECT", "Unclosed object in cvm_repository configuration", 1, 1);
+                return;
+            }
+
+            let objSub: string = content.substr(openBrace, closeBrace - openBrace + 1);
+
+            let pathIdx: int = (int)objSub.find("\"path\"");
+            if (pathIdx != -1) {
+                let pColon: int = (int)objSub.find(":", pathIdx);
+                if (pColon != -1) {
+                    let pStart: int = (int)objSub.find("\"", pColon);
+                    if (pStart != -1) {
+                        let pEnd: int = (int)objSub.find("\"", pStart + 1);
+                        if (pEnd != -1) {
+                            let pathVal: string = objSub.substr(pStart + 1, pEnd - pStart - 1);
+                            if (pathVal.length() == 0) {
+                                result->addError("RULE_CVM_REPO_EMPTY_PATH", "cvm_repository path property cannot be empty", 1, 1);
+                            }
+                            if (pathVal.find("..") != -1) {
+                                result->addError("RULE_CVM_REPO_PATH_TRAVERSAL", "cvm_repository path cannot contain parent traversal ('..')", 1, 1);
+                            }
+                        }
+                    }
+                }
+            }
+
+            let urlIdx: int = (int)objSub.find("\"url\"");
+            if (urlIdx != -1) {
+                let uColon: int = (int)objSub.find(":", urlIdx);
+                if (uColon != -1) {
+                    let uStart: int = (int)objSub.find("\"", uColon);
+                    if (uStart != -1) {
+                        let uEnd: int = (int)objSub.find("\"", uStart + 1);
+                        if (uEnd != -1) {
+                            let urlVal: string = objSub.substr(uStart + 1, uEnd - uStart - 1);
+                            if (urlVal.length() == 0) {
+                                result->addError("RULE_CVM_REPO_EMPTY_URL", "cvm_repository url property cannot be empty", 1, 1);
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            result->addError("RULE_CVM_REPO_INVALID_TYPE", "cvm_repository must be a URL string or an object with url, path (e.g. web-pack.json), and branch", 1, 1);
+        }
+    }
+
+    public static extractCvmRepositoryPath(content: string): string {
+        let cvmIdx: int = (int)content.find("\"cvm_repository\"");
+        if (cvmIdx == -1) {
+            return "cex-pack.json";
+        }
+        let pathIdx: int = (int)content.find("\"path\"", cvmIdx);
+        if (pathIdx == -1) {
+            return "cex-pack.json";
+        }
+        let colonIdx: int = (int)content.find(":", pathIdx);
+        if (colonIdx == -1) {
+            return "cex-pack.json";
+        }
+        let quoteStart: int = (int)content.find("\"", colonIdx);
+        if (quoteStart == -1) {
+            return "cex-pack.json";
+        }
+        let quoteEnd: int = (int)content.find("\"", quoteStart + 1);
+        if (quoteEnd == -1) {
+            return "cex-pack.json";
+        }
+        let pathVal: string = content.substr(quoteStart + 1, quoteEnd - quoteStart - 1);
+        return (pathVal.length() > 0) ? pathVal : "cex-pack.json";
+    }
+
+    public static extractCvmRepositoryUrl(content: string): string {
+        let cvmIdx: int = (int)content.find("\"cvm_repository\"");
+        if (cvmIdx == -1) {
+            return "";
+        }
+        let colonIdx: int = (int)content.find(":", cvmIdx);
+        if (colonIdx == -1) {
+            return "";
+        }
+        let openBrace: int = (int)content.find("{", colonIdx);
+        let firstQuote: int = (int)content.find("\"", colonIdx);
+        if (openBrace != -1 && (firstQuote == -1 || openBrace < firstQuote)) {
+            let urlIdx: int = (int)content.find("\"url\"", openBrace);
+            if (urlIdx != -1) {
+                let uColon: int = (int)content.find(":", urlIdx);
+                if (uColon != -1) {
+                    let uQuoteStart: int = (int)content.find("\"", uColon);
+                    if (uQuoteStart != -1) {
+                        let uQuoteEnd: int = (int)content.find("\"", uQuoteStart + 1);
+                        if (uQuoteEnd != -1) {
+                            return content.substr(uQuoteStart + 1, uQuoteEnd - uQuoteStart - 1);
+                        }
+                    }
+                }
+            }
+            return "";
+        }
+        if (firstQuote != -1) {
+            let quoteEnd: int = (int)content.find("\"", firstQuote + 1);
+            if (quoteEnd != -1) {
+                return content.substr(firstQuote + 1, quoteEnd - firstQuote - 1);
+            }
+        }
+        return "";
+    }
+
     public static synthesizeThunderDockerfile(appName: string, mainPath: string, envPath: string, port: int): string {
         let dockerfile: string = "FROM @2tek/thunder:latest\n";
         dockerfile = dockerfile + "WORKDIR /app\n";

@@ -628,6 +628,74 @@ fn testEnvAndProcessEnvModule(): void {
     assertTrue(cli->run("env", "tests/fixtures/env-manifest.json") == 0, "CLI run env with manifest returns 0");
 }
 
+fn testCvmRepositoryModule(): void {
+    println("[SUITE 12] Testing CVM Repository & Web-Pack.json Manifest Configuration...");
+
+    // 1. CvmRepositoryConfig defaults
+    let cvmCfg: CvmRepositoryConfig* = new CvmRepositoryConfig();
+    assertTrue(!cvmCfg->isDefined, "CvmRepositoryConfig default isDefined is false");
+    assertTrue(cvmCfg->type == "cvm", "CvmRepositoryConfig default type is cvm");
+    assertTrue(cvmCfg->url == "", "CvmRepositoryConfig default url is empty");
+    assertTrue(cvmCfg->path == "cex-pack.json", "CvmRepositoryConfig default path is cex-pack.json");
+    assertTrue(cvmCfg->branch == "main", "CvmRepositoryConfig default branch is main");
+
+    // 2. Custom constructor with web-pack.json
+    let customCfg: CvmRepositoryConfig* = new CvmRepositoryConfig("cvm://localhost:3110/repo/web", "web-pack.json", "release");
+    assertTrue(customCfg->isDefined, "CvmRepositoryConfig custom isDefined is true");
+    assertTrue(customCfg->url == "cvm://localhost:3110/repo/web", "CvmRepositoryConfig custom url matches");
+    assertTrue(customCfg->path == "web-pack.json", "CvmRepositoryConfig custom path matches web-pack.json");
+    assertTrue(customCfg->branch == "release", "CvmRepositoryConfig custom branch matches release");
+
+    // 3. PackManifest setCvmRepository
+    let manifest: PackManifest* = new PackManifest();
+    assertTrue(!manifest->hasCvmRepository, "PackManifest default hasCvmRepository is false");
+    manifest->setCvmRepository("cvm://localhost:3110/repo/app", "web-pack.json", "main");
+    assertTrue(manifest->hasCvmRepository, "PackManifest hasCvmRepository is true after setCvmRepository");
+    assertTrue(manifest->cvmRepository->path == "web-pack.json", "PackManifest cvmRepository path is web-pack.json");
+
+    // 4. Schema validation with string cvm_repository
+    let schemaVal: SchemaValidator* = new SchemaValidator();
+    let strCvmManifest: string = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": \"cvm://localhost:3110/repo/app\"\n}\n";
+    let res1: ValidationResult* = new ValidationResult();
+    schemaVal->validateCvmRepositoryRule(strCvmManifest, res1);
+    assertTrue(res1->isValid && res1->errorCount == 0, "String cvm_repository passes validation");
+
+    // 5. Schema validation with object cvm_repository pointing to web-pack.json
+    let objCvmManifest: string = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": {\n    \"type\": \"cvm\",\n    \"url\": \"cvm://localhost:3110/repo/app\",\n    \"path\": \"web-pack.json\",\n    \"branch\": \"main\"\n  }\n}\n";
+    let res2: ValidationResult* = new ValidationResult();
+    schemaVal->validateCvmRepositoryRule(objCvmManifest, res2);
+    assertTrue(res2->isValid && res2->errorCount == 0, "Object cvm_repository with web-pack.json passes validation");
+
+    // 6. Schema validation: empty path detection
+    let emptyPathManifest: string = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": {\n    \"type\": \"cvm\",\n    \"url\": \"cvm://localhost:3110/repo/app\",\n    \"path\": \"\",\n    \"branch\": \"main\"\n  }\n}\n";
+    let res3: ValidationResult* = new ValidationResult();
+    schemaVal->validateCvmRepositoryRule(emptyPathManifest, res3);
+    assertTrue(!res3->isValid, "Empty cvm_repository path triggers validation error");
+
+    // 7. Schema validation: path traversal prohibition
+    let traversalManifest: string = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": {\n    \"type\": \"cvm\",\n    \"url\": \"cvm://localhost:3110/repo/app\",\n    \"path\": \"../web-pack.json\"\n  }\n}\n";
+    let res4: ValidationResult* = new ValidationResult();
+    schemaVal->validateCvmRepositoryRule(traversalManifest, res4);
+    assertTrue(!res4->isValid, "cvm_repository path traversal ('..') triggers validation error");
+
+    // 8. Extraction helpers
+    let extractedPath: string = SchemaValidator::extractCvmRepositoryPath(objCvmManifest);
+    assertTrue(extractedPath == "web-pack.json", "extractCvmRepositoryPath correctly extracts web-pack.json");
+
+    let defaultPath: string = SchemaValidator::extractCvmRepositoryPath("{\n  \"name\": \"app\"\n}\n");
+    assertTrue(defaultPath == "cex-pack.json", "extractCvmRepositoryPath defaults to cex-pack.json");
+
+    let extractedUrl: string = SchemaValidator::extractCvmRepositoryUrl(objCvmManifest);
+    assertTrue(extractedUrl == "cvm://localhost:3110/repo/app", "extractCvmRepositoryUrl correctly extracts url from object");
+
+    let extractedStrUrl: string = SchemaValidator::extractCvmRepositoryUrl(strCvmManifest);
+    assertTrue(extractedStrUrl == "cvm://localhost:3110/repo/app", "extractCvmRepositoryUrl correctly extracts url from string");
+
+    // 9. PackCLI CVM dispatching
+    let cli: PackCLI* = new PackCLI();
+    assertTrue(cli->runWithArg("check", "cex-pack.json", "") == 0, "CLI check on valid cex-pack.json returns 0");
+}
+
 fn main(): int {
     println("================================================------------------");
     println("      Running CexPack 100% Full Coverage Test Suite               ");
@@ -644,6 +712,7 @@ fn main(): int {
     testCLIModule();
     testExamplesIntegration();
     testEnvAndProcessEnvModule();
+    testCvmRepositoryModule();
 
     println("================================================------------------");
     print("  Assertions: ");

@@ -22,6 +22,8 @@
     "test": "cexr run tests/workspace.test.cex"
   },
   "dependencies": {
+    "cex-env": "1.0.0",
+    "cex-logger": "1.0.0",
     "cex-cli": "1.0.0",
     "cexr": "1.0.0",
     "cex-service": "1.0.0",

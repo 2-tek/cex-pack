@@ -20,10 +20,12 @@
 - **Environment Auto-Loading (`options.envs`)**: Auto-loads `.env` configuration files based on the active environment (`NODE_ENV`, `CEX_ENV`, `APP_ENV`, `ENVIRONMENT`) mapped via `options: { envs: { [environmentName]: [root env path] } }` or top-level `envs`.
 - **Process Environment Injection (`process.env`)**: Maps and injects variables into `process.env` using dynamic `"ENV::[variableName]"` or `"ENV::variableName"` references resolved directly from `.env` files or system environment.
 - **Pure Cex Runtime API (`ProcessEnv` & `process.env`)**: Zero-dependency runtime environment manager supporting `ProcessEnv::get(...)`, `ProcessEnv::getInt(...)`, `ProcessEnv::getBool(...)`, `ProcessEnv::set(...)`, and `process.env.get(...)`.
+- **CVM Repository & Multi-Manifest Routing (`cvm_repository`)**: Declare CodeVersionManager remote endpoints and alternate manifests (e.g. `"path": "web-pack.json"`) directly inside `cex-pack.json` for multi-manifest sync, commit, push, and dependency installation.
 - **Rule Enforcer Integration**:
     - **Rule 69**: Ensures `"target": "runtime"` remains strictly immutable across all manifest files.
     - **Rule 29**: Verifies EOF single newline integrity.
     - **Rule 72**: Enforces clean dynamic path references.
+    - **RULE_CVM_REPOSITORY_IN_CEX_PACK**: Enforces valid `cvm_repository` format, URL integrity, and forbids path traversal (`..`).
 
 ---
 
@@ -33,15 +35,30 @@
 
 ```bash
 cex-pack downloads
-# or targeting specific manifest
-cex-pack downloads path/to/cex-pack.json
+# or targeting alternate manifest (e.g. web-pack.json)
+cex-pack downloads --path web-pack.json
 ```
 
 When `cex-pack downloads` executes:
 
 1. It reads declared dependencies and versions in `cex-pack.json`.
-2. Resolves and decrypts the download URLs defined in `cex-pack-linked.json`.
-3. Clones or pulls real Git / CVM repositories into `.cex_boxes/{cleanName}`.
+2. If `cvm_repository.path` points to a secondary manifest (e.g. `web-pack.json`) and exists, it automatically merges dependencies from both manifests.
+3. Resolves and decrypts the download URLs defined in `cex-pack-linked.json`.
+4. Clones or pulls real Git / CVM repositories into `.cex_boxes/{cleanName}`.
+
+### CVM Repository & Multi-Manifest Workflows
+
+```bash
+# Push working tree and manifest to CVM remote repository
+cex-pack push --path web-pack.json
+
+# Commit manifest changes to CVM repository
+cex-pack commit -m "feat(web): update client bundle" --path web-pack.json
+
+# Dispatch CVM subcommands
+cex-pack cvm status
+cex-pack cvm sync
+```
 
 ### Generating or Updating `cex-pack-linked.json`
 
@@ -81,12 +98,48 @@ cex-pack link
 | --------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `cex-pack env [path]`       | Auto-load environment variables from path defined in `options.envs` or `envs` for `process.env`                |
 | `cex-pack downloads [path]` | Download dependencies defined in `cex-pack.json` via `cex-pack-linked.json` into `.cex_boxes/{dependencyName}` |
+| `cex-pack push [path]`      | Push manifest and working tree changes to CVM repository                                                       |
+| `cex-pack commit [msg]`     | Stage and commit manifest changes to CVM repository (`-m "message"`)                                           |
+| `cex-pack cvm [action]`     | Dispatch CVM commands (`status`, `push`, `commit`, `sync`)                                                     |
 | `cex-pack link [path]`      | Generate or refresh project-encrypted `cex-pack-linked.json` lockfile                                          |
 | `cex-pack check [path]`     | Validate syntax and schema of specified `cex-pack.json` file                                                   |
 | `cex-pack lint [path]`      | Run deep linter and rule compliance check                                                                      |
+| `cex-pack thunder [path]`   | Validate zero-file Thunder container configuration                                                             |
 | `cex-pack init`             | Scaffold a valid standard `cex-pack.json` manifest template                                                    |
+| `--path <file>`             | Target alternate manifest (e.g. `web-pack.json`) for check, downloads, push, or commit                          |
+| `-m <message>`              | Commit message for `cex-pack commit`                                                                           |
 | `--verbose`                 | Output detailed step-by-step diagnostic information                                                            |
 | `--help`, `-h`              | Display usage instructions and available subcommands                                                           |
+
+---
+
+## CVM Repository Configuration (`cvm_repository`)
+
+Declare CodeVersionManager repository and secondary manifest routing in `cex-pack.json`:
+
+```json
+{
+    "name": "@2tek/my-application",
+    "version": "1.0.0",
+    "main": "src/index.cex",
+    "target": "runtime",
+    "cvm_repository": {
+        "type": "cvm",
+        "url": "cvm://localhost:3110/repo/my-application",
+        "path": "web-pack.json",
+        "branch": "main"
+    },
+    "dependencies": {
+        "cex-cli": "1.0.0"
+    }
+}
+```
+
+Or string URL shorthand:
+
+```json
+"cvm_repository": "cvm://localhost:3110/repo/my-application"
+```
 
 ---
 

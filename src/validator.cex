@@ -33,6 +33,9 @@ class PackValidator {
         this.schemaVal->validateEnvsRule(manifestContent, result);
         this.schemaVal->validateProcessEnvRule(manifestContent, result);
 
+        // 6. CVM Repository & Manifest Path Rule Validation
+        this.schemaVal->validateCvmRepositoryRule(manifestContent, result);
+
         return result;
     }
 

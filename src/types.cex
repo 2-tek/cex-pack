@@ -137,6 +137,30 @@ class EnvConfigOptions {
     }
 }
 
+class CvmRepositoryConfig {
+    public isDefined: bool;
+    public type: string;
+    public url: string;
+    public path: string;
+    public branch: string;
+
+    public constructor() {
+        this.isDefined = false;
+        this.type = "cvm";
+        this.url = "";
+        this.path = "cex-pack.json";
+        this.branch = "main";
+    }
+
+    public constructor(url: string, p: string, b: string) {
+        this.isDefined = true;
+        this.type = "cvm";
+        this.url = url;
+        this.path = (p.length() > 0) ? p : "cex-pack.json";
+        this.branch = (b.length() > 0) ? b : "main";
+    }
+}
+
 class PackManifest {
     public name: string;
     public version: string;
@@ -153,6 +177,8 @@ class PackManifest {
     public processEnv: Array<EnvItem*>*;
     public hasEnvs: bool;
     public hasProcessEnv: bool;
+    public cvmRepository: CvmRepositoryConfig*;
+    public hasCvmRepository: bool;
 
     public constructor() {
         this.name = "";
@@ -170,6 +196,8 @@ class PackManifest {
         this.processEnv = new Array<EnvItem*>();
         this.hasEnvs = false;
         this.hasProcessEnv = false;
+        this.cvmRepository = new CvmRepositoryConfig();
+        this.hasCvmRepository = false;
     }
 
     public addEnvMapping(envName: string, path: string): void {
@@ -180,5 +208,10 @@ class PackManifest {
     public addProcessEnvItem(k: string, rawVal: string, resolvedVal: string, dynamic: bool, srcVar: string): void {
         this.processEnv->push(new EnvItem(k, rawVal, resolvedVal, dynamic, srcVar));
         this.hasProcessEnv = true;
+    }
+
+    public setCvmRepository(url: string, p: string, b: string): void {
+        this.cvmRepository = new CvmRepositoryConfig(url, p, b);
+        this.hasCvmRepository = true;
     }
 }

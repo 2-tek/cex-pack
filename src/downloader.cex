@@ -163,7 +163,35 @@ class DependencyDownloader {
             return false;
         }
 
-        let deps: Array<PackageDependency*>* = this.parseDependenciesFromManifest(manifestContent);
+        let cvmUrl: string = SchemaValidator::extractCvmRepositoryUrl(manifestContent);
+        if (cvmUrl.length() > 0) {
+            println("CVM Remote Repo : " + cvmUrl);
+        }
+
+        let cvmPath: string = SchemaValidator::extractCvmRepositoryPath(manifestContent);
+        if (cvmPath.length() > 0 && cvmPath != "cex-pack.json" && cvmPath != manifestPath) {
+            println("CVM Target Path : " + cvmPath);
+            let lastSlash: int = -1;
+            let len: int = (int)manifestPath.length();
+            for (let i: int = 0; i < len; i = i + 1) {
+                if (manifestPath.substr(i, 1) == "/") {
+                    lastSlash = i;
+                }
+            }
+            let secondaryPath: string = (lastSlash != -1) ? (manifestPath.substr(0, lastSlash) + "/" + cvmPath) : cvmPath;
+            if (fs.exists(secondaryPath)) {
+                println("  • [CVM] Parsing secondary dependencies from configured path: " + secondaryPath);
+                let secContent: string = fs.readFile(secondaryPath);
+                if (secContent.length() > 0) {
+                    let secDeps: Array<PackageDependency*>* = this.parseDependenciesFromManifest(secContent);
+                    let secTotal: int = (int)secDeps->length();
+                    for (let s: int = 0; s < secTotal; s = s + 1) {
+                        deps->push(secDeps->get(s));
+                    }
+                }
+            }
+        }
+
         let total: int = (int)deps->length();
 
         if (total == 0) {

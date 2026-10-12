@@ -12,6 +12,8 @@
     "start": "cexr run src/main.cex"
   },
   "dependencies": {
+    "cex-env": "1.0.0",
+    "cex-logger": "1.0.0",
     "cex-cli": "1.0.0",
     "cexr": "1.0.0",
     "cexp": "1.0.0",

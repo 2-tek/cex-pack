@@ -7,5 +7,7 @@
   "required": {
     "cexr": "^8"
   },
-  "dependencies": {}
+  "dependencies": {
+    "cex-env": "1.0.0",
+    "cex-logger": "1.0.0",}
 }
