@@ -127,10 +127,10 @@
   },
   {
     "path": ".agents/rules/RULE_NO_EXTERNAL_INCLUDEDIRS.md",
-    "hash": "bf5c3ca80419ddc69522d198bae6653329f50a1a",
-    "size": 1850,
+    "hash": "a4e2ca6b0f61c7b2d0a11460ac06df11a21a5817",
+    "size": 1860,
     "mode": "100644",
-    "mtime": 1791685415202.7625
+    "mtime": 1791774721700.9807
   },
   {
     "path": ".agents/rules/RULE_PURE_CEX_BIN.md",
@@ -141,10 +141,10 @@
   },
   {
     "path": ".agents/rules/RULE_SYNTAX_VALIDATION.md",
-    "hash": "d2b5745cd1251fc977db864aed60ef955bcdc44d",
-    "size": 881,
+    "hash": "41639ade9b1f2666df27982230dc5db65a5375f2",
+    "size": 883,
     "mode": "100644",
-    "mtime": 1791685437564.2512
+    "mtime": 1791774721717.981
   },
   {
     "path": ".agents/rules/rule-cex-lint.md",
@@ -162,10 +162,10 @@
   },
   {
     "path": ".agents/rules/rule-no-external-includedirs.md",
-    "hash": "bf5c3ca80419ddc69522d198bae6653329f50a1a",
-    "size": 1850,
+    "hash": "a4e2ca6b0f61c7b2d0a11460ac06df11a21a5817",
+    "size": 1860,
     "mode": "100644",
-    "mtime": 1791685418986.8452
+    "mtime": 1791774721739.9812
   },
   {
     "path": ".agents/rules/standard-for-project.md",
@@ -400,10 +400,10 @@
   },
   {
     "path": "tests/fixtures/env-manifest.json",
-    "hash": "697682e4e1a5ef64ad5499c2c9dc661871915b94",
-    "size": 400,
+    "hash": "fd4c48b808b7a01ed0875175d5914a864f543913",
+    "size": 452,
     "mode": "100644",
-    "mtime": 1791774303153.2104
+    "mtime": 1791774721876.9832
   },
   {
     "path": "tests/fixtures/invalid.json",

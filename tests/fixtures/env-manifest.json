@@ -1,18 +1,18 @@
 {
-  "name": "@2tek/env-app",
-  "version": "1.0.0",
-  "main": "src/index.cex",
-  "target": "runtime",
-  "options": {
-    "envs": {
-      "development": "./tests/fixtures/.env.dev",
-      "production": "./tests/fixtures/.env.prod"
+    "name": "@2tek/env-app",
+    "version": "1.0.0",
+    "main": "src/index.cex",
+    "target": "runtime",
+    "options": {
+        "envs": {
+            "development": "./tests/fixtures/.env.dev",
+            "production": "./tests/fixtures/.env.prod"
+        }
+    },
+    "process.env": {
+        "PORT": "ENV::[PORT]",
+        "DB_NAME": "ENV::[DATABASE_NAME]",
+        "APP_ENV_VAL": "ENV::APP_SECRET",
+        "STATIC_KEY": "custom_val"
     }
-  },
-  "process.env": {
-    "PORT": "ENV::[PORT]",
-    "DB_NAME": "ENV::[DATABASE_NAME]",
-    "APP_ENV_VAL": "ENV::APP_SECRET",
-    "STATIC_KEY": "custom_val"
-  }
 }
