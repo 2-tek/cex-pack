@@ -27,8 +27,8 @@
         "example:download": "cex-pack downloads examples/pack-with-downloads/cex-pack.json"
     },
     "dependencies": {
-    "cex-env": "1.0.0",
-    "cex-logger": "1.0.0",
+        "cex-env": "1.0.0",
+        "cex-logger": "1.0.0",
         "cex-cli": "1.0.0",
         "cex-log": "1.0.0",
         "cexr": "1.0.0",

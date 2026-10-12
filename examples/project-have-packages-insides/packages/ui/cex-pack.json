@@ -1,13 +1,14 @@
 {
-  "name": "@2tek/example-ui",
-  "version": "1.0.0",
-  "description": "Internal UI Package for project-have-packages-insides",
-  "main": "src/index.cex",
-  "target": "runtime",
-  "required": {
-    "cexr": "^8"
-  },
-  "dependencies": {
-    "cex-env": "1.0.0",
-    "cex-logger": "1.0.0",}
+    "name": "@2tek/example-ui",
+    "version": "1.0.0",
+    "description": "Internal UI Package for project-have-packages-insides",
+    "main": "src/index.cex",
+    "target": "runtime",
+    "required": {
+        "cexr": "^8"
+    },
+    "dependencies": {
+        "cex-env": "1.0.0",
+        "cex-logger": "1.0.0"
+    }
 }

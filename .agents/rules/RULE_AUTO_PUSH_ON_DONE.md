@@ -1,5 +1,7 @@
 # Rule: Auto Push Code on Done
 
+<!-- Merged (deduplicated): auto-commit-code.md -->
+
 <!-- Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule 82 (CXVM & Direct CexR) -->
 
 ## Policy & Invariants
@@ -36,3 +38,12 @@ Whenever any task, milestone, feature, bug fix, or refactor is completed:
   - **Do NOT abort, revert, or fail the entire task.**
   - **Break step by commit only**: Keep the commit safely recorded in the local repository.
   - Inform the user that the code has been committed locally and push was skipped or gracefully broken.
+
+## Merged Directives
+
+### From `auto-commit-code.md` — Auto Commit & Push Code Guideline
+
+> **Severity: GUIDELINE**
+
+1. Upon passing validation tests (`cexr run tests/cex_pack.test.cex`), code updates and governance rules should be staged and committed to git with clean, descriptive commit messages.
+2. Auto push code on done: push to `.git` remote (`git push origin main`), try push `.cvm`, and if push cannot be completed, break step by commit only. See `RULE_AUTO_PUSH_ON_DONE.md`.

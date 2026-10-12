@@ -106,7 +106,7 @@ cex-pack link
 | `cex-pack lint [path]`      | Run deep linter and rule compliance check                                                                      |
 | `cex-pack thunder [path]`   | Validate zero-file Thunder container configuration                                                             |
 | `cex-pack init`             | Scaffold a valid standard `cex-pack.json` manifest template                                                    |
-| `--path <file>`             | Target alternate manifest (e.g. `web-pack.json`) for check, downloads, push, or commit                          |
+| `--path <file>`             | Target alternate manifest (e.g. `web-pack.json`) for check, downloads, push, or commit                         |
 | `-m <message>`              | Commit message for `cex-pack commit`                                                                           |
 | `--verbose`                 | Output detailed step-by-step diagnostic information                                                            |
 | `--help`, `-h`              | Display usage instructions and available subcommands                                                           |
