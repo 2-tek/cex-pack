@@ -147,6 +147,13 @@
     "mtime": 1791800975084.367
   },
   {
+    "path": ".agents/rules/RULE_SEEDING_TEST_ONLY.md",
+    "hash": "9131f891a9b7d6e5ecca476771a1159f10b7d8f7",
+    "size": 2221,
+    "mode": "100644",
+    "mtime": 1791806926727.1157
+  },
+  {
     "path": ".agents/rules/RULE_SYNTAX_VALIDATION.md",
     "hash": "41639ade9b1f2666df27982230dc5db65a5375f2",
     "size": 883,
