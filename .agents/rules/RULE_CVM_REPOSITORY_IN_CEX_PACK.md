@@ -3,7 +3,7 @@
 <!-- Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule 80 (Root @), Rule 82 (CXVM & Direct CexR) -->
 
 > **MANDATORY CVM REPOSITORY & MANIFEST PATH SPECIFICATION**:
-> In all `mvc-lighting`, `mvc-deepsea`, and Cex project workspaces, repositories, and packages:
+> In all `mvc-lighting`, `mvp-deepsea`, and Cex project workspaces, repositories, and packages:
 >
 > 1. **`cvm_repository` MANIFEST DECLARATION**:
 >     - Projects may declare a CodeVersionManager repository configuration via `"cvm_repository"` inside `cex-pack.json`.

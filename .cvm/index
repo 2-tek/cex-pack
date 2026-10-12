@@ -63,13 +63,6 @@
     "mtime": 1791527628734.655
   },
   {
-    "path": ".agents/rules/auto-commit-code.md",
-    "hash": "292c28d117fe472fbf9a77f877c2319ca0c5022e",
-    "size": 433,
-    "mode": "100644",
-    "mtime": 1791647812630.0264
-  },
-  {
     "path": ".agents/rules/RULE_29_EOF_INTEGRITY.md",
     "hash": "1fe3c525c65759d5dc38c3c5a3880dee541ca64e",
     "size": 347,
@@ -92,10 +85,10 @@
   },
   {
     "path": ".agents/rules/RULE_AUTO_PUSH_ON_DONE.md",
-    "hash": "6ccc31066812eaf90728d71b14c7408278759247",
-    "size": 1648,
+    "hash": "9dfb9cb4cc1ff6441968183b38867130a8316f8e",
+    "size": 2190,
     "mode": "100644",
-    "mtime": 1791647812630.0264
+    "mtime": 1791800975084.1077
   },
   {
     "path": ".agents/rules/RULE_CEX_LINT.md",
@@ -106,10 +99,10 @@
   },
   {
     "path": ".agents/rules/RULE_CVM_REPOSITORY_IN_CEX_PACK.md",
-    "hash": "ef9a4a1841315b32ded63e3865b5708d53f16f43",
-    "size": 3041,
+    "hash": "83c15b8ed9c3f2d214a24a2b398842e5fb109657",
+    "size": 3169,
     "mode": "100644",
-    "mtime": 1791788819868.1501
+    "mtime": 1791788946593.5251
   },
   {
     "path": ".agents/rules/RULE_CXVM_UPGRADE.md",
@@ -147,32 +140,18 @@
     "mtime": 1791527628734.655
   },
   {
+    "path": ".agents/rules/RULE_SCHEMA_FIRST.md",
+    "hash": "eb62a897518e33164a97b14e50ab9eca790e9aea",
+    "size": 5016,
+    "mode": "100644",
+    "mtime": 1791800975084.367
+  },
+  {
     "path": ".agents/rules/RULE_SYNTAX_VALIDATION.md",
     "hash": "41639ade9b1f2666df27982230dc5db65a5375f2",
     "size": 883,
     "mode": "100644",
     "mtime": 1791774721717.981
-  },
-  {
-    "path": ".agents/rules/rule-cex-lint.md",
-    "hash": "66721ba1d8524fd73ab79ec513fb3393bb2d2d86",
-    "size": 2595,
-    "mode": "100644",
-    "mtime": 1791647812644.6558
-  },
-  {
-    "path": ".agents/rules/rule-cxvm-upgrade.md",
-    "hash": "93181a942f465d6761253b2099132a238a494415",
-    "size": 1918,
-    "mode": "100644",
-    "mtime": 1791647812644.6558
-  },
-  {
-    "path": ".agents/rules/rule-no-external-includedirs.md",
-    "hash": "a4e2ca6b0f61c7b2d0a11460ac06df11a21a5817",
-    "size": 1860,
-    "mode": "100644",
-    "mtime": 1791774721739.9812
   },
   {
     "path": ".agents/rules/standard-for-project.md",
@@ -218,10 +197,10 @@
   },
   {
     "path": "cex-pack.json",
-    "hash": "ccaf2e5f14da580de9c40049e1fb2ecf3781301c",
-    "size": 1658,
+    "hash": "aaf272b5a35b79afbd42c44db748aa9d9d6cf744",
+    "size": 1666,
     "mode": "100644",
-    "mtime": 1791788904819.8035
+    "mtime": 1791788946727.5242
   },
   {
     "path": "examples/pack-with-downloads/cex-pack-linked.json",
@@ -232,10 +211,10 @@
   },
   {
     "path": "examples/pack-with-downloads/cex-pack.json",
-    "hash": "39a7951013923476e415d905c654e3f39ec67bc7",
-    "size": 521,
+    "hash": "d660426a8d1b7773bad45ddf070adc8c1fede802",
+    "size": 579,
     "mode": "100644",
-    "mtime": 1791788829266.2097
+    "mtime": 1791788946742.1794
   },
   {
     "path": "examples/pack-with-downloads/src/main.cex",
@@ -253,17 +232,17 @@
   },
   {
     "path": "examples/project-have-packages-insides/cex-pack.json",
-    "hash": "3d4eb332a84b5bec875828f5e0cab8c57da02c70",
-    "size": 838,
+    "hash": "7a31b11e7f96c149f9c2bddfe68a23210459d629",
+    "size": 878,
     "mode": "100644",
-    "mtime": 1791788829266.2097
+    "mtime": 1791788946754.5242
   },
   {
     "path": "examples/project-have-packages-insides/packages/core/cex-pack.json",
-    "hash": "cefd5026c87a09f307f292094f354a040c0722b2",
-    "size": 294,
+    "hash": "bb46964c2371dd6663971d26aa18e608958405e9",
+    "size": 326,
     "mode": "100644",
-    "mtime": 1791788829266.2097
+    "mtime": 1791788946764.524
   },
   {
     "path": "examples/project-have-packages-insides/packages/core/src/index.cex",
@@ -274,10 +253,10 @@
   },
   {
     "path": "examples/project-have-packages-insides/packages/ui/cex-pack.json",
-    "hash": "020321ec602e547ef0c69c7f41ce8feed1cb63a9",
-    "size": 290,
+    "hash": "1f7a67f1b985938b260a70b07109a74c419c87a2",
+    "size": 322,
     "mode": "100644",
-    "mtime": 1791788829266.2097
+    "mtime": 1791788946774.524
   },
   {
     "path": "examples/project-have-packages-insides/packages/ui/src/index.cex",
@@ -302,10 +281,10 @@
   },
   {
     "path": "README.md",
-    "hash": "50779e6ce82cfe5fb3f5ee1deb1b0211be2f349a",
-    "size": 9703,
+    "hash": "f01508b953736a4c5fd71b7185ccc2ba5f95057c",
+    "size": 9702,
     "mode": "100644",
-    "mtime": 1791788885349.9211
+    "mtime": 1791788946704.5244
   },
   {
     "path": "src/cli.cex",
