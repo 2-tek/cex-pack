@@ -29,6 +29,10 @@ class PackValidator {
         // 4. Thunder Quick-Define Build Validation
         this.schemaVal->validateThunderRule(manifestContent, result);
 
+        // 5. Environment Options & Process.Env Syntax Validation
+        this.schemaVal->validateEnvsRule(manifestContent, result);
+        this.schemaVal->validateProcessEnvRule(manifestContent, result);
+
         return result;
     }
 

@@ -75,6 +75,68 @@ class ThunderConfig {
     }
 }
 
+class EnvItem {
+    public key: string;
+    public rawValue: string;
+    public resolvedValue: string;
+    public isDynamic: bool;
+    public sourceVarName: string;
+
+    public constructor(k: string, rawVal: string, resolvedVal: string, dynamic: bool, srcVar: string) {
+        this.key = k;
+        this.rawValue = rawVal;
+        this.resolvedValue = resolvedVal;
+        this.isDynamic = dynamic;
+        this.sourceVarName = srcVar;
+    }
+}
+
+class EnvMapping {
+    public environment: string;
+    public envPath: string;
+
+    public constructor(env: string, path: string) {
+        this.environment = env;
+        this.envPath = path;
+    }
+}
+
+class EnvConfigOptions {
+    public envs: Array<EnvMapping*>*;
+    public activeEnvironment: string;
+
+    public constructor() {
+        this.envs = new Array<EnvMapping*>();
+        this.activeEnvironment = "";
+    }
+
+    public addEnv(envName: string, path: string): void {
+        this.envs->push(new EnvMapping(envName, path));
+    }
+
+    public getPathForEnv(envName: string): string {
+        let count: int = (int)this.envs->length();
+        for (let i: int = 0; i < count; i = i + 1) {
+            let m: EnvMapping* = this.envs->get(i);
+            if (m->environment == envName) {
+                return m->envPath;
+            }
+        }
+        return "";
+    }
+
+    public hasEnv(envName: string): bool {
+        let count: int = (int)this.envs->length();
+        for (let i: int = 0; i < count; i = i + 1) {
+            let m: EnvMapping* = this.envs->get(i);
+            if (m->environment == envName) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 class PackManifest {
     public name: string;
     public version: string;
@@ -87,6 +149,10 @@ class PackManifest {
     public hasTarget: bool;
     public hasDependencies: bool;
     public thunder: ThunderConfig*;
+    public envConfig: EnvConfigOptions*;
+    public processEnv: Array<EnvItem*>*;
+    public hasEnvs: bool;
+    public hasProcessEnv: bool;
 
     public constructor() {
         this.name = "";
@@ -100,5 +166,19 @@ class PackManifest {
         this.hasTarget = false;
         this.hasDependencies = false;
         this.thunder = new ThunderConfig();
+        this.envConfig = new EnvConfigOptions();
+        this.processEnv = new Array<EnvItem*>();
+        this.hasEnvs = false;
+        this.hasProcessEnv = false;
+    }
+
+    public addEnvMapping(envName: string, path: string): void {
+        this.envConfig->addEnv(envName, path);
+        this.hasEnvs = true;
+    }
+
+    public addProcessEnvItem(k: string, rawVal: string, resolvedVal: string, dynamic: bool, srcVar: string): void {
+        this.processEnv->push(new EnvItem(k, rawVal, resolvedVal, dynamic, srcVar));
+        this.hasProcessEnv = true;
     }
 }

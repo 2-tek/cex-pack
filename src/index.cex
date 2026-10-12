@@ -6,6 +6,7 @@ import "./schema.cex";
 import "./reporter.cex";
 import "./validator.cex";
 import "./downloader.cex";
+import "./env.cex";
 import "./cli.cex";
 
 fn main(argc: int, argv: char**): int {

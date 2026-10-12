@@ -7,6 +7,7 @@ import "../src/schema.cex";
 import "../src/reporter.cex";
 import "../src/validator.cex";
 import "../src/downloader.cex";
+import "../src/env.cex";
 import "../src/cli.cex";
 
 let totalAsserts: int = 0;
@@ -69,7 +70,25 @@ fn testTypesModule(): void {
     thunCfg->addOutput(3000, "3000", 3000, "3000", "api");
     assertTrue(thunCfg->outputs->length() == 1, "ThunderConfig addOutput increments outputs array");
 
-    // 5. PackManifest
+    // 5. EnvItem, EnvMapping, and EnvConfigOptions
+    let envIt: EnvItem* = new EnvItem("PORT", "ENV::[PORT]", "3000", true, "PORT");
+    assertTrue(envIt->key == "PORT", "EnvItem key matches");
+    assertTrue(envIt->rawValue == "ENV::[PORT]", "EnvItem rawValue matches");
+    assertTrue(envIt->resolvedValue == "3000", "EnvItem resolvedValue matches");
+    assertTrue(envIt->isDynamic, "EnvItem isDynamic is true");
+    assertTrue(envIt->sourceVarName == "PORT", "EnvItem sourceVarName matches");
+
+    let envMap: EnvMapping* = new EnvMapping("production", "./.env.prod");
+    assertTrue(envMap->environment == "production", "EnvMapping environment matches");
+    assertTrue(envMap->envPath == "./.env.prod", "EnvMapping envPath matches");
+
+    let envOpts: EnvConfigOptions* = new EnvConfigOptions();
+    assertTrue(!envOpts->hasEnv("development"), "EnvConfigOptions default hasEnv is false");
+    envOpts->addEnv("development", "./.env");
+    assertTrue(envOpts->hasEnv("development"), "EnvConfigOptions hasEnv is true after addEnv");
+    assertTrue(envOpts->getPathForEnv("development") == "./.env", "EnvConfigOptions getPathForEnv matches");
+
+    // 6. PackManifest
     let manifest: PackManifest* = new PackManifest();
     assertTrue(manifest->name == "", "PackManifest default name is empty");
     assertTrue(manifest->version == "", "PackManifest default version is empty");
@@ -81,7 +100,15 @@ fn testTypesModule(): void {
     assertTrue(!manifest->hasRequired, "PackManifest default hasRequired is false");
     assertTrue(!manifest->hasTarget, "PackManifest default hasTarget is false");
     assertTrue(!manifest->hasDependencies, "PackManifest default hasDependencies is false");
+    assertTrue(!manifest->hasEnvs, "PackManifest default hasEnvs is false");
+    assertTrue(!manifest->hasProcessEnv, "PackManifest default hasProcessEnv is false");
     assertTrue(manifest->thunder->outputs->length() == 0, "PackManifest default thunder is initialized");
+
+    manifest->addEnvMapping("production", "./.env.prod");
+    assertTrue(manifest->hasEnvs, "PackManifest hasEnvs is true after addEnvMapping");
+    manifest->addProcessEnvItem("PORT", "ENV::[PORT]", "8080", true, "PORT");
+    assertTrue(manifest->hasProcessEnv, "PackManifest hasProcessEnv is true after addProcessEnvItem");
+    assertTrue(manifest->processEnv->length() == 1, "PackManifest processEnv length is 1");
 }
 
 fn testParserModule(): void {
@@ -177,6 +204,46 @@ fn testSchemaModule(): void {
     let res9: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"unscoped-pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"required\": {}\n}\n", res9);
     assertTrue(res9->warningCount > 0, "Unscoped name triggers recommendation warning");
+
+    // Parent traversal '..' in includeDirs (RULE_NO_EXTERNAL_INCLUDEDIRS)
+    let res10: ValidationResult* = new ValidationResult();
+    schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"includeDirs\": [\"./src\", \"../outside/src\"]\n}\n", res10);
+    assertTrue(!res10->isValid, "Parent traversal '..' in includeDirs is rejected under RULE_NO_EXTERNAL_INCLUDEDIRS");
+
+    // CexP/CexR reference in includeDirs (RULE_NO_EXTERNAL_INCLUDEDIRS)
+    let res11: ValidationResult* = new ValidationResult();
+    schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"includeDirs\": [\"./src\", \"../../packages/CexP/v1/src\"]\n}\n", res11);
+    assertTrue(!res11->isValid, "CexP/CexR path in includeDirs is rejected under RULE_NO_EXTERNAL_INCLUDEDIRS");
+
+    // Valid internal includeDirs passes
+    let res12: ValidationResult* = new ValidationResult();
+    schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"includeDirs\": [\"./src\"]\n}\n", res12);
+    assertTrue(res12->isValid, "Internal includeDirs ['./src'] passes schema validation");
+
+    // Invalid envs type (e.g., array instead of object)
+    let res13: ValidationResult* = new ValidationResult();
+    schemaVal->validateEnvsRule("{\n  \"envs\": [\"./.env\"]\n}\n", res13);
+    assertTrue(!res13->isValid, "Invalid envs type (array) triggers RULE_ENVS_INVALID_TYPE");
+
+    // Valid envs object passes
+    let res14: ValidationResult* = new ValidationResult();
+    schemaVal->validateEnvsRule("{\n  \"envs\": { \"development\": \"./.env\" }\n}\n", res14);
+    assertTrue(res14->isValid, "Valid envs object passes validateEnvsRule");
+
+    // Unclosed ENV::[ bracket
+    let res15: ValidationResult* = new ValidationResult();
+    schemaVal->validateProcessEnvRule("{\n  \"process.env\": { \"PORT\": \"ENV::[PORT\" }\n}\n", res15);
+    assertTrue(!res15->isValid, "Unclosed ENV::[ bracket triggers SCHEMA_UNCLOSED_ENV_BRACKET");
+
+    // Empty ENV::[]
+    let res16: ValidationResult* = new ValidationResult();
+    schemaVal->validateProcessEnvRule("{\n  \"process.env\": { \"PORT\": \"ENV::[]\" }\n}\n", res16);
+    assertTrue(!res16->isValid, "Empty ENV::[] triggers SCHEMA_EMPTY_ENV_VAR_NAME");
+
+    // Valid ENV::[PORT] passes
+    let res17: ValidationResult* = new ValidationResult();
+    schemaVal->validateProcessEnvRule("{\n  \"process.env\": { \"PORT\": \"ENV::[PORT]\", \"HOST\": \"ENV::HOST\" }\n}\n", res17);
+    assertTrue(res17->isValid, "Valid ENV::[variableName] passes validateProcessEnvRule");
 }
 
 fn testRule29EofModule(): void {
@@ -421,6 +488,118 @@ fn testExamplesIntegration(): void {
     assertTrue(ex2Ok, "examples/project-have-packages-insides/cex-pack.json validates successfully");
 }
 
+fn testEnvAndProcessEnvModule(): void {
+    println("[SUITE 11] Testing Environment Loader & Process.Env Module...");
+
+    // 1. EnvParser trim
+    assertTrue(EnvParser::trim("  \t\nhello world\r\n ") == "hello world", "EnvParser trim removes surrounding whitespace");
+
+    // 2. EnvParser parseLine
+    let k1: string = "";
+    let v1: string = "";
+    assertTrue(EnvParser::parseLine("DATABASE_HOST=localhost", k1, v1) && k1 == "DATABASE_HOST" && v1 == "localhost", "EnvParser parseLine simple assignment");
+
+    let k2: string = "";
+    let v2: string = "";
+    assertTrue(EnvParser::parseLine("export API_TOKEN=\"secret#token\\n\"", k2, v2) && k2 == "API_TOKEN" && v2 == "secret#token\n", "EnvParser parseLine with export and escaped quotes");
+
+    let k3: string = "";
+    let v3: string = "";
+    assertTrue(EnvParser::parseLine("APP_PORT=3000 # default port", k3, v3) && k3 == "APP_PORT" && v3 == "3000", "EnvParser parseLine with trailing inline comment");
+
+    let k4: string = "";
+    let v4: string = "";
+    assertTrue(!EnvParser::parseLine("# Comment line only", k4, v4), "EnvParser parseLine ignores comment lines");
+    assertTrue(!EnvParser::parseLine("    ", k4, v4), "EnvParser parseLine ignores empty lines");
+
+    // 3. EnvParser extractVarName
+    assertTrue(EnvParser::extractVarName("ENV::[PORT]") == "PORT", "extractVarName extracts PORT from ENV::[PORT]");
+    assertTrue(EnvParser::extractVarName("ENV::DATABASE_URL") == "DATABASE_URL", "extractVarName extracts DATABASE_URL from ENV::DATABASE_URL");
+    assertTrue(EnvParser::extractVarName("{{ENV->[PORT]}}") == "PORT", "extractVarName extracts PORT from {{ENV->[PORT]}}");
+    assertTrue(EnvParser::extractVarName("{{ENV->API_KEY}}") == "API_KEY", "extractVarName extracts API_KEY from {{ENV->API_KEY}}");
+    assertTrue(EnvParser::extractVarName("static_value") == "", "extractVarName returns empty for static value");
+
+    // 4. EnvParser isDynamic
+    assertTrue(EnvParser::isDynamic("ENV::[PORT]"), "isDynamic returns true for ENV::[PORT]");
+    assertTrue(EnvParser::isDynamic("ENV::HOST"), "isDynamic returns true for ENV::HOST");
+    assertTrue(!EnvParser::isDynamic("localhost:8080"), "isDynamic returns false for static value");
+
+    // 5. EnvParser interpolateString
+    let dummyItems: Array<EnvItem*>* = new Array<EnvItem*>();
+    dummyItems->push(new EnvItem("PORT", "3000", "3000", false, ""));
+    dummyItems->push(new EnvItem("HOST", "127.0.0.1", "127.0.0.1", false, ""));
+    let interp: string = EnvParser::interpolateString("http://ENV::[HOST]:ENV::[PORT]/api", dummyItems);
+    assertTrue(interp == "http://127.0.0.1:3000/api", "interpolateString resolves embedded ENV::[var] expressions");
+
+    // 6. EnvManager parseEnvsOptions
+    let opts1: EnvConfigOptions* = EnvManager::parseEnvsOptions("{\n  \"options\": {\n    \"envs\": {\n      \"development\": \"./tests/fixtures/.env.dev\",\n      \"production\": \"./tests/fixtures/.env.prod\"\n    }\n  }\n}\n");
+    assertTrue(opts1->hasEnv("development"), "parseEnvsOptions parses development from options.envs");
+    assertTrue(opts1->hasEnv("production"), "parseEnvsOptions parses production from options.envs");
+    assertTrue(opts1->getPathForEnv("development") == "./tests/fixtures/.env.dev", "parseEnvsOptions resolves development path");
+    assertTrue(opts1->getPathForEnv("production") == "./tests/fixtures/.env.prod", "parseEnvsOptions resolves production path");
+
+    let opts2: EnvConfigOptions* = EnvManager::parseEnvsOptions("{\n  \"envs\": {\n    \"test\": \"./tests/fixtures/.env.test\"\n  }\n}\n");
+    assertTrue(opts2->hasEnv("test"), "parseEnvsOptions parses top-level envs");
+    assertTrue(opts2->getPathForEnv("test") == "./tests/fixtures/.env.test", "parseEnvsOptions resolves top-level path");
+
+    // 7. EnvManager parseProcessEnv
+    let pItems1: Array<EnvItem*>* = EnvManager::parseProcessEnv("{\n  \"process.env\": {\n    \"PORT\": \"ENV::[PORT]\",\n    \"DB\": \"ENV::[DATABASE_NAME]\",\n    \"TITLE\": \"My App\"\n  }\n}\n");
+    assertTrue(pItems1->length() == 3, "parseProcessEnv parses 3 items from process.env");
+    assertTrue(pItems1->get(0)->key == "PORT" && pItems1->get(0)->isDynamic && pItems1->get(0)->sourceVarName == "PORT", "parseProcessEnv parses dynamic PORT item");
+    assertTrue(pItems1->get(1)->key == "DB" && pItems1->get(1)->isDynamic && pItems1->get(1)->sourceVarName == "DATABASE_NAME", "parseProcessEnv parses dynamic DB item");
+    assertTrue(pItems1->get(2)->key == "TITLE" && !pItems1->get(2)->isDynamic && pItems1->get(2)->rawValue == "My App", "parseProcessEnv parses static TITLE item");
+
+    let pItems2: Array<EnvItem*>* = EnvManager::parseProcessEnv("{\n  \"process\": {\n    \"env\": {\n      \"PORT\": \"ENV::PORT\"\n    }\n  }\n}\n");
+    assertTrue(pItems2->length() == 1, "parseProcessEnv parses item from process: { env: ... }");
+    assertTrue(pItems2->get(0)->key == "PORT" && pItems2->get(0)->isDynamic, "parseProcessEnv dynamic item from process: { env: ... }");
+
+    let pItems3: Array<EnvItem*>* = EnvManager::parseProcessEnv("{\n  \"env\": {\n    \"PORT\": \"ENV::[PORT]\"\n  }\n}\n");
+    assertTrue(pItems3->length() == 1, "parseProcessEnv parses item from top-level env: { ... }");
+
+    // 8. EnvManager loadEnvFile
+    let devFileItems: Array<EnvItem*>* = EnvManager::loadEnvFile("tests/fixtures/.env.dev");
+    assertTrue(devFileItems->length() == 4, "loadEnvFile loads 4 items from tests/fixtures/.env.dev");
+
+    // 9. EnvManager autoLoad with tests/fixtures/env-manifest.json in development
+    ProcessEnv::clear();
+    let devLoaded: int = EnvManager::autoLoad("tests/fixtures/env-manifest.json", "development");
+    assertTrue(devLoaded > 0, "autoLoad with development env loads variables");
+    assertTrue(ProcessEnv::get("PORT", "") == "3000", "ProcessEnv::get PORT is 3000 in development");
+    assertTrue(ProcessEnv::getInt("PORT", 0) == 3000, "ProcessEnv::getInt PORT is 3000 in development");
+    assertTrue(ProcessEnv::get("DB_NAME", "") == "mydb_dev", "ProcessEnv::get DB_NAME is mydb_dev");
+    assertTrue(ProcessEnv::get("APP_ENV_VAL", "") == "dev_secret_123", "ProcessEnv::get APP_ENV_VAL is dev_secret_123");
+    assertTrue(ProcessEnv::get("STATIC_KEY", "") == "custom_val", "ProcessEnv::get STATIC_KEY is custom_val");
+    assertTrue(process.env.get("PORT", "") == "3000", "process.env.get PORT is 3000 in development");
+    assertTrue(process.env.getInt("PORT", 0) == 3000, "process.env.getInt PORT is 3000 in development");
+
+    // 10. EnvManager autoLoad with tests/fixtures/env-manifest.json in production
+    ProcessEnv::clear();
+    let prodLoaded: int = EnvManager::autoLoad("tests/fixtures/env-manifest.json", "production");
+    assertTrue(prodLoaded > 0, "autoLoad with production env loads variables");
+    assertTrue(ProcessEnv::get("PORT", "") == "8080", "ProcessEnv::get PORT is 8080 in production");
+    assertTrue(ProcessEnv::getInt("PORT", 0) == 8080, "ProcessEnv::getInt PORT is 8080 in production");
+    assertTrue(ProcessEnv::get("DB_NAME", "") == "mydb_prod", "ProcessEnv::get DB_NAME is mydb_prod");
+    assertTrue(ProcessEnv::get("APP_ENV_VAL", "") == "prod_secret_456", "ProcessEnv::get APP_ENV_VAL is prod_secret_456");
+    assertTrue(process.env.get("PORT", "") == "8080", "process.env.get PORT is 8080 in production");
+
+    // 11. ProcessEnv::set and ProcessEnv::has
+    ProcessEnv::set("CUSTOM_DYNAMIC_VAR", "active_session");
+    assertTrue(ProcessEnv::has("CUSTOM_DYNAMIC_VAR"), "ProcessEnv::has returns true for newly set var");
+    assertTrue(ProcessEnv::get("CUSTOM_DYNAMIC_VAR", "") == "active_session", "ProcessEnv::get returns newly set var");
+    assertTrue(process.env.has("CUSTOM_DYNAMIC_VAR"), "process.env.has returns true");
+    assertTrue(process.env.get("CUSTOM_DYNAMIC_VAR", "") == "active_session", "process.env.get returns newly set var");
+
+    // 12. EnvManager resolveManifest
+    let rawManifestStr: string = "{\n  \"serverPort\": \"ENV::[PORT]\",\n  \"database\": \"ENV::[DATABASE_NAME]\"\n}\n";
+    let resolvedJson: string = EnvManager::resolveManifest(rawManifestStr, "production", "tests/fixtures/env-manifest.json");
+    assertTrue(resolvedJson.find("\"serverPort\": \"8080\"") != -1, "resolveManifest replaces ENV::[PORT] with 8080 in production");
+    assertTrue(resolvedJson.find("\"database\": \"mydb_prod\"") != -1, "resolveManifest replaces ENV::[DATABASE_NAME] with mydb_prod in production");
+
+    // 13. CLI run env
+    let cli: PackCLI* = new PackCLI();
+    assertTrue(cli->run("env", "tests/fixtures/env-manifest.json") == 0, "CLI run env with manifest returns 0");
+}
+
 fn main(): int {
     println("================================================------------------");
     println("      Running CexPack 100% Full Coverage Test Suite               ");
@@ -436,6 +615,7 @@ fn main(): int {
     testDownloaderModule();
     testCLIModule();
     testExamplesIntegration();
+    testEnvAndProcessEnvModule();
 
     println("================================================------------------");
     print("  Assertions: ");

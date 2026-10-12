@@ -37,6 +37,22 @@ class SchemaValidator {
         if (content.find("\"name\": \"@") == -1 && content.find("\"name\":\"@") == -1) {
             result->addWarning("RECOMMEND_SCOPED_NAME", "Package name should ideally use a scoped identifier (e.g., @2tek/... or @cex-...)", 1, 1);
         }
+
+        // 7. Rule RULE_NO_EXTERNAL_INCLUDEDIRS: Prohibition of External and CexP/CexR includeDirs
+        let incIdx: int = (int)content.find("\"includeDirs\"");
+        if (incIdx != -1) {
+            let openBracket: int = (int)content.find("[", incIdx);
+            let closeBracket: int = (int)content.find("]", incIdx);
+            if (openBracket != -1 && closeBracket != -1 && closeBracket > openBracket) {
+                let incContent: string = content.substr(openBracket, closeBracket - openBracket + 1);
+                if (incContent.find("..") != -1) {
+                    result->addError("RULE_NO_EXTERNAL_INCLUDEDIRS", "Rule Violation: Manifest 'includeDirs' cannot contain parent traversal ('..'). Paths must stay within project root", 1, 1);
+                }
+                if (incContent.find("CexP") != -1 || incContent.find("CexR") != -1) {
+                    result->addError("RULE_NO_CEXP_CEXR_INCLUDEDIRS", "Rule Violation: Manifest 'includeDirs' cannot reference CexP or CexR directly. Standard libraries are provided natively by the engine", 1, 1);
+                }
+            }
+        }
     }
 
     public validateEofNewline(content: string, result: ValidationResult*): void {
@@ -90,6 +106,51 @@ class SchemaValidator {
                     }
                 }
             }
+        }
+    }
+
+    public validateEnvsRule(content: string, result: ValidationResult*): void {
+        let envsIdx: int = (int)content.find("\"envs\"");
+        if (envsIdx == -1) {
+            return;
+        }
+
+        let colonIdx: int = (int)content.find(":", envsIdx);
+        if (colonIdx == -1) {
+            result->addError("RULE_ENVS_INVALID_FORMAT", "Manifest 'envs' must be followed by ':' and an object of environment paths", 1, 1);
+            return;
+        }
+
+        let nextOpen: int = (int)content.find("{", colonIdx);
+        let nextQuote: int = (int)content.find("\"", colonIdx);
+        let nextBracket: int = (int)content.find("[", colonIdx);
+
+        if (nextOpen == -1 || (nextQuote != -1 && nextQuote < nextOpen) || (nextBracket != -1 && nextBracket < nextOpen)) {
+            result->addError("RULE_ENVS_INVALID_TYPE", "Manifest 'envs' configuration must be an object: { [environmentName]: [root env path] }", 1, 1);
+        }
+    }
+
+    public validateProcessEnvRule(content: string, result: ValidationResult*): void {
+        let pos: int = 0;
+        let cLen: int = (int)content.length();
+        let targetPrefix: string = "ENV::[";
+        while (pos < cLen) {
+            let idx: int = (int)content.find(targetPrefix, pos);
+            if (idx == -1) {
+                break;
+            }
+            let nextQuote: int = (int)content.find("\"", idx);
+            let nextClose: int = (int)content.find("]", idx);
+            if (nextClose == -1 || (nextQuote != -1 && nextClose > nextQuote)) {
+                result->addError("SCHEMA_UNCLOSED_ENV_BRACKET", "Unclosed bracket in ENV::[variableName] expression in manifest", 1, 1);
+            } else if (nextClose == idx + 6) {
+                result->addError("SCHEMA_EMPTY_ENV_VAR_NAME", "Empty environment variable name in ENV::[] expression in manifest", 1, 1);
+            }
+            pos = idx + 6;
+        }
+
+        if (content.find("\"ENV::\"") != -1) {
+            result->addError("SCHEMA_EMPTY_ENV_VAR_NAME", "Empty environment variable name in ENV:: expression in manifest", 1, 1);
         }
     }
 

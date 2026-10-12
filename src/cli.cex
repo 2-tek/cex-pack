@@ -3,6 +3,7 @@
 import "./types.cex";
 import "./validator.cex";
 import "./downloader.cex";
+import "./env.cex";
 
 class PackCLI {
     private validator: PackValidator*;
@@ -23,6 +24,7 @@ class PackCLI {
         println("  Commands:");
         println("    check [file]       Validate JSON syntax and manifest schema (default: cex-pack.json)");
         println("    downloads [file]   Download dependencies defined in manifest into .cex_boxes/");
+        println("    env [file]         Auto-load environment variables from path into process.env");
         println("    lint [file]        Perform deep linter and rule governance checks");
         println("    init               Scaffold a standard governance-compliant cex-pack.json");
         println("    help               Display this help documentation");
@@ -70,6 +72,12 @@ class PackCLI {
                 return 0;
             }
             return 1;
+        }
+
+        if (cmd == "env" || cmd == "load-env" || cmd == "--env") {
+            let count: int = ProcessEnv::autoLoad(fileToValidate, "");
+            println("[CexPack] Auto-loaded " + std::to_string(count) + " environment variable(s) for process.env from " + fileToValidate);
+            return 0;
         }
 
         if (cmd == "thunder" || cmd == "--thunder") {

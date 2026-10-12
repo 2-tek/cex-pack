@@ -17,6 +17,9 @@
 - **Package Manifest Script Lifecycle**: Supports `"install": "cex-pack downloads"` in `cex-pack.json` scripts section for automated dependency installation.
 - **JSON Syntax & Structure Validation**: Strict checks for proper brace pairing, quotes, comma separators, and JSON type integrity.
 - **Manifest Schema Governance**: Validates mandatory fields (`name`, `version`, `main`, `target: "runtime"`, `required`, `dependencies`, `includeDirs`, `scripts`, `lint`).
+- **Environment Auto-Loading (`options.envs`)**: Auto-loads `.env` configuration files based on the active environment (`NODE_ENV`, `CEX_ENV`, `APP_ENV`, `ENVIRONMENT`) mapped via `options: { envs: { [environmentName]: [root env path] } }` or top-level `envs`.
+- **Process Environment Injection (`process.env`)**: Maps and injects variables into `process.env` using dynamic `"ENV::[variableName]"` or `"ENV::variableName"` references resolved directly from `.env` files or system environment.
+- **Pure Cex Runtime API (`ProcessEnv` & `process.env`)**: Zero-dependency runtime environment manager supporting `ProcessEnv::get(...)`, `ProcessEnv::getInt(...)`, `ProcessEnv::getBool(...)`, `ProcessEnv::set(...)`, and `process.env.get(...)`.
 - **Rule Enforcer Integration**:
     - **Rule 69**: Ensures `"target": "runtime"` remains strictly immutable across all manifest files.
     - **Rule 29**: Verifies EOF single newline integrity.
@@ -76,6 +79,7 @@ cex-pack link
 
 | Command / Option            | Description                                                                                                    |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `cex-pack env [path]`       | Auto-load environment variables from path defined in `options.envs` or `envs` for `process.env`                |
 | `cex-pack downloads [path]` | Download dependencies defined in `cex-pack.json` via `cex-pack-linked.json` into `.cex_boxes/{dependencyName}` |
 | `cex-pack link [path]`      | Generate or refresh project-encrypted `cex-pack-linked.json` lockfile                                          |
 | `cex-pack check [path]`     | Validate syntax and schema of specified `cex-pack.json` file                                                   |
@@ -83,6 +87,47 @@ cex-pack link
 | `cex-pack init`             | Scaffold a valid standard `cex-pack.json` manifest template                                                    |
 | `--verbose`                 | Output detailed step-by-step diagnostic information                                                            |
 | `--help`, `-h`              | Display usage instructions and available subcommands                                                           |
+
+---
+
+## Environment Configuration & `process.env`
+
+Declare environment configuration in `cex-pack.json`:
+
+```json
+{
+    "name": "@2tek/my-service",
+    "version": "1.0.0",
+    "main": "src/index.cex",
+    "target": "runtime",
+    "options": {
+        "envs": {
+            "development": "./.env",
+            "production": "./.env.production",
+            "test": "./.env.test"
+        }
+    },
+    "process.env": {
+        "PORT": "ENV::[PORT]",
+        "DATABASE_URL": "ENV::[DATABASE_URL]",
+        "APP_SECRET": "ENV::SECRET_KEY",
+        "APP_NAME": "MyService"
+    }
+}
+```
+
+### Auto-Loading in Cex Source Code:
+
+```cex
+import "@cex-pack/src/env.cex";
+
+// Auto-loads active environment from cex-pack.json options.envs
+ProcessEnv::autoLoad("cex-pack.json", "production");
+
+// Access environment variables
+let port: int = ProcessEnv::getInt("PORT", 3000);
+let dbUrl: string = process.env.get("DATABASE_URL", "");
+```
 
 ---
 

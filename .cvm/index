@@ -1,0 +1,422 @@
+[
+  {
+    "path": ".agents/agents/coder.md",
+    "hash": "c93426ed19a295d544515e1883e4a69bca319c84",
+    "size": 289,
+    "mode": "100644",
+    "mtime": 1791527628734.4224
+  },
+  {
+    "path": ".agents/agents/git-checker.md",
+    "hash": "3f2582051a74336834939b771722a6d9ec625b12",
+    "size": 327,
+    "mode": "100644",
+    "mtime": 1791527628734.472
+  },
+  {
+    "path": ".agents/agents/leader.md",
+    "hash": "5da3fbb4de02c1e9b35020277df0b7513d017a48",
+    "size": 298,
+    "mode": "100644",
+    "mtime": 1791527628734.472
+  },
+  {
+    "path": ".agents/agents/test-editor.md",
+    "hash": "8b4c8d71440c9f0f71feb68acaa6f7729c6c0a18",
+    "size": 300,
+    "mode": "100644",
+    "mtime": 1791527628734.472
+  },
+  {
+    "path": ".agents/features/09-10-2026.md",
+    "hash": "4e9c982a1e500c1c9622ecbd46f8c7d4f9be4b38",
+    "size": 379,
+    "mode": "100644",
+    "mtime": 1791647812629.7275
+  },
+  {
+    "path": ".agents/features/10-10-2026.md",
+    "hash": "69e8e22110de9b2c7fa51e605946c727357dcea9",
+    "size": 1606,
+    "mode": "100644",
+    "mtime": 1791647812638.6558
+  },
+  {
+    "path": ".agents/features/11-10-2026.md",
+    "hash": "3fdf46564038c726e6d27ce5673b1d0d6c1f9dd3",
+    "size": 1040,
+    "mode": "100644",
+    "mtime": 1791686893085.1396
+  },
+  {
+    "path": ".agents/PRODUCT_TARGET.md",
+    "hash": "ae09584ec29842d57719f52d99c3483c283654d4",
+    "size": 2216,
+    "mode": "100644",
+    "mtime": 1791527628734.0164
+  },
+  {
+    "path": ".agents/rules/allow-git-cex-commands.md",
+    "hash": "0bebbaf85b2a06df1c60426bb678f22cd60b34d1",
+    "size": 505,
+    "mode": "100644",
+    "mtime": 1791527628734.655
+  },
+  {
+    "path": ".agents/rules/auto-commit-code.md",
+    "hash": "292c28d117fe472fbf9a77f877c2319ca0c5022e",
+    "size": 433,
+    "mode": "100644",
+    "mtime": 1791647812630.0264
+  },
+  {
+    "path": ".agents/rules/RULE_29_EOF_INTEGRITY.md",
+    "hash": "1fe3c525c65759d5dc38c3c5a3880dee541ca64e",
+    "size": 347,
+    "mode": "100644",
+    "mtime": 1791527628734.472
+  },
+  {
+    "path": ".agents/rules/RULE_69_KEEP_TARGET.md",
+    "hash": "c8c762b375ebccc0c18218d1db8ed58c205d121b",
+    "size": 350,
+    "mode": "100644",
+    "mtime": 1791527628734.655
+  },
+  {
+    "path": ".agents/rules/RULE_72_DYNAMIC_PATHS.md",
+    "hash": "ea8a4087ae3391ee3f04b33369c534c802010c43",
+    "size": 442,
+    "mode": "100644",
+    "mtime": 1791527628734.655
+  },
+  {
+    "path": ".agents/rules/RULE_AUTO_PUSH_ON_DONE.md",
+    "hash": "6ccc31066812eaf90728d71b14c7408278759247",
+    "size": 1648,
+    "mode": "100644",
+    "mtime": 1791647812630.0264
+  },
+  {
+    "path": ".agents/rules/RULE_CEX_LINT.md",
+    "hash": "66721ba1d8524fd73ab79ec513fb3393bb2d2d86",
+    "size": 2595,
+    "mode": "100644",
+    "mtime": 1791647812643.856
+  },
+  {
+    "path": ".agents/rules/RULE_CXVM_UPGRADE.md",
+    "hash": "93181a942f465d6761253b2099132a238a494415",
+    "size": 1918,
+    "mode": "100644",
+    "mtime": 1791647812644.6558
+  },
+  {
+    "path": ".agents/rules/RULE_DOCUMENTS_UPDATE.md",
+    "hash": "33e5e8244eb62816dc6c8254f4e36e4f5306c54d",
+    "size": 2485,
+    "mode": "100644",
+    "mtime": 1791527628734.655
+  },
+  {
+    "path": ".agents/rules/RULE_FEATURES_TRACKING.md",
+    "hash": "8d017fc8f75abc74e4097b80191e59b598b5556a",
+    "size": 1238,
+    "mode": "100644",
+    "mtime": 1791647812630.0264
+  },
+  {
+    "path": ".agents/rules/RULE_NO_EXTERNAL_INCLUDEDIRS.md",
+    "hash": "bf5c3ca80419ddc69522d198bae6653329f50a1a",
+    "size": 1850,
+    "mode": "100644",
+    "mtime": 1791685415202.7625
+  },
+  {
+    "path": ".agents/rules/RULE_PURE_CEX_BIN.md",
+    "hash": "56f238c5c2c866627cb792e50cb539295bb98bb3",
+    "size": 855,
+    "mode": "100644",
+    "mtime": 1791527628734.655
+  },
+  {
+    "path": ".agents/rules/RULE_SYNTAX_VALIDATION.md",
+    "hash": "d2b5745cd1251fc977db864aed60ef955bcdc44d",
+    "size": 881,
+    "mode": "100644",
+    "mtime": 1791685437564.2512
+  },
+  {
+    "path": ".agents/rules/rule-cex-lint.md",
+    "hash": "66721ba1d8524fd73ab79ec513fb3393bb2d2d86",
+    "size": 2595,
+    "mode": "100644",
+    "mtime": 1791647812644.6558
+  },
+  {
+    "path": ".agents/rules/rule-cxvm-upgrade.md",
+    "hash": "93181a942f465d6761253b2099132a238a494415",
+    "size": 1918,
+    "mode": "100644",
+    "mtime": 1791647812644.6558
+  },
+  {
+    "path": ".agents/rules/rule-no-external-includedirs.md",
+    "hash": "bf5c3ca80419ddc69522d198bae6653329f50a1a",
+    "size": 1850,
+    "mode": "100644",
+    "mtime": 1791685418986.8452
+  },
+  {
+    "path": ".agents/rules/standard-for-project.md",
+    "hash": "53e399ac45f718fcb20e24491a186042d79abfc5",
+    "size": 835,
+    "mode": "100644",
+    "mtime": 1791685441602.339
+  },
+  {
+    "path": ".agents/standards/ARCHITECTURE.md",
+    "hash": "69b09cc38c497ccd6d6656738e3521037b7e1244",
+    "size": 695,
+    "mode": "100644",
+    "mtime": 1791527628734.655
+  },
+  {
+    "path": ".agents/standards/MANIFEST_SPEC.md",
+    "hash": "a0384b205b2cae75dfa12c1f576580b6e3720a10",
+    "size": 1023,
+    "mode": "100644",
+    "mtime": 1791527628735.0103
+  },
+  {
+    "path": ".cvmignore",
+    "hash": "665fe8efd8248c64dc00db6f08628e2c40777307",
+    "size": 56,
+    "mode": "100644",
+    "mtime": 1791774711907.8455
+  },
+  {
+    "path": ".gitignore",
+    "hash": "c2aecf5f9f3c9ed7b85ebedb865747ebd0a1f5ef",
+    "size": 140,
+    "mode": "100644",
+    "mtime": 1791647812639.6558
+  },
+  {
+    "path": "cex-pack-linked.json",
+    "hash": "8132ada7fc33b8accb25508a44fc5878404de55a",
+    "size": 1489,
+    "mode": "100644",
+    "mtime": 1791527628735.0103
+  },
+  {
+    "path": "cex-pack.json",
+    "hash": "f1e7f40a27a8d45875a4b2bfe2c7b779cbec16d5",
+    "size": 1436,
+    "mode": "100644",
+    "mtime": 1791647812644.6558
+  },
+  {
+    "path": "examples/pack-with-downloads/cex-pack-linked.json",
+    "hash": "6c635186c860d992c5438356ef2f124b8fd45473",
+    "size": 1213,
+    "mode": "100644",
+    "mtime": 1791527628735.3196
+  },
+  {
+    "path": "examples/pack-with-downloads/cex-pack.json",
+    "hash": "1c75a724dda4aadd0b8e8f56e9e87fa743664b54",
+    "size": 470,
+    "mode": "100644",
+    "mtime": 1791527628735.3901
+  },
+  {
+    "path": "examples/pack-with-downloads/src/main.cex",
+    "hash": "e3db8ab7ce8e19ba02af35c91af1440fb1f89bec",
+    "size": 197,
+    "mode": "100644",
+    "mtime": 1791527628735.3901
+  },
+  {
+    "path": "examples/project-have-packages-insides/cex-pack-linked.json",
+    "hash": "56fbc8f25b5683abb382a3b1b5c5eadddbe0fa01",
+    "size": 1234,
+    "mode": "100644",
+    "mtime": 1791527628735.5603
+  },
+  {
+    "path": "examples/project-have-packages-insides/cex-pack.json",
+    "hash": "0dcf8e91bd75cc1adc3d6fe7a24711234fd9b6e1",
+    "size": 787,
+    "mode": "100644",
+    "mtime": 1791527628735.5603
+  },
+  {
+    "path": "examples/project-have-packages-insides/packages/core/cex-pack.json",
+    "hash": "e9eb89ae8cb43f6c178fab2fa7295fd90fa54156",
+    "size": 243,
+    "mode": "100644",
+    "mtime": 1791527628735.6436
+  },
+  {
+    "path": "examples/project-have-packages-insides/packages/core/src/index.cex",
+    "hash": "44437a0a84cfa94b9bd3f446ac5d55d0e84425b5",
+    "size": 516,
+    "mode": "100644",
+    "mtime": 1791527628735.7148
+  },
+  {
+    "path": "examples/project-have-packages-insides/packages/ui/cex-pack.json",
+    "hash": "d8da10d2be9bd39751f6580eadeb8d915538c634",
+    "size": 239,
+    "mode": "100644",
+    "mtime": 1791527628735.7148
+  },
+  {
+    "path": "examples/project-have-packages-insides/packages/ui/src/index.cex",
+    "hash": "1e2fe7ce86f4c62edc7c28723ee3d61ef2295f04",
+    "size": 503,
+    "mode": "100644",
+    "mtime": 1791527628735.833
+  },
+  {
+    "path": "examples/project-have-packages-insides/README.md",
+    "hash": "a472469dc59fc2b6b09b9411b66ebd286a5a83e6",
+    "size": 2719,
+    "mode": "100644",
+    "mtime": 1791527628735.3901
+  },
+  {
+    "path": "examples/project-have-packages-insides/src/main.cex",
+    "hash": "7fa914f307ec35bd8f4c840f24696fd4caecfa98",
+    "size": 959,
+    "mode": "100644",
+    "mtime": 1791527628735.833
+  },
+  {
+    "path": "README.md",
+    "hash": "c9e8a199211f4549edb5b34cfb89841c697d8624",
+    "size": 7317,
+    "mode": "100644",
+    "mtime": 1791774596620.2542
+  },
+  {
+    "path": "src/cli.cex",
+    "hash": "a0f70fc89aaddf94b1c939d6ba3cbe0f4570885d",
+    "size": 4235,
+    "mode": "100644",
+    "mtime": 1791774132672.869
+  },
+  {
+    "path": "src/downloader.cex",
+    "hash": "c14274eeb18aa6328b5beaef05c052635e0f311a",
+    "size": 9725,
+    "mode": "100644",
+    "mtime": 1791647812640.6558
+  },
+  {
+    "path": "src/env.cex",
+    "hash": "56db624a47d092ec85fbf918da7a2e00ba7d4edd",
+    "size": 30130,
+    "mode": "100644",
+    "mtime": 1791774476444.5967
+  },
+  {
+    "path": "src/index.cex",
+    "hash": "1d84cd08e226bf26ba13dfb15da0363eaa99d46d",
+    "size": 529,
+    "mode": "100644",
+    "mtime": 1791774146653.0605
+  },
+  {
+    "path": "src/parser.cex",
+    "hash": "7e8e7572633b94c9938cf34a86be1e35cfb0f394",
+    "size": 2959,
+    "mode": "100644",
+    "mtime": 1791647812640.6558
+  },
+  {
+    "path": "src/reporter.cex",
+    "hash": "9f2bd3a9c43e072b5a83fe2aa7f0daa389a80a98",
+    "size": 2267,
+    "mode": "100644",
+    "mtime": 1791647812640.6558
+  },
+  {
+    "path": "src/schema.cex",
+    "hash": "47a2090389665f1b7e03c1e4c860fe88f0c6b2a7",
+    "size": 8843,
+    "mode": "100644",
+    "mtime": 1791774101607.4429
+  },
+  {
+    "path": "src/types.cex",
+    "hash": "b26db6c60c8d0ede23cbfda8891ee94938d6324d",
+    "size": 5332,
+    "mode": "100644",
+    "mtime": 1791774050826.7473
+  },
+  {
+    "path": "src/validator.cex",
+    "hash": "ca0de3f8d52655c2f98d31514e1da9bf662b328a",
+    "size": 2149,
+    "mode": "100644",
+    "mtime": 1791774109540.5518
+  },
+  {
+    "path": "tests/cex_pack.test.cex",
+    "hash": "c2b58b4d9c91f7903782e38716543eaed7045419",
+    "size": 38132,
+    "mode": "100644",
+    "mtime": 1791774379479.261
+  },
+  {
+    "path": "tests/fixtures/.env.dev",
+    "hash": "0f9388f5b24151c1a2fd9e5d1c61300e51643f65",
+    "size": 75,
+    "mode": "100644",
+    "mtime": 1791774295223.1013
+  },
+  {
+    "path": "tests/fixtures/.env.prod",
+    "hash": "abb3f9eefdb2a1036d55d3f2a4dc048c7bc7dab0",
+    "size": 78,
+    "mode": "100644",
+    "mtime": 1791774299078.1545
+  },
+  {
+    "path": "tests/fixtures/all-branches.json",
+    "hash": "859fc889ba0ddeb79c9ae2c4ce23ee8347170553",
+    "size": 450,
+    "mode": "100644",
+    "mtime": 1791647812644.6558
+  },
+  {
+    "path": "tests/fixtures/cex-pack-linked.json",
+    "hash": "09e73cc3918503ab17f15882816ff8914689ed21",
+    "size": 341,
+    "mode": "100644",
+    "mtime": 1791647812644.6558
+  },
+  {
+    "path": "tests/fixtures/env-manifest.json",
+    "hash": "697682e4e1a5ef64ad5499c2c9dc661871915b94",
+    "size": 400,
+    "mode": "100644",
+    "mtime": 1791774303153.2104
+  },
+  {
+    "path": "tests/fixtures/invalid.json",
+    "hash": "eeeb11455940ff1a7d8b50dcc67780e85ed068e3",
+    "size": 60,
+    "mode": "100644",
+    "mtime": 1791647812644.6558
+  },
+  {
+    "path": "tests/fixtures/no-deps.json",
+    "hash": "9bf2cef44b24f4a3f8abe3894b52d36676c57885",
+    "size": 161,
+    "mode": "100644",
+    "mtime": 1791647812644.6558
+  }
+]
