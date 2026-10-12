@@ -99,10 +99,10 @@
   },
   {
     "path": ".agents/rules/RULE_CVM_REPOSITORY_IN_CEX_PACK.md",
-    "hash": "83c15b8ed9c3f2d214a24a2b398842e5fb109657",
+    "hash": "f09961fa02b58b833fc1ab3c199d7c59bf682683",
     "size": 3169,
     "mode": "100644",
-    "mtime": 1791788946593.5251
+    "mtime": 1791805644512.845
   },
   {
     "path": ".agents/rules/RULE_CXVM_UPGRADE.md",
