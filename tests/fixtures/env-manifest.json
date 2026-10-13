@@ -5,7 +5,7 @@
     "target": "runtime",
     "required": {
         "cexr": "^8",
-        "cexp": "^8"
+        "cexp": "^6"
     },
     "options": {
         "envs": {

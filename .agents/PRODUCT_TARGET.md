@@ -6,7 +6,7 @@
 > **Canonical Target of Cex-Pack (`@2tek/pack`)**:
 > **`cex-pack` is the canonical syntax validation engine, schema enforcer, and diagnostic tool for `cex-pack.json` manifests across the Cex ecosystem.**
 > **Toolchain Standard**: Pure Cex Native Engine (`cexr` runtime engine + `cexp` direct machine compiler).
-> **Target Definition**: `"target": "runtime"`, `"required": {"cexr": "^8", "cexp": "^8"}`.
+> **Target Definition**: `"target": "runtime"`, `"required": {"cexr": "^8", "cexp": "^6"}`.
 
 ---
 
@@ -41,4 +41,4 @@
 | Version | `1.0.0` | Cex Manifest Validator Standard |
 | Target | `"target": "runtime"` | Strictly Immutable (Rule 69) |
 | Runtime Requirement | `"cexr": "^8"` | CexR v8 Runtime Engine |
-| Compiler Requirement | `"cexp": "^8"` | CexP v8 Direct Machine Compiler |
+| Compiler Requirement | `"cexp": "^6"` | CexP v8 Direct Machine Compiler |
