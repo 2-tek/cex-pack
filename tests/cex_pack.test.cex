@@ -408,11 +408,24 @@ fn testDownloaderModule(): void {
     let dep: PackageDependency* = new PackageDependency("@2tek/cli", "1.0.0");
     assertTrue(dep->packageName == "@2tek/cli", "PackageDependency packageName initialized");
     assertTrue(dep->versionSpec == "1.0.0", "PackageDependency versionSpec initialized");
+    assertTrue(dep->exactVersion == "1.0.0", "PackageDependency exactVersion initialized to 1.0.0");
     assertTrue(dep->status == "PENDING", "PackageDependency default status is PENDING");
     assertTrue(dep->percent == 0, "PackageDependency default percent is 0");
     assertTrue(dep->currentSize == "0.00Mb", "PackageDependency default currentSize is 0.00Mb");
     assertTrue(dep->totalSize == "0.00Mb", "PackageDependency default totalSize is 0.00Mb");
     assertTrue(dep->linkedRef == "cex-pack-linked.json", "PackageDependency default linkedRef matches");
+
+    // Exact version cleaning tests
+    assertTrue(PackageDependency::cleanExactVersion("^1.0.0") == "1.0.0", "cleanExactVersion strips caret ^");
+    assertTrue(PackageDependency::cleanExactVersion("~1.2.3") == "1.2.3", "cleanExactVersion strips tilde ~");
+    assertTrue(PackageDependency::cleanExactVersion(">=2.0.0") == "2.0.0", "cleanExactVersion strips >=");
+    assertTrue(PackageDependency::cleanExactVersion("v1.5.0") == "1.5.0", "cleanExactVersion strips leading v");
+    assertTrue(PackageDependency::cleanExactVersion("^8") == "8.0.0", "cleanExactVersion expands single major integer");
+
+    // Locked version extraction tests
+    let mockLinked: string = "{\n  \"dependencies\": {\n    \"cex-cli\": {\n      \"version\": \"1.0.4\",\n      \"url\": \"cex-enc:abc\"\n    }\n  }\n}\n";
+    assertTrue(DependencyDownloader::extractLockedVersion(mockLinked, "cex-cli") == "1.0.4", "extractLockedVersion extracts exact locked version");
+    assertTrue(DependencyDownloader::extractLockedUrl(mockLinked, "cex-cli") == "cex-enc:abc", "extractLockedUrl extracts locked url");
 
     // Parse dependencies from manifest with no dependencies
     let emptyDeps: Array<PackageDependency*>* = downloader->parseDependenciesFromManifest("{\n  \"name\": \"pkg\"\n}\n");
@@ -440,6 +453,9 @@ fn testDownloaderModule(): void {
     // Download dependencies covering all package size branches
     let dlAll: bool = downloader->downloadDependencies("tests/fixtures/all-branches.json", "tests/.cex_boxes");
     assertTrue(dlAll, "Downloader successfully resolves all package branches and generates PROGRESS.md");
+    assertTrue(fs.exists("tests/.cex_boxes/cex-cli/cex-pack.json"), "Downloaded dependency box manifest exists");
+    let cliBoxManifest: string = fs.readFile("tests/.cex_boxes/cex-cli/cex-pack.json");
+    assertTrue(cliBoxManifest.find("\"version\": \"1.0.0\"") != -1, "Downloaded dependency has exact version in manifest");
 }
 
 fn testCLIModule(): void {

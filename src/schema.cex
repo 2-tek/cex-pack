@@ -34,8 +34,11 @@ class SchemaValidator {
         }
 
         // 6. Recommendation check: scope format
-        if (content.find("\"name\": \"@") == -1 && content.find("\"name\":\"@") == -1) {
-            result->addWarning("RECOMMEND_SCOPED_NAME", "Package name should ideally use a scoped identifier (e.g., @2tek/... or @cex-...)", 1, 1);
+        if (content.find("\"name\": \"@") == -1 && content.find("\"name\":\"@") == -1 &&
+            content.find("\"name\": \"cex-") == -1 && content.find("\"name\":\"cex-") == -1 &&
+            content.find("\"name\": \"sample-") == -1 && content.find("\"name\":\"sample-") == -1 &&
+            content.find("\"name\": \"project-") == -1 && content.find("\"name\":\"project-") == -1) {
+            result->addWarning("RECOMMEND_SCOPED_NAME", "Package name should ideally use a scoped identifier (e.g., @2tek/... or cex-...)", 1, 1);
         }
 
         // 7. Rule RULE_NO_EXTERNAL_INCLUDEDIRS: Prohibition of External and CexP/CexR includeDirs

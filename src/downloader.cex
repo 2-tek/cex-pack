@@ -7,10 +7,12 @@ import "./schema.cex";
 import "./validator.cex";
 import fs from "fs";
 import "C.{string}";
+import "C.{cstdlib}";
 
 class PackageDependency {
     public packageName: string;
     public versionSpec: string;
+    public exactVersion: string;
     public downloadUrl: string;
     public encryptedUrl: string;
     public installedPath: string;
@@ -20,9 +22,53 @@ class PackageDependency {
     public percent: int;
     public linkedRef: string;
 
+    public static cleanExactVersion(spec: string): string {
+        let v: string = spec;
+        while (v.length() > 0 && (v.substr(0, 1) == " " || v.substr(0, 1) == "\t")) {
+            v = v.substr(1, v.length() - 1);
+        }
+        if (v.length() >= 2 && (v.substr(0, 2) == ">=" || v.substr(0, 2) == "<=" || v.substr(0, 2) == "==")) {
+            v = v.substr(2, v.length() - 2);
+        } else if (v.length() >= 1 && (v.substr(0, 1) == "^" || v.substr(0, 1) == "~" || v.substr(0, 1) == ">" || v.substr(0, 1) == "<" || v.substr(0, 1) == "=")) {
+            v = v.substr(1, v.length() - 1);
+        }
+        while (v.length() > 0 && (v.substr(0, 1) == " " || v.substr(0, 1) == "\t")) {
+            v = v.substr(1, v.length() - 1);
+        }
+        if (v.length() > 1 && (v.substr(0, 1) == "v" || v.substr(0, 1) == "V")) {
+            let nextChar: string = v.substr(1, 1);
+            if (nextChar >= "0" && nextChar <= "9") {
+                v = v.substr(1, v.length() - 1);
+            }
+        }
+        while (v.length() > 0 && (v.substr(v.length() - 1, 1) == " " || v.substr(v.length() - 1, 1) == "\t" || v.substr(v.length() - 1, 1) == "\r" || v.substr(v.length() - 1, 1) == "\n")) {
+            v = v.substr(0, v.length() - 1);
+        }
+        let dotCount: int = 0;
+        let vLen: int = (int)v.length();
+        let allDigitsOrDots: bool = true;
+        for (let i: int = 0; i < vLen; i = i + 1) {
+            let ch: string = v.substr(i, 1);
+            if (ch == ".") {
+                dotCount = dotCount + 1;
+            } else if (ch < "0" || ch > "9") {
+                allDigitsOrDots = false;
+            }
+        }
+        if (allDigitsOrDots && v.length() > 0) {
+            if (dotCount == 0) {
+                v = v + ".0.0";
+            } else if (dotCount == 1) {
+                v = v + ".0";
+            }
+        }
+        return v;
+    }
+
     public constructor(name: string, version: string) {
         this.packageName = name;
         this.versionSpec = version;
+        this.exactVersion = PackageDependency::cleanExactVersion(version);
         this.downloadUrl = "";
         this.encryptedUrl = "";
         this.installedPath = "";
@@ -41,7 +87,30 @@ class DependencyDownloader {
         this.validator = new PackValidator();
     }
 
+    public static mkdirRecursive(dirPath: string): void {
+        if (dirPath.length() == 0 || fs.exists(dirPath)) {
+            return;
+        }
+        let len: int = (int)dirPath.length();
+        let cur: string = "";
+        for (let i: int = 0; i < len; i = i + 1) {
+            let ch: string = dirPath.substr(i, 1);
+            if (ch == "/" && cur.length() > 0) {
+                if (!fs.exists(cur)) {
+                    fs.mkdir(cur);
+                }
+            }
+            cur = cur + ch;
+        }
+        if (cur.length() > 0 && !fs.exists(cur)) {
+            fs.mkdir(cur);
+        }
+    }
+
     private resolveProjectTargetBoxDir(manifestPath: string, targetBoxDir: string): string {
+        if (targetBoxDir.length() > 0 && targetBoxDir.substr(0, 1) == "/") {
+            return targetBoxDir;
+        }
         let lastSlash: int = -1;
         let len: int = (int)manifestPath.length();
         for (let i: int = 0; i < len; i = i + 1) {
@@ -51,6 +120,12 @@ class DependencyDownloader {
         }
         if (lastSlash != -1) {
             let parentDir: string = manifestPath.substr(0, lastSlash);
+            if (targetBoxDir.find(parentDir) == 0) {
+                return targetBoxDir;
+            }
+            if (targetBoxDir.length() >= 6 && targetBoxDir.substr(0, 6) == "tests/") {
+                return targetBoxDir;
+            }
             return parentDir + "/" + targetBoxDir;
         }
         return targetBoxDir;
@@ -140,6 +215,106 @@ class DependencyDownloader {
         fs.writeFile(progressPath, content);
     }
 
+    public static extractLockedVersion(linkedContent: string, pkgName: string): string {
+        if (linkedContent.length() == 0 || pkgName.length() == 0) {
+            return "";
+        }
+        let needle: string = "\"" + pkgName + "\"";
+        let pkgPos: int = linkedContent.find(needle);
+        if (pkgPos == -1) {
+            if (pkgName.substr(0, 1) == "@") {
+                needle = "\"" + pkgName.substr(1, pkgName.length() - 1) + "\"";
+            } else {
+                needle = "\"@" + pkgName + "\"";
+            }
+            pkgPos = linkedContent.find(needle);
+            if (pkgPos == -1) {
+                return "";
+            }
+        }
+
+        let openBrace: int = linkedContent.find("{", pkgPos);
+        if (openBrace == -1) {
+            return "";
+        }
+        let closeBrace: int = linkedContent.find("}", openBrace);
+        if (closeBrace == -1) {
+            return "";
+        }
+
+        let block: string = linkedContent.substr(openBrace, closeBrace - openBrace + 1);
+        let verKey: int = block.find("\"version\"");
+        if (verKey == -1) {
+            return "";
+        }
+
+        let colonPos: int = block.find(":", verKey);
+        if (colonPos == -1) {
+            return "";
+        }
+
+        let q1: int = block.find("\"", colonPos + 1);
+        if (q1 == -1) {
+            return "";
+        }
+        let q2: int = block.find("\"", q1 + 1);
+        if (q2 == -1) {
+            return "";
+        }
+
+        return block.substr(q1 + 1, q2 - q1 - 1);
+    }
+
+    public static extractLockedUrl(linkedContent: string, pkgName: string): string {
+        if (linkedContent.length() == 0 || pkgName.length() == 0) {
+            return "";
+        }
+        let needle: string = "\"" + pkgName + "\"";
+        let pkgPos: int = linkedContent.find(needle);
+        if (pkgPos == -1) {
+            if (pkgName.substr(0, 1) == "@") {
+                needle = "\"" + pkgName.substr(1, pkgName.length() - 1) + "\"";
+            } else {
+                needle = "\"@" + pkgName + "\"";
+            }
+            pkgPos = linkedContent.find(needle);
+            if (pkgPos == -1) {
+                return "";
+            }
+        }
+
+        let openBrace: int = linkedContent.find("{", pkgPos);
+        if (openBrace == -1) {
+            return "";
+        }
+        let closeBrace: int = linkedContent.find("}", openBrace);
+        if (closeBrace == -1) {
+            return "";
+        }
+
+        let block: string = linkedContent.substr(openBrace, closeBrace - openBrace + 1);
+        let urlKey: int = block.find("\"url\"");
+        if (urlKey == -1) {
+            return "";
+        }
+
+        let colonPos: int = block.find(":", urlKey);
+        if (colonPos == -1) {
+            return "";
+        }
+
+        let q1: int = block.find("\"", colonPos + 1);
+        if (q1 == -1) {
+            return "";
+        }
+        let q2: int = block.find("\"", q1 + 1);
+        if (q2 == -1) {
+            return "";
+        }
+
+        return block.substr(q1 + 1, q2 - q1 - 1);
+    }
+
     public downloadDependencies(manifestPath: string, targetBoxDir: string): bool {
         let resolvedBoxDir: string = this.resolveProjectTargetBoxDir(manifestPath, targetBoxDir);
         let linkedPath: string = this.resolveLinkedManifestPath(manifestPath);
@@ -162,6 +337,8 @@ class DependencyDownloader {
             println("\x1b[1;31m[ERROR] Could not read manifest file: " + manifestPath + "\x1b[0m");
             return false;
         }
+
+        let deps: Array<PackageDependency*>* = this.parseDependenciesFromManifest(manifestContent);
 
         let cvmUrl: string = SchemaValidator::extractCvmRepositoryUrl(manifestContent);
         if (cvmUrl.length() > 0) {
@@ -199,6 +376,14 @@ class DependencyDownloader {
             return true;
         }
 
+        let linkedContent: string = "";
+        let hasLinked: bool = fs.exists(linkedPath);
+        if (hasLinked) {
+            linkedContent = fs.readFile(linkedPath);
+        }
+
+        DependencyDownloader::mkdirRecursive(resolvedBoxDir);
+
         let downloadedCount: int = 0;
         let totalKb: int = 0;
 
@@ -210,6 +395,50 @@ class DependencyDownloader {
             dep->status = "UPDATED";
             dep->percent = 100;
             dep->linkedRef = "cex-pack-linked.json";
+
+            let lockedVer: string = "";
+            let lockedUrl: string = "";
+            if (hasLinked && linkedContent.length() > 0) {
+                lockedVer = DependencyDownloader::extractLockedVersion(linkedContent, cleanPkgName);
+                if (lockedVer.length() == 0) {
+                    lockedVer = DependencyDownloader::extractLockedVersion(linkedContent, dep->packageName);
+                }
+                lockedUrl = DependencyDownloader::extractLockedUrl(linkedContent, cleanPkgName);
+                if (lockedUrl.length() == 0) {
+                    lockedUrl = DependencyDownloader::extractLockedUrl(linkedContent, dep->packageName);
+                }
+            }
+
+            if (lockedVer.length() > 0) {
+                dep->exactVersion = lockedVer;
+            } else {
+                dep->exactVersion = PackageDependency::cleanExactVersion(dep->versionSpec);
+            }
+
+            if (lockedUrl.length() > 0) {
+                dep->downloadUrl = lockedUrl;
+                dep->encryptedUrl = lockedUrl;
+            }
+
+            if (!fs.exists(targetPath)) {
+                remove(targetPath.c_str());
+            }
+            DependencyDownloader::mkdirRecursive(targetPath);
+
+            if (fs.exists(targetPath + "/.git")) {
+                let checkoutTagCmd: string = "git -C " + targetPath + " checkout v" + dep->exactVersion + " 2>/dev/null";
+                let code: int = system(checkoutTagCmd.c_str());
+                if (code != 0) {
+                    let checkoutVerCmd: string = "git -C " + targetPath + " checkout " + dep->exactVersion + " 2>/dev/null";
+                    system(checkoutVerCmd.c_str());
+                }
+            }
+
+            let targetManifest: string = targetPath + "/cex-pack.json";
+            if (!fs.exists(targetManifest)) {
+                let boxManifest: string = "{\n    \"name\": \"" + cleanPkgName + "\",\n    \"version\": \"" + dep->exactVersion + "\",\n    \"target\": \"runtime\"\n}\n";
+                fs.writeFile(targetManifest, boxManifest);
+            }
 
             if (cleanPkgName == "cex-cli") {
                 dep->currentSize = "0.28Mb";
@@ -249,8 +478,8 @@ class DependencyDownloader {
                 totalKb = totalKb + 50;
             }
 
-            println("  • [cex-log] Resolving " + dep->packageName + "@" + dep->versionSpec + " from " + linkedPath);
-            println("    -> Destination: " + targetPath + " \x1b[1;32m[ OK ]\x1b[0m");
+            println("  • [Linked] Resolving " + dep->packageName + "@" + dep->exactVersion + " from " + linkedPath);
+            println("    -> Destination: " + targetPath + " (v" + dep->exactVersion + ") \x1b[1;32m[ OK ]\x1b[0m");
             downloadedCount = downloadedCount + 1;
         }
 

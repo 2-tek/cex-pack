@@ -1,6 +1,6 @@
 {
     "name": "cex-pack",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "CexPack: Native Syntax Checker, Manifest Validator & Dependency Downloader for cex-pack.json configuration files in C-ext (Cex)",
     "main": "src/index.cex",
     "author": "2-TEK Ecosystem",
@@ -35,16 +35,10 @@
         "cex-service": "1.0.0",
         "cex-test": "1.0.0"
     },
-    "includeDirs": [
-        "./src"
-    ],
+    "includeDirs": ["./src"],
     "lint": {
         "onBuild": true,
-        "include": [
-            "src",
-            "tests",
-            "examples"
-        ],
+        "include": ["src", "tests", "examples"],
         "rules": {
             "indent": {
                 "level": "error",
