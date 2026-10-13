@@ -246,6 +246,46 @@ class SchemaValidator {
         }
     }
 
+    public static extractPackageName(content: string): string {
+        let nameIdx: int = (int)content.find("\"name\"");
+        if (nameIdx == -1) {
+            return "";
+        }
+        let colonIdx: int = (int)content.find(":", nameIdx);
+        if (colonIdx == -1) {
+            return "";
+        }
+        let q1: int = (int)content.find("\"", colonIdx);
+        if (q1 == -1) {
+            return "";
+        }
+        let q2: int = (int)content.find("\"", q1 + 1);
+        if (q2 == -1) {
+            return "";
+        }
+        return content.substr(q1 + 1, q2 - q1 - 1);
+    }
+
+    public static extractPackageVersion(content: string): string {
+        let verIdx: int = (int)content.find("\"version\"");
+        if (verIdx == -1) {
+            return "";
+        }
+        let colonIdx: int = (int)content.find(":", verIdx);
+        if (colonIdx == -1) {
+            return "";
+        }
+        let q1: int = (int)content.find("\"", colonIdx);
+        if (q1 == -1) {
+            return "";
+        }
+        let q2: int = (int)content.find("\"", q1 + 1);
+        if (q2 == -1) {
+            return "";
+        }
+        return content.substr(q1 + 1, q2 - q1 - 1);
+    }
+
     public static extractCvmRepositoryPath(content: string): string {
         let cvmIdx: int = (int)content.find("\"cvm_repository\"");
         if (cvmIdx == -1) {

@@ -3,3 +3,4 @@ log_1791774845805_awq6s	75000b6e19455e88fd85a4553798ab3554990de1	2b9eac1a33252bd
 log_1791775122408_1dmvb	2b9eac1a33252bd8fecd7813d6796da1afc603ab	d8c2f150cb8404abc2c130aee754e5aef0af8da0	commit	test(validation): enforce 100% test case validation with 0 warnings	2026-10-12T03:18:42.408Z
 log_1791788937663_hh3gn	d8c2f150cb8404abc2c130aee754e5aef0af8da0	8da77f8e3a27a3818a269232674e6cbc391cfa06	commit	feat(cvm): add cvm_repository and multi-manifest web-pack.json routing	2026-10-12T07:08:57.663Z
 log_1791861311012_lmuwh	8da77f8e3a27a3818a269232674e6cbc391cfa06	18c682a23cda0285a56ea631e2c75ceffd6ef326	commit	feat(downloader): download exact version of dependencies in cex-pack downloads	2026-10-13T03:15:11.012Z
+log_1791885399496_q88o0	18c682a23cda0285a56ea631e2c75ceffd6ef326	1ebd59cb953ec496f565fdae35ce599ddae28c7e	commit	fix(downloader): fix locked version matching to cex-pack.json and add link command	2026-10-13T09:56:39.495Z

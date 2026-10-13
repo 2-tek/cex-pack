@@ -27,6 +27,7 @@ class PackCLI {
         println("  Commands:");
         println("    check [file]       Validate JSON syntax and manifest schema (default: cex-pack.json)");
         println("    downloads [file]   Download dependencies defined in manifest into .cex_boxes/");
+        println("    link [file]        Generate or refresh project-encrypted cex-pack-linked.json lockfile");
         println("    push [file]        Push manifest and working changes to CVM repository");
         println("    commit [msg]       Commit staged changes to CVM repository (-m \"message\")");
         println("    cvm [action]       Dispatch CodeVersionManager commands (status, push, commit, sync)");
@@ -46,7 +47,7 @@ class PackCLI {
     }
 
     public printVersion(): void {
-        println("cex-pack v1.0.2 (2-TEK Cex Manifest Validator & Package Manager)");
+        println("cex-pack v1.0.3 (2-TEK Cex Manifest Validator & Package Manager)");
         println("  • Integrated Engine: @2tek/cli v1.0.0");
     }
 
@@ -170,6 +171,14 @@ class PackCLI {
             return 1;
         }
 
+        if (cmd == "link" || cmd == "--link") {
+            let ok: bool = this.downloader->linkManifest(fileToValidate);
+            if (ok) {
+                return 0;
+            }
+            return 1;
+        }
+
         if (cmd == "env" || cmd == "load-env" || cmd == "--env") {
             let count: int = ProcessEnv::autoLoad(fileToValidate, "");
             println("[CexPack] Auto-loaded " + std::to_string(count) + " environment variable(s) for process.env from " + fileToValidate);
@@ -188,6 +197,7 @@ class PackCLI {
 
         if (cmd == "check" || cmd == "lint" || cmd == "--check" || cmd.length() == 0 || cmd == fileToValidate) {
             let valid: bool = this.validator->validateFile(fileToValidate);
+            this.downloader->validateLinkedAgainstManifest(fileToValidate);
             if (valid) {
                 return 0;
             } else {

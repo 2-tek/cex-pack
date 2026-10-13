@@ -1,15 +1,47 @@
 {
-    "name": "@2tek/fixtures",
+    "name": "@2tek/all-branches-test",
     "version": "1.0.0",
+    "lockfileVersion": 1,
+    "encryption": {
+        "algorithm": "aes-256-cbc",
+        "scope": "project"
+    },
     "dependencies": {
-        "cex-cli": "1.0.0",
-        "cex-log": "1.0.0",
-        "cexr": "1.0.0",
-        "cex-service": "1.0.0",
-        "cex-test": "1.0.0",
-        "cex-lint": "1.0.0",
-        "cex-pack": "1.0.0",
-        "cexp": "1.0.0",
-        "custom-pkg": "1.0.0"
+        "cex-cli": {
+            "version": "1.0.0",
+            "url": "https://github.com/2-tek/cex-cli.git"
+        },
+        "cex-log": {
+            "version": "1.0.0",
+            "url": "https://github.com/2-tek/cex-log.git"
+        },
+        "cexr": {
+            "version": "1.0.0",
+            "url": "https://github.com/2-tek/cexr.git"
+        },
+        "cex-service": {
+            "version": "1.0.0",
+            "url": "https://github.com/2-tek/cex-service.git"
+        },
+        "cex-test": {
+            "version": "1.0.0",
+            "url": "https://github.com/2-tek/cex-test.git"
+        },
+        "cex-lint": {
+            "version": "1.0.0",
+            "url": "https://github.com/2-tek/cex-lint.git"
+        },
+        "cex-pack": {
+            "version": "1.0.0",
+            "url": "https://github.com/2-tek/cex-pack.git"
+        },
+        "cexp": {
+            "version": "1.0.0",
+            "url": "https://github.com/2-tek/cexp.git"
+        },
+        "custom-pkg": {
+            "version": "1.0.0",
+            "url": "https://github.com/2-tek/custom-pkg.git"
+        }
     }
 }

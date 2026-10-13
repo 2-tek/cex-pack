@@ -427,6 +427,49 @@ fn testDownloaderModule(): void {
     assertTrue(DependencyDownloader::extractLockedVersion(mockLinked, "cex-cli") == "1.0.4", "extractLockedVersion extracts exact locked version");
     assertTrue(DependencyDownloader::extractLockedUrl(mockLinked, "cex-cli") == "cex-enc:abc", "extractLockedUrl extracts locked url");
 
+    // Flat string format extraction test
+    let flatLinked: string = "{\n  \"name\": \"pkg\",\n  \"dependencies\": {\n    \"cex-cli\": \"2.5.0\",\n    \"cex-log\": \"1.0.0\"\n  }\n}\n";
+    assertTrue(DependencyDownloader::extractLockedVersion(flatLinked, "cex-cli") == "2.5.0", "extractLockedVersion extracts version from flat string format");
+    assertTrue(DependencyDownloader::extractLockedVersion(flatLinked, "cex-log") == "1.0.0", "extractLockedVersion extracts flat string second entry");
+
+    // Root name collision protection test
+    let collisionLinked: string = "{\n  \"name\": \"cex-pack\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"other-pkg\": {\n      \"version\": \"3.3.3\"\n    }\n  }\n}\n";
+    assertTrue(DependencyDownloader::extractLockedVersion(collisionLinked, "cex-pack") == "", "extractLockedVersion does not falsely extract root name as dependency");
+
+    // Scoped package name alias stripping & matching
+    assertTrue(DependencyDownloader::stripScopeAlias("@2tek/roe") == "roe", "stripScopeAlias strips @2tek/ scope");
+    assertTrue(DependencyDownloader::stripScopeAlias("@cex-log") == "cex-log", "stripScopeAlias strips @ scope");
+    assertTrue(DependencyDownloader::stripScopeAlias("cex-cli") == "cex-cli", "stripScopeAlias preserves clean name");
+
+    let scopedLinked: string = "{\n  \"dependencies\": {\n    \"roe\": {\n      \"version\": \"1.2.0\",\n      \"url\": \"url-roe\"\n    }\n  }\n}\n";
+    assertTrue(DependencyDownloader::extractLockedVersion(scopedLinked, "@2tek/roe") == "1.2.0", "extractLockedVersion matches @2tek/roe to roe");
+    assertTrue(DependencyDownloader::extractLockedUrl(scopedLinked, "@2tek/roe") == "url-roe", "extractLockedUrl matches @2tek/roe to roe");
+
+    // Version match tests (semver and spec matching)
+    assertTrue(DependencyDownloader::isVersionMatch("8.0.0", "^8"), "isVersionMatch ^8 with 8.0.0 returns true");
+    assertTrue(!DependencyDownloader::isVersionMatch("1.0.0", "^8"), "isVersionMatch ^8 with 1.0.0 returns false");
+    assertTrue(DependencyDownloader::isVersionMatch("6.0.0", "^6"), "isVersionMatch ^6 with 6.0.0 returns true");
+    assertTrue(!DependencyDownloader::isVersionMatch("1.0.0", "^6"), "isVersionMatch ^6 with 1.0.0 returns false");
+    assertTrue(DependencyDownloader::isVersionMatch("1.0.4", "^1.0.0"), "isVersionMatch ^1.0.0 with 1.0.4 returns true");
+    assertTrue(!DependencyDownloader::isVersionMatch("2.0.0", "^1.0.0"), "isVersionMatch ^1.0.0 with 2.0.0 returns false");
+    assertTrue(DependencyDownloader::isVersionMatch("1.2.5", "~1.2.0"), "isVersionMatch ~1.2.0 with 1.2.5 returns true");
+    assertTrue(!DependencyDownloader::isVersionMatch("1.3.0", "~1.2.0"), "isVersionMatch ~1.2.0 with 1.3.0 returns false");
+    assertTrue(DependencyDownloader::isVersionMatch("2.1.0", ">=2.0.0"), "isVersionMatch >=2.0.0 with 2.1.0 returns true");
+    assertTrue(!DependencyDownloader::isVersionMatch("1.9.0", ">=2.0.0"), "isVersionMatch >=2.0.0 with 1.9.0 returns false");
+    assertTrue(DependencyDownloader::isVersionMatch("1.0.0", "1.0.0"), "isVersionMatch exact 1.0.0 matches");
+    assertTrue(!DependencyDownloader::isVersionMatch("1.0.1", "1.0.0"), "isVersionMatch exact 1.0.0 does not match 1.0.1");
+
+    // Lockfile linking and synchronization test
+    let linkTestManifest: string = "tests/fixtures/all-branches.json";
+    let linkOk: bool = downloader->linkManifest(linkTestManifest);
+    assertTrue(linkOk, "linkManifest succeeds on fixture manifest");
+    assertTrue(fs.exists("tests/fixtures/cex-pack-linked.json"), "linkManifest generated cex-pack-linked.json");
+    let generatedLinked: string = fs.readFile("tests/fixtures/cex-pack-linked.json");
+    assertTrue(generatedLinked.find("\"cex-cli\"") != -1, "Generated linked file contains cex-cli");
+    assertTrue(DependencyDownloader::extractLockedVersion(generatedLinked, "cex-cli") == "1.0.0", "Generated linked file matches cex-cli version to manifest");
+    let validLinked: bool = downloader->validateLinkedAgainstManifest(linkTestManifest);
+    assertTrue(validLinked, "validateLinkedAgainstManifest returns true when linked matches manifest");
+
     // Parse dependencies from manifest with no dependencies
     let emptyDeps: Array<PackageDependency*>* = downloader->parseDependenciesFromManifest("{\n  \"name\": \"pkg\"\n}\n");
     assertTrue(emptyDeps->length() == 0, "No dependencies block returns 0 dependencies");
