@@ -1,5 +1,5 @@
 {
-    "name": "@2tek/sample-pack-app",
+    "name": "sample-pack-app",
     "version": "1.0.0",
     "description": "Sample Cex Application demonstrating cex-pack downloads dependency installer into .cex_boxes/",
     "main": "src/main.cex",

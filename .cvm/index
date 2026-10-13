@@ -133,6 +133,13 @@
     "mtime": 1791774721700.9807
   },
   {
+    "path": ".agents/rules/RULE_NO_HTML_PLUS_CONCAT.md",
+    "hash": "c2557ba28be9564352b12f14d3e2c86935913096",
+    "size": 2985,
+    "mode": "100644",
+    "mtime": 1791807347432.0571
+  },
+  {
     "path": ".agents/rules/RULE_PURE_CEX_BIN.md",
     "hash": "56f238c5c2c866627cb792e50cb539295bb98bb3",
     "size": 855,

@@ -1,5 +1,5 @@
 {
-    "name": "@2tek/example-core",
+    "name": "example-core",
     "version": "1.0.0",
     "description": "Internal Core Package for project-have-packages-insides",
     "main": "src/index.cex",
