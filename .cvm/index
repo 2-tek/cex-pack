@@ -57,10 +57,10 @@
   },
   {
     "path": ".agents/PRODUCT_TARGET.md",
-    "hash": "5d49893ad07a86b328a8a974f648230ec448f6a3",
-    "size": 2216,
+    "hash": "3d7179ec6149744b795ae6be1cade64924582ec4",
+    "size": 2462,
     "mode": "100644",
-    "mtime": 1791883363483.9888
+    "mtime": 1791883518273.9663
   },
   {
     "path": ".agents/rules/allow-git-cex-commands.md",
@@ -218,10 +218,10 @@
   },
   {
     "path": "cex-pack.json",
-    "hash": "5023a41660a17396d863a1a4113cdcd4c715c99e",
-    "size": 1720,
+    "hash": "9ac7949bc18e6f955bbde0024c43146efdc5b094",
+    "size": 1660,
     "mode": "100644",
-    "mtime": 1791883349880.7175
+    "mtime": 1791883518304.9666
   },
   {
     "path": "examples/pack-with-downloads/cex-pack-linked.json",
@@ -253,10 +253,10 @@
   },
   {
     "path": "examples/project-have-packages-insides/cex-pack.json",
-    "hash": "c84f8a39cac6ac75047d9987d1369b6a5dd3aa60",
-    "size": 938,
+    "hash": "c5d1cf7f02b8b06c822d8042b909918f2cc4105c",
+    "size": 872,
     "mode": "100644",
-    "mtime": 1791883349892.91
+    "mtime": 1791883518321.9668
   },
   {
     "path": "examples/project-have-packages-insides/packages/core/cex-pack.json",
