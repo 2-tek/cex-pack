@@ -57,10 +57,10 @@
   },
   {
     "path": ".agents/PRODUCT_TARGET.md",
-    "hash": "ae09584ec29842d57719f52d99c3483c283654d4",
+    "hash": "5d49893ad07a86b328a8a974f648230ec448f6a3",
     "size": 2216,
     "mode": "100644",
-    "mtime": 1791527628734.0164
+    "mtime": 1791883363483.9888
   },
   {
     "path": ".agents/rules/allow-git-cex-commands.md",
@@ -218,10 +218,10 @@
   },
   {
     "path": "cex-pack.json",
-    "hash": "243fc5747c38bc3c119d47a813ef067ac5e3c111",
-    "size": 1660,
+    "hash": "5023a41660a17396d863a1a4113cdcd4c715c99e",
+    "size": 1720,
     "mode": "100644",
-    "mtime": 1791861227250.8147
+    "mtime": 1791883349880.7175
   },
   {
     "path": "examples/pack-with-downloads/cex-pack-linked.json",
@@ -232,10 +232,10 @@
   },
   {
     "path": "examples/pack-with-downloads/cex-pack.json",
-    "hash": "563e0acc8c096831b5d15e28fd87788b7ddb798c",
-    "size": 573,
+    "hash": "12393349fd6c44e38d1e8c864485a8ee333456d2",
+    "size": 585,
     "mode": "100644",
-    "mtime": 1791858841468.693
+    "mtime": 1791883349891.4595
   },
   {
     "path": "examples/pack-with-downloads/src/main.cex",
@@ -253,17 +253,17 @@
   },
   {
     "path": "examples/project-have-packages-insides/cex-pack.json",
-    "hash": "9811ee6d4a59828d401a90a6e7788bcdc02a5018",
-    "size": 872,
+    "hash": "c84f8a39cac6ac75047d9987d1369b6a5dd3aa60",
+    "size": 938,
     "mode": "100644",
-    "mtime": 1791858914282.4666
+    "mtime": 1791883349892.91
   },
   {
     "path": "examples/project-have-packages-insides/packages/core/cex-pack.json",
-    "hash": "c9d31399d33367fac5f1be528ab93d3725737a78",
-    "size": 320,
+    "hash": "259b385f7dcea077e5392c746ac22603a85c4479",
+    "size": 342,
     "mode": "100644",
-    "mtime": 1791858841469.4133
+    "mtime": 1791883349893.3777
   },
   {
     "path": "examples/project-have-packages-insides/packages/core/src/index.cex",
@@ -274,10 +274,10 @@
   },
   {
     "path": "examples/project-have-packages-insides/packages/ui/cex-pack.json",
-    "hash": "934de772042ac77af0f4291272d8ba0f11543656",
-    "size": 316,
+    "hash": "6dcd692482689dd29fb8821d28e9ba48f8051912",
+    "size": 338,
     "mode": "100644",
-    "mtime": 1791858841469.686
+    "mtime": 1791883349893.1714
   },
   {
     "path": "examples/project-have-packages-insides/packages/ui/src/index.cex",
@@ -407,10 +407,10 @@
   },
   {
     "path": "tests/fixtures/env-manifest.json",
-    "hash": "c7947cbc692f1a2d140d19ceb955752f3546ce4d",
+    "hash": "75dfab1fb8c6411b196770ee404b8f1a8a06da40",
     "size": 520,
     "mode": "100644",
-    "mtime": 1791774996894.2769
+    "mtime": 1791883371762.8796
   },
   {
     "path": "tests/fixtures/invalid.json",
