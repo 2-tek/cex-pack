@@ -1,6 +1,6 @@
 {
     "name": "cex-pack",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "lockfileVersion": 1,
     "encryption": {
         "algorithm": "aes-256-cbc",

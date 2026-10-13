@@ -6,7 +6,7 @@ import "./validator.cex";
 import "./downloader.cex";
 import "./env.cex";
 import fs from "fs";
-import "C.{cstdlib}";
+import "c.cstdlib";
 
 class PackCLI {
     private validator: PackValidator*;
@@ -47,7 +47,7 @@ class PackCLI {
     }
 
     public printVersion(): void {
-        println("cex-pack v1.0.3 (2-TEK Cex Manifest Validator & Package Manager)");
+        println("cex-pack v1.0.4 (2-TEK Cex Manifest Validator & Package Manager)");
         println("  • Integrated Engine: @2tek/cli v1.0.0");
     }
 

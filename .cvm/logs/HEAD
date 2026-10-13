@@ -4,3 +4,4 @@ log_1791775122408_1dmvb	2b9eac1a33252bd8fecd7813d6796da1afc603ab	d8c2f150cb8404a
 log_1791788937663_hh3gn	d8c2f150cb8404abc2c130aee754e5aef0af8da0	8da77f8e3a27a3818a269232674e6cbc391cfa06	commit	feat(cvm): add cvm_repository and multi-manifest web-pack.json routing	2026-10-12T07:08:57.663Z
 log_1791861311012_lmuwh	8da77f8e3a27a3818a269232674e6cbc391cfa06	18c682a23cda0285a56ea631e2c75ceffd6ef326	commit	feat(downloader): download exact version of dependencies in cex-pack downloads	2026-10-13T03:15:11.012Z
 log_1791885399496_q88o0	18c682a23cda0285a56ea631e2c75ceffd6ef326	1ebd59cb953ec496f565fdae35ce599ddae28c7e	commit	fix(downloader): fix locked version matching to cex-pack.json and add link command	2026-10-13T09:56:39.495Z
+log_1791886730753_8wp1z	1ebd59cb953ec496f565fdae35ce599ddae28c7e	c84561ed6ea8e138cc41b668e2b4984b5545616f	commit	refactor(imports): migrate legacy C.{} to c. and cpp.	2026-10-13T10:18:50.753Z

@@ -6,8 +6,8 @@ import "./parser.cex";
 import "./schema.cex";
 import "./validator.cex";
 import fs from "fs";
-import "C.{string}";
-import "C.{cstdlib}";
+import "cpp.string";
+import "c.cstdlib";
 
 class PackageDependency {
     public packageName: string;
