@@ -1,0 +1,15 @@
+[repository]
+    formatversion = 2
+    target = runtime
+    engine = CexR-v8
+    package = @2tek/pack
+    boxes = .cexboxes
+
+[cvm]
+    patchFormat = 2.0
+    compress = true
+    author = "2-TEK Ecosystem <dev@2tek.local>"
+
+[branch "main"]
+    remote = origin
+    merge = refs/heads/main

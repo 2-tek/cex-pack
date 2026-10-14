@@ -2,6 +2,7 @@
 // Supports cex-pack-linked.json version-to-download-URL encryption & locking
 
 import "./types.cex";
+import "./cvm.cex";
 import "./parser.cex";
 import "./schema.cex";
 import "./validator.cex";
@@ -107,9 +108,42 @@ class DependencyDownloader {
         }
     }
 
+    public static resolveDefaultBoxDirectory(manifestPath: string, cvmConfig: CvmConfig*): string {
+        let parentDir: string = "";
+        let lastSlash: int = -1;
+        let len: int = (int)manifestPath.length();
+        for (let i: int = 0; i < len; i = i + 1) {
+            if (manifestPath.substr(i, 1) == "/") {
+                lastSlash = i;
+            }
+        }
+        if (lastSlash != -1) {
+            parentDir = manifestPath.substr(0, lastSlash) + "/";
+        }
+
+        if (cvmConfig != null && cvmConfig->isDefined && cvmConfig->boxesDir.length() > 0) {
+            return cvmConfig->boxesDir;
+        }
+
+        if (fs.exists(parentDir + ".cexboxes") || fs.exists(".cexboxes")) {
+            return ".cexboxes";
+        }
+
+        if (fs.exists(parentDir + ".cex_boxes") || fs.exists(".cex_boxes")) {
+            return ".cex_boxes";
+        }
+
+        return ".cexboxes";
+    }
+
     private resolveProjectTargetBoxDir(manifestPath: string, targetBoxDir: string): string {
-        if (targetBoxDir.length() > 0 && targetBoxDir.substr(0, 1) == "/") {
-            return targetBoxDir;
+        let actualBoxDir: string = targetBoxDir;
+        if (actualBoxDir.length() == 0 || actualBoxDir == ".cex_boxes") {
+            let cvmCfg: CvmConfig* = CvmConfig::load(manifestPath);
+            actualBoxDir = DependencyDownloader::resolveDefaultBoxDirectory(manifestPath, cvmCfg);
+        }
+        if (actualBoxDir.length() > 0 && actualBoxDir.substr(0, 1) == "/") {
+            return actualBoxDir;
         }
         let lastSlash: int = -1;
         let len: int = (int)manifestPath.length();
@@ -120,15 +154,15 @@ class DependencyDownloader {
         }
         if (lastSlash != -1) {
             let parentDir: string = manifestPath.substr(0, lastSlash);
-            if (targetBoxDir.find(parentDir) == 0) {
-                return targetBoxDir;
+            if (actualBoxDir.find(parentDir) == 0) {
+                return actualBoxDir;
             }
-            if (targetBoxDir.length() >= 6 && targetBoxDir.substr(0, 6) == "tests/") {
-                return targetBoxDir;
+            if (actualBoxDir.length() >= 6 && actualBoxDir.substr(0, 6) == "tests/") {
+                return actualBoxDir;
             }
-            return parentDir + "/" + targetBoxDir;
+            return parentDir + "/" + actualBoxDir;
         }
-        return targetBoxDir;
+        return actualBoxDir;
     }
 
     private resolveLinkedManifestPath(manifestPath: string): string {
@@ -207,7 +241,20 @@ class DependencyDownloader {
     public writeProgressFile(resolvedBoxDir: string, deps: Array<PackageDependency*>*, totalSizeStr: string, overallPercent: int): void {
         let progressPath: string = resolvedBoxDir + "/PROGRESS.md";
         let content: string = "current: " + totalSizeStr + "\n";
-        content = content + ".cex_boxes -> PROGRESS.md\n\n";
+        let boxDirName: string = ".cexboxes";
+        let lastSlash: int = -1;
+        let bLen: int = (int)resolvedBoxDir.length();
+        for (let i: int = 0; i < bLen; i = i + 1) {
+            if (resolvedBoxDir.substr(i, 1) == "/") {
+                lastSlash = i;
+            }
+        }
+        if (lastSlash != -1) {
+            boxDirName = resolvedBoxDir.substr(lastSlash + 1, resolvedBoxDir.length() - lastSlash - 1);
+        } else if (resolvedBoxDir.length() > 0) {
+            boxDirName = resolvedBoxDir;
+        }
+        content = content + boxDirName + " -> PROGRESS.md\n\n";
 
         let len: int = (int)deps->length();
         for (let i: int = 0; i < len; i = i + 1) {
@@ -541,13 +588,38 @@ class DependencyDownloader {
         let resolvedBoxDir: string = this.resolveProjectTargetBoxDir(manifestPath, targetBoxDir);
         let linkedPath: string = this.resolveLinkedManifestPath(manifestPath);
 
+        let boxDirName: string = ".cexboxes";
+        let lastSlash: int = -1;
+        let bLen: int = (int)resolvedBoxDir.length();
+        for (let i: int = 0; i < bLen; i = i + 1) {
+            if (resolvedBoxDir.substr(i, 1) == "/") {
+                lastSlash = i;
+            }
+        }
+        if (lastSlash != -1) {
+            boxDirName = resolvedBoxDir.substr(lastSlash + 1, resolvedBoxDir.length() - lastSlash - 1);
+        } else if (resolvedBoxDir.length() > 0) {
+            boxDirName = resolvedBoxDir;
+        }
+
         println("\x1b[1;34m================================================------------------\x1b[0m");
-        println("\x1b[1;36m   2-TEK CexPack Git/CVM Dependency Downloader (.cex_boxes)       \x1b[0m");
+        println("\x1b[1;36m   2-TEK CexPack Git/CVM Dependency Downloader (" + boxDirName + ")       \x1b[0m");
         println("   Linked Version Resolution Engine (cex-pack-linked.json)        ");
         println("\x1b[1;34m================================================------------------\x1b[0m");
         println("Target Manifest : " + manifestPath);
         println("Linked Manifest : " + linkedPath);
         println("Target Directory: " + resolvedBoxDir + "/\n");
+
+        let cvmCfg: CvmConfig* = CvmConfig::load(manifestPath);
+        if (cvmCfg != null && cvmCfg->isDefined) {
+            println("CVM Config File : " + cvmCfg->configPath + " [LOADED]");
+            if (cvmCfg->packageName.length() > 0) {
+                println("CVM Package     : " + cvmCfg->packageName);
+            }
+            if (cvmCfg->engine.length() > 0) {
+                println("CVM Engine      : " + cvmCfg->engine);
+            }
+        }
 
         if (!fs.exists(manifestPath)) {
             println("\x1b[1;31m[ERROR] Could not read manifest file: " + manifestPath + "\x1b[0m");

@@ -1,6 +1,7 @@
 // CexPack Command Router & Option Parser (C-ext)
 
 import "./types.cex";
+import "./cvm.cex";
 import "./schema.cex";
 import "./validator.cex";
 import "./downloader.cex";
@@ -26,11 +27,11 @@ class PackCLI {
         println("");
         println("  Commands:");
         println("    check [file]       Validate JSON syntax and manifest schema (default: cex-pack.json)");
-        println("    downloads [file]   Download dependencies defined in manifest into .cex_boxes/");
+        println("    downloads [file] [dir] Download dependencies into .cexboxes / .cex_boxes");
         println("    link [file]        Generate or refresh project-encrypted cex-pack-linked.json lockfile");
         println("    push [file]        Push manifest and working changes to CVM repository");
         println("    commit [msg]       Commit staged changes to CVM repository (-m \"message\")");
-        println("    cvm [action]       Dispatch CodeVersionManager commands (status, push, commit, sync)");
+        println("    cvm [action]       Dispatch CodeVersionManager commands (status, config, push, commit, sync)");
         println("    env [file]         Auto-load environment variables from path into process.env");
         println("    lint [file]        Perform deep linter and rule governance checks");
         println("    thunder [file]     Validate zero-file Thunder build container configuration");
@@ -47,8 +48,10 @@ class PackCLI {
     }
 
     public printVersion(): void {
-        println("cex-pack v1.0.4 (2-TEK Cex Manifest Validator & Package Manager)");
+        println("cex-pack v1.0.5 (2-TEK Cex Manifest Validator & Package Manager)");
         println("  • Integrated Engine: @2tek/cli v1.0.0");
+        println("  • Target Boxes: .cexboxes / .cex_boxes");
+        println("  • CVM Config: .cvm/config support enabled");
     }
 
     public createTemplateManifest(): void {
@@ -61,10 +64,20 @@ class PackCLI {
             manifestPath = "cex-pack.json";
         }
 
+        let cvmCfg: CvmConfig* = CvmConfig::load(manifestPath);
+
         println("\x1b[1;34m================================================------------------\x1b[0m");
         println("\x1b[1;36m   2-TEK CexPack CVM Integration & Manifest Synchronization       \x1b[0m");
         println("\x1b[1;34m================================================------------------\x1b[0m");
         println("Target Manifest : " + manifestPath);
+        if (cvmCfg != null && cvmCfg->isDefined) {
+            println("CVM Config File : " + cvmCfg->configPath + " [LOADED]");
+            println("CVM Package     : " + cvmCfg->packageName);
+            println("CVM Engine      : " + cvmCfg->engine);
+            println("CVM Target      : " + cvmCfg->target);
+            println("CVM Boxes Dir   : " + cvmCfg->boxesDir);
+            println("CVM Branch      : " + cvmCfg->branch + " (" + cvmCfg->remote + " -> " + cvmCfg->merge + ")");
+        }
 
         let cvmUrl: string = "";
         let cvmPath: string = "";
@@ -79,6 +92,11 @@ class PackCLI {
         }
         if (cvmPath.length() > 0 && cvmPath != manifestPath) {
             println("Secondary Path  : " + cvmPath);
+        }
+
+        if (action == "config") {
+            println("\x1b[1;32m[CexPack CVM] Configuration verified and synchronized successfully.\x1b[0m");
+            return 0;
         }
 
         if (action == "push") {
@@ -131,8 +149,18 @@ class PackCLI {
 
     public runWithArg(cmd: string, targetFile: string, extraArg: string): int {
         let fileToValidate: string = targetFile;
+        let boxTargetDir: string = "";
+
         if (fileToValidate.length() == 0) {
             fileToValidate = "cex-pack.json";
+        }
+
+        if (fileToValidate == ".cexboxes" || fileToValidate == ".cex_boxes" || (fileToValidate.find(".json") == -1 && fileToValidate.find("boxes") != -1)) {
+            boxTargetDir = fileToValidate;
+            fileToValidate = "cex-pack.json";
+        }
+        if (extraArg.length() > 0 && (extraArg == ".cexboxes" || extraArg == ".cex_boxes" || extraArg.find("boxes") != -1)) {
+            boxTargetDir = extraArg;
         }
 
         if (cmd == "--help" || cmd == "-h" || cmd == "help") {
@@ -159,12 +187,19 @@ class PackCLI {
         }
 
         if (cmd == "cvm" || cmd == "--cvm") {
-            let act: string = extraArg.length() > 0 ? extraArg : "status";
+            let act: string = "status";
+            if (extraArg.length() > 0) {
+                act = extraArg;
+            } else if (targetFile != "cex-pack.json" && (targetFile == "config" || targetFile == "status" || targetFile == "push" || targetFile == "commit" || targetFile == "sync")) {
+                act = targetFile;
+                fileToValidate = "cex-pack.json";
+            }
             return this.runCvmAction(act, fileToValidate, "");
         }
 
         if (cmd == "downloads" || cmd == "download" || cmd == "--downloads" || cmd == "--download") {
-            let ok: bool = this.downloader->downloadDependencies(fileToValidate, ".cex_boxes");
+            let targetBox: string = boxTargetDir.length() > 0 ? boxTargetDir : ".cexboxes";
+            let ok: bool = this.downloader->downloadDependencies(fileToValidate, targetBox);
             if (ok) {
                 return 0;
             }

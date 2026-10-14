@@ -1,0 +1,165 @@
+// CexPack CVM Configuration Parser & Engine (.cvm/config) (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), RULE_CVM_REPOSITORY_IN_CEX_PACK
+
+import "./types.cex";
+import fs from "fs";
+import "cpp.string";
+import "c.cstdlib";
+
+class CvmConfig {
+    public isDefined: bool;
+    public configPath: string;
+    public formatVersion: int;
+    public target: string;
+    public engine: string;
+    public packageName: string;
+    public boxesDir: string;
+    public patchFormat: string;
+    public compress: bool;
+    public author: string;
+    public remote: string;
+    public merge: string;
+    public branch: string;
+
+    public constructor() {
+        this.isDefined = false;
+        this.configPath = "";
+        this.formatVersion = 2;
+        this.target = "runtime";
+        this.engine = "CexR-v8";
+        this.packageName = "";
+        this.boxesDir = ".cexboxes";
+        this.patchFormat = "2.0";
+        this.compress = true;
+        this.author = "";
+        this.remote = "origin";
+        this.merge = "refs/heads/main";
+        this.branch = "main";
+    }
+
+    public static trim(s: string): string {
+        let v: string = s;
+        while (v.length() > 0 && (v.substr(0, 1) == " " || v.substr(0, 1) == "\t" || v.substr(0, 1) == "\r" || v.substr(0, 1) == "\n")) {
+            v = v.substr(1, v.length() - 1);
+        }
+        while (v.length() > 0 && (v.substr(v.length() - 1, 1) == " " || v.substr(v.length() - 1, 1) == "\t" || v.substr(v.length() - 1, 1) == "\r" || v.substr(v.length() - 1, 1) == "\n")) {
+            v = v.substr(0, v.length() - 1);
+        }
+        return v;
+    }
+
+    public static stripQuotes(s: string): string {
+        let v: string = CvmConfig::trim(s);
+        if (v.length() >= 2 && ((v.substr(0, 1) == "\"" && v.substr(v.length() - 1, 1) == "\"") || (v.substr(0, 1) == "'" && v.substr(v.length() - 1, 1) == "'"))) {
+            return v.substr(1, v.length() - 2);
+        }
+        return v;
+    }
+
+    public static findCvmConfigFile(manifestPath: string): string {
+        let lastSlash: int = -1;
+        let len: int = (int)manifestPath.length();
+        for (let i: int = 0; i < len; i = i + 1) {
+            if (manifestPath.substr(i, 1) == "/") {
+                lastSlash = i;
+            }
+        }
+        if (lastSlash != -1) {
+            let parentDir: string = manifestPath.substr(0, lastSlash);
+            let candidate: string = parentDir + "/.cvm/config";
+            if (fs.exists(candidate)) {
+                return candidate;
+            }
+        }
+        if (fs.exists(".cvm/config")) {
+            return ".cvm/config";
+        }
+        return "";
+    }
+
+    public static parseCvmConfig(content: string, filePath: string): CvmConfig* {
+        let cfg: CvmConfig* = new CvmConfig();
+        cfg->configPath = filePath;
+        cfg->isDefined = true;
+
+        let len: int = (int)content.length();
+        let currentSection: string = "";
+        let lineStart: int = 0;
+
+        for (let i: int = 0; i <= len; i = i + 1) {
+            if (i == len || content.substr(i, 1) == "\n") {
+                let line: string = content.substr(lineStart, i - lineStart);
+                lineStart = i + 1;
+                line = CvmConfig::trim(line);
+
+                if (line.length() == 0 || line.substr(0, 1) == "#" || line.substr(0, 1) == ";") {
+                    continue;
+                }
+
+                if (line.substr(0, 1) == "[" && line.substr(line.length() - 1, 1) == "]") {
+                    let secHeader: string = line.substr(1, line.length() - 2);
+                    secHeader = CvmConfig::trim(secHeader);
+                    if (secHeader.find("branch ") == 0) {
+                        currentSection = "branch";
+                        let qStart: int = secHeader.find("\"");
+                        let qEnd: int = (qStart != -1) ? secHeader.find("\"", qStart + 1) : -1;
+                        if (qStart != -1 && qEnd != -1) {
+                            cfg->branch = secHeader.substr(qStart + 1, qEnd - qStart - 1);
+                        }
+                    } else {
+                        currentSection = secHeader;
+                    }
+                } else {
+                    let eqPos: int = line.find("=");
+                    if (eqPos != -1) {
+                        let k: string = CvmConfig::trim(line.substr(0, eqPos));
+                        let val: string = CvmConfig::stripQuotes(line.substr(eqPos + 1, line.length() - eqPos - 1));
+
+                        if (currentSection == "repository") {
+                            if (k == "formatversion") {
+                                cfg->formatVersion = std::stoi(val);
+                            } else if (k == "target") {
+                                cfg->target = val;
+                            } else if (k == "engine") {
+                                cfg->engine = val;
+                            } else if (k == "package") {
+                                cfg->packageName = val;
+                            } else if (k == "boxes" || k == "boxesDir" || k == "targetDir") {
+                                cfg->boxesDir = val;
+                            }
+                        } else if (currentSection == "cvm") {
+                            if (k == "patchFormat") {
+                                cfg->patchFormat = val;
+                            } else if (k == "compress") {
+                                cfg->compress = (val == "true" || val == "1");
+                            } else if (k == "author") {
+                                cfg->author = val;
+                            }
+                        } else if (currentSection == "branch") {
+                            if (k == "remote") {
+                                cfg->remote = val;
+                            } else if (k == "merge") {
+                                cfg->merge = val;
+                            }
+                        } else if (currentSection == "boxes") {
+                            if (k == "dir" || k == "path") {
+                                cfg->boxesDir = val;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return cfg;
+    }
+
+    public static load(manifestPath: string): CvmConfig* {
+        let cfgFile: string = CvmConfig::findCvmConfigFile(manifestPath);
+        if (cfgFile.length() > 0 && fs.exists(cfgFile)) {
+            let content: string = fs.readFile(cfgFile);
+            return CvmConfig::parseCvmConfig(content, cfgFile);
+        }
+        return new CvmConfig();
+    }
+}

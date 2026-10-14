@@ -2,6 +2,7 @@
 // 100% Testcases Coverage for Types, Parser, Schema, Reporter, Validator, Downloader, and CLI
 
 import "../src/types.cex";
+import "../src/cvm.cex";
 import "../src/parser.cex";
 import "../src/schema.cex";
 import "../src/reporter.cex";
@@ -755,6 +756,36 @@ fn testCvmRepositoryModule(): void {
     assertTrue(cli->runWithArg("check", "cex-pack.json", "") == 0, "CLI check on valid cex-pack.json returns 0");
 }
 
+fn testCvmConfigAndCexBoxesModule(): void {
+    println("[SUITE 13] Testing CVM Config (.cvm/config) & .cexboxes Target Resolution...");
+
+    let sampleIni: string = "[repository]\n    formatversion = 2\n    target = runtime\n    engine = CexR-v8\n    package = @2tek/pack\n    boxes = .cexboxes\n\n[cvm]\n    patchFormat = 2.0\n    compress = true\n    author = \"2-TEK Ecosystem <dev@2tek.local>\"\n\n[branch \"main\"]\n    remote = origin\n    merge = refs/heads/main\n";
+    let cfg: CvmConfig* = CvmConfig::parseCvmConfig(sampleIni, ".cvm/config");
+
+    assertTrue(cfg->isDefined, "CvmConfig isDefined is true after parsing valid INI");
+    assertTrue(cfg->formatVersion == 2, "CvmConfig formatVersion is 2");
+    assertTrue(cfg->target == "runtime", "CvmConfig target is runtime");
+    assertTrue(cfg->engine == "CexR-v8", "CvmConfig engine is CexR-v8");
+    assertTrue(cfg->packageName == "@2tek/pack", "CvmConfig package is @2tek/pack");
+    assertTrue(cfg->boxesDir == ".cexboxes", "CvmConfig boxes is .cexboxes");
+    assertTrue(cfg->patchFormat == "2.0", "CvmConfig patchFormat is 2.0");
+    assertTrue(cfg->compress, "CvmConfig compress is true");
+    assertTrue(cfg->author == "2-TEK Ecosystem <dev@2tek.local>", "CvmConfig author matches");
+    assertTrue(cfg->remote == "origin", "CvmConfig remote is origin");
+    assertTrue(cfg->merge == "refs/heads/main", "CvmConfig merge is refs/heads/main");
+    assertTrue(cfg->branch == "main", "CvmConfig branch is main");
+
+    let loadedCfg: CvmConfig* = CvmConfig::load("cex-pack.json");
+    assertTrue(loadedCfg->isDefined, "CvmConfig::load on cex-pack.json loads local .cvm/config");
+    assertTrue(loadedCfg->boxesDir == ".cexboxes", "Loaded .cvm/config sets boxesDir to .cexboxes");
+
+    let boxDir: string = DependencyDownloader::resolveDefaultBoxDirectory("cex-pack.json", loadedCfg);
+    assertTrue(boxDir == ".cexboxes", "resolveDefaultBoxDirectory resolves to .cexboxes when configured in .cvm");
+
+    let cli: PackCLI* = new PackCLI();
+    assertTrue(cli->runWithArg("cvm", "cex-pack.json", "config") == 0, "CLI cvm config returns 0");
+}
+
 fn main(): int {
     println("================================================------------------");
     println("      Running CexPack 100% Full Coverage Test Suite               ");
@@ -772,6 +803,7 @@ fn main(): int {
     testExamplesIntegration();
     testEnvAndProcessEnvModule();
     testCvmRepositoryModule();
+    testCvmConfigAndCexBoxesModule();
 
     println("================================================------------------");
     print("  Assertions: ");
