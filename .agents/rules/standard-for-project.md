@@ -7,4 +7,4 @@
 3. All source code and metadata files must adhere to Rule 29 (EOF newline) and Rule 72 (Dynamic Paths).
 4. Pure Cex Binaries: The `bin/` directory must contain exclusively `.cex` files (`bin/cex-pack.cex`, `bin/cex-log.cex`). No `.js` files or JavaScript/Node.js scripts are permitted.
 5. Documents Update: Whenever a new feature or command is introduced, update the central documentation book at `documents/` under `../{projectName}`.
-6. Prohibit external and CexP/CexR includeDirs (RULE_NO_EXTERNAL_INCLUDEDIRS): Manifests must strictly encapsulate within their own project root.
+6. Prohibit external and CexP/cexp includeDirs (RULE_NO_EXTERNAL_INCLUDEDIRS): Manifests must strictly encapsulate within their own project root.

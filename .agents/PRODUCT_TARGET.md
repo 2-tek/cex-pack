@@ -40,5 +40,5 @@
 | Package Name         | `@2tek/pack`          | Official Cex Pack Manifest Validator |
 | Version              | `1.0.0`               | Cex Manifest Validator Standard      |
 | Target               | `"target": "runtime"` | Strictly Immutable (Rule 69)         |
-| Runtime Requirement  | `"cexr": "^8"`        | CexR v8 Runtime Engine               |
+| Runtime Requirement  | `"cexr": "^8"`        | cexp v8 Runtime Engine               |
 | Compiler Requirement | `"cexp": "^6"`        | CexP v8 Direct Machine Compiler      |

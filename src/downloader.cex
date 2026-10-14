@@ -193,18 +193,16 @@ class DependencyDownloader {
         return result;
     }
 
-    public parseDependenciesFromManifest(manifestContent: string): Array<PackageDependency*>* {
-        let deps: Array<PackageDependency*>* = new Array<PackageDependency*>();
-
-        let depIndex: int = manifestContent.find("\"dependencies\"");
+    public parseDependenciesFromBlockKey(manifestContent: string, keyName: string, deps: Array<PackageDependency*>*): void {
+        let depIndex: int = manifestContent.find(keyName);
         if (depIndex == -1) {
-            return deps;
+            return;
         }
 
         let openBrace: int = manifestContent.find("{", depIndex);
         let closeBrace: int = manifestContent.find("}", openBrace);
         if (openBrace == -1 || closeBrace == -1 || closeBrace <= openBrace) {
-            return deps;
+            return;
         }
 
         let depBlock: string = manifestContent.substr(openBrace + 1, closeBrace - openBrace - 1);
@@ -231,10 +229,28 @@ class DependencyDownloader {
 
             let versionSpec: string = depBlock.substr(valStart + 1, valEnd - valStart - 1);
 
-            deps->push(new PackageDependency(pkgName, versionSpec));
+            let exists: bool = false;
+            let dCount: int = (int)deps->length();
+            for (let i: int = 0; i < dCount; i = i + 1) {
+                let existingDep: PackageDependency* = deps->get(i);
+                if (existingDep->packageName == pkgName) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                deps->push(new PackageDependency(pkgName, versionSpec));
+            }
+
             pos = valEnd + 1;
         }
+    }
 
+    public parseDependenciesFromManifest(manifestContent: string): Array<PackageDependency*>* {
+        let deps: Array<PackageDependency*>* = new Array<PackageDependency*>();
+        this.parseDependenciesFromBlockKey(manifestContent, "\"cex-boxes\"", deps);
+        this.parseDependenciesFromBlockKey(manifestContent, "\"dependencies\"", deps);
+        this.parseDependenciesFromBlockKey(manifestContent, "\"boxes\"", deps);
         return deps;
     }
 
@@ -374,7 +390,13 @@ class DependencyDownloader {
     }
 
     public static extractDependencyBlock(linkedContent: string): string {
-        let depIndex: int = linkedContent.find("\"dependencies\"");
+        let depIndex: int = linkedContent.find("\"cex-boxes\"");
+        if (depIndex == -1) {
+            depIndex = linkedContent.find("\"dependencies\"");
+        }
+        if (depIndex == -1) {
+            depIndex = linkedContent.find("\"boxes\"");
+        }
         if (depIndex == -1) {
             return "";
         }
@@ -892,7 +914,12 @@ class DependencyDownloader {
         out = out + "        \"algorithm\": \"aes-256-cbc\",\n";
         out = out + "        \"scope\": \"project\"\n";
         out = out + "    },\n";
-        out = out + "    \"dependencies\": {\n";
+        let useCexBoxes: bool = (content.find("\"cex-boxes\"") != -1 || existingLinked.find("\"cex-boxes\"") != -1);
+        if (useCexBoxes) {
+            out = out + "    \"cex-boxes\": {\n";
+        } else {
+            out = out + "    \"dependencies\": {\n";
+        }
 
         let total: int = (int)deps->length();
         for (let i: int = 0; i < total; i = i + 1) {
