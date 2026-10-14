@@ -2,7 +2,7 @@
 
 <!-- Merged (deduplicated): auto-commit-code.md -->
 
-<!-- Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule 82 (CXVM & Direct CexR) -->
+<!-- Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule 82 (CXVM & Direct cexp) -->
 
 ## Policy & Invariants
 Whenever any task, milestone, feature, bug fix, or refactor is completed:

@@ -1,6 +1,6 @@
 # Mandatory Rule: CVM Repository Specification and Multi-Manifest Routing in cex-pack (RULE_CVM_REPOSITORY_IN_CEX_PACK)
 
-<!-- Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule 80 (Root @), Rule 82 (CXVM & Direct CexR) -->
+<!-- Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule 80 (Root @), Rule 82 (CXVM & Direct cexp) -->
 
 > **MANDATORY CVM REPOSITORY & MANIFEST PATH SPECIFICATION**:
 > In all `mvc-lighting`, `mvp-deepsea`, and Cex project workspaces, repositories, and packages:

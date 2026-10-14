@@ -10,7 +10,7 @@ The `cex-pack` tool MUST perform thorough JSON syntax parsing and schema validat
 2. Enforce required manifest fields (`name`, `version`, `main`, `target: "runtime"`, `required`).
 3. Verify Rule 69 compliance (`"target": "runtime"`).
 4. Verify Rule 29 EOF line ending integrity (`\n`).
-5. Verify RULE_NO_EXTERNAL_INCLUDEDIRS: manifest must NOT contain `includeDirs` pointing outside the project (`..`) or referencing `CexP`/`CexR`.
+5. Verify RULE_NO_EXTERNAL_INCLUDEDIRS: manifest must NOT contain `includeDirs` pointing outside the project (`..`) or referencing `CexP`/`cexp`.
 
 ## 2. Rationale
 
