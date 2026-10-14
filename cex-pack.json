@@ -5,7 +5,6 @@
     "main": "src/index.cex",
     "author": "2-TEK Ecosystem",
     "license": "MIT",
-    "runtime": "v8",
     "target": "runtime",
     "cvm_repository": {
         "type": "cvm",
@@ -13,13 +12,9 @@
         "path": "cex-pack.json",
         "branch": "main"
     },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/2-tek/cex-pack.git"
-    },
     "required": {
         "cexr": "^8",
-        "cexp": "^8"
+        "cexp": "^6"
     },
     "scripts": {
         "build": "cexp build src/index.cex -o bin/cex-pack",

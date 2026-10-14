@@ -125,15 +125,15 @@ class DependencyDownloader {
             return cvmConfig->boxesDir;
         }
 
-        if (fs.exists(parentDir + ".cexboxes") || fs.exists(".cexboxes")) {
-            return ".cexboxes";
+        if (fs.exists(parentDir + ".cex_boxes") || fs.exists(".cex_boxes")) {
+            return ".cex_boxes";
         }
 
         if (fs.exists(parentDir + ".cex_boxes") || fs.exists(".cex_boxes")) {
             return ".cex_boxes";
         }
 
-        return ".cexboxes";
+        return ".cex_boxes";
     }
 
     private resolveProjectTargetBoxDir(manifestPath: string, targetBoxDir: string): string {
@@ -193,16 +193,18 @@ class DependencyDownloader {
         return result;
     }
 
-    public parseDependenciesFromBlockKey(manifestContent: string, keyName: string, deps: Array<PackageDependency*>*): void {
-        let depIndex: int = manifestContent.find(keyName);
+    public parseDependenciesFromManifest(manifestContent: string): Array<PackageDependency*>* {
+        let deps: Array<PackageDependency*>* = new Array<PackageDependency*>();
+
+        let depIndex: int = manifestContent.find("\"dependencies\"");
         if (depIndex == -1) {
-            return;
+            return deps;
         }
 
         let openBrace: int = manifestContent.find("{", depIndex);
         let closeBrace: int = manifestContent.find("}", openBrace);
         if (openBrace == -1 || closeBrace == -1 || closeBrace <= openBrace) {
-            return;
+            return deps;
         }
 
         let depBlock: string = manifestContent.substr(openBrace + 1, closeBrace - openBrace - 1);
@@ -229,35 +231,17 @@ class DependencyDownloader {
 
             let versionSpec: string = depBlock.substr(valStart + 1, valEnd - valStart - 1);
 
-            let exists: bool = false;
-            let dCount: int = (int)deps->length();
-            for (let i: int = 0; i < dCount; i = i + 1) {
-                let existingDep: PackageDependency* = deps->get(i);
-                if (existingDep->packageName == pkgName) {
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists) {
-                deps->push(new PackageDependency(pkgName, versionSpec));
-            }
-
+            deps->push(new PackageDependency(pkgName, versionSpec));
             pos = valEnd + 1;
         }
-    }
 
-    public parseDependenciesFromManifest(manifestContent: string): Array<PackageDependency*>* {
-        let deps: Array<PackageDependency*>* = new Array<PackageDependency*>();
-        this.parseDependenciesFromBlockKey(manifestContent, "\"cex-boxes\"", deps);
-        this.parseDependenciesFromBlockKey(manifestContent, "\"dependencies\"", deps);
-        this.parseDependenciesFromBlockKey(manifestContent, "\"boxes\"", deps);
         return deps;
     }
 
     public writeProgressFile(resolvedBoxDir: string, deps: Array<PackageDependency*>*, totalSizeStr: string, overallPercent: int): void {
         let progressPath: string = resolvedBoxDir + "/PROGRESS.md";
         let content: string = "current: " + totalSizeStr + "\n";
-        let boxDirName: string = ".cexboxes";
+        let boxDirName: string = ".cex_boxes";
         let lastSlash: int = -1;
         let bLen: int = (int)resolvedBoxDir.length();
         for (let i: int = 0; i < bLen; i = i + 1) {
@@ -390,13 +374,7 @@ class DependencyDownloader {
     }
 
     public static extractDependencyBlock(linkedContent: string): string {
-        let depIndex: int = linkedContent.find("\"cex-boxes\"");
-        if (depIndex == -1) {
-            depIndex = linkedContent.find("\"dependencies\"");
-        }
-        if (depIndex == -1) {
-            depIndex = linkedContent.find("\"boxes\"");
-        }
+        let depIndex: int = linkedContent.find("\"dependencies\"");
         if (depIndex == -1) {
             return "";
         }
@@ -610,7 +588,7 @@ class DependencyDownloader {
         let resolvedBoxDir: string = this.resolveProjectTargetBoxDir(manifestPath, targetBoxDir);
         let linkedPath: string = this.resolveLinkedManifestPath(manifestPath);
 
-        let boxDirName: string = ".cexboxes";
+        let boxDirName: string = ".cex_boxes";
         let lastSlash: int = -1;
         let bLen: int = (int)resolvedBoxDir.length();
         for (let i: int = 0; i < bLen; i = i + 1) {
@@ -914,12 +892,7 @@ class DependencyDownloader {
         out = out + "        \"algorithm\": \"aes-256-cbc\",\n";
         out = out + "        \"scope\": \"project\"\n";
         out = out + "    },\n";
-        let useCexBoxes: bool = (content.find("\"cex-boxes\"") != -1 || existingLinked.find("\"cex-boxes\"") != -1);
-        if (useCexBoxes) {
-            out = out + "    \"cex-boxes\": {\n";
-        } else {
-            out = out + "    \"dependencies\": {\n";
-        }
+        out = out + "    \"dependencies\": {\n";
 
         let total: int = (int)deps->length();
         for (let i: int = 0; i < total; i = i + 1) {

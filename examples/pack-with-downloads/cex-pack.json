@@ -3,11 +3,10 @@
     "version": "1.0.0",
     "description": "Sample Cex Application demonstrating cex-pack downloads dependency installer into .cex_boxes/",
     "main": "src/main.cex",
-    "runtime": "v8",
     "target": "runtime",
     "required": {
         "cexr": "^8",
-        "cexp": "^8"
+        "cexp": "^6"
     },
     "scripts": {
         "install": "cex-pack downloads",

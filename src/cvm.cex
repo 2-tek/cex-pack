@@ -28,7 +28,7 @@ class CvmConfig {
         this.target = "runtime";
         this.engine = "CexR-v8";
         this.packageName = "";
-        this.boxesDir = ".cexboxes";
+        this.boxesDir = ".cex_boxes";
         this.patchFormat = "2.0";
         this.compress = true;
         this.author = "";

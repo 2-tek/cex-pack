@@ -3,11 +3,10 @@
     "version": "1.0.0",
     "description": "Example Cex workspace demonstrating a project with internal packages inside packages/ directory",
     "main": "src/main.cex",
-    "runtime": "v8",
     "target": "runtime",
     "required": {
         "cexr": "^8",
-        "cexp": "^8"
+        "cexp": "^6"
     },
     "workspaces": ["packages/*"],
     "packages": ["packages/core", "packages/ui"],

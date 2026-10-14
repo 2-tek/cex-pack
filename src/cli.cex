@@ -27,7 +27,7 @@ class PackCLI {
         println("");
         println("  Commands:");
         println("    check [file]       Validate JSON syntax and manifest schema (default: cex-pack.json)");
-        println("    downloads [file] [dir] Download dependencies into .cexboxes / .cex_boxes");
+        println("    downloads [file] [dir] Download dependencies into .cex_boxes / .cex_boxes");
         println("    link [file]        Generate or refresh project-encrypted cex-pack-linked.json lockfile");
         println("    push [file]        Push manifest and working changes to CVM repository");
         println("    commit [msg]       Commit staged changes to CVM repository (-m \"message\")");
@@ -50,7 +50,7 @@ class PackCLI {
     public printVersion(): void {
         println("cex-pack v1.0.5 (2-TEK Cex Manifest Validator & Package Manager)");
         println("  • Integrated Engine: @2tek/cli v1.0.0");
-        println("  • Target Boxes: .cexboxes / .cex_boxes");
+        println("  • Target Boxes: .cex_boxes / .cex_boxes");
         println("  • CVM Config: .cvm/config support enabled");
     }
 
@@ -155,11 +155,11 @@ class PackCLI {
             fileToValidate = "cex-pack.json";
         }
 
-        if (fileToValidate == ".cexboxes" || fileToValidate == ".cex_boxes" || (fileToValidate.find(".json") == -1 && fileToValidate.find("boxes") != -1)) {
+        if (fileToValidate == ".cex_boxes" || fileToValidate == ".cex_boxes" || (fileToValidate.find(".json") == -1 && fileToValidate.find("boxes") != -1)) {
             boxTargetDir = fileToValidate;
             fileToValidate = "cex-pack.json";
         }
-        if (extraArg.length() > 0 && (extraArg == ".cexboxes" || extraArg == ".cex_boxes" || extraArg.find("boxes") != -1)) {
+        if (extraArg.length() > 0 && (extraArg == ".cex_boxes" || extraArg == ".cex_boxes" || extraArg.find("boxes") != -1)) {
             boxTargetDir = extraArg;
         }
 
@@ -198,7 +198,7 @@ class PackCLI {
         }
 
         if (cmd == "downloads" || cmd == "download" || cmd == "--downloads" || cmd == "--download") {
-            let targetBox: string = boxTargetDir.length() > 0 ? boxTargetDir : ".cexboxes";
+            let targetBox: string = boxTargetDir.length() > 0 ? boxTargetDir : ".cex_boxes";
             let ok: bool = this.downloader->downloadDependencies(fileToValidate, targetBox);
             if (ok) {
                 return 0;

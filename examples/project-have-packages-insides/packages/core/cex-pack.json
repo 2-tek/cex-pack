@@ -3,11 +3,10 @@
     "version": "1.0.0",
     "description": "Internal Core Package for project-have-packages-insides",
     "main": "src/index.cex",
-    "runtime": "v8",
     "target": "runtime",
     "required": {
         "cexr": "^8",
-        "cexp": "^8"
+        "cexp": "^6"
     },
     "dependencies": {
         "cex-env": "1.0.0",
