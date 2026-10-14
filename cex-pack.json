@@ -40,16 +40,10 @@
         "cex-service": "1.0.0",
         "cex-test": "1.0.0"
     },
-    "includeDirs": [
-        "./src"
-    ],
+    "includeDirs": ["./src"],
     "lint": {
         "onBuild": true,
-        "include": [
-            "src",
-            "tests",
-            "examples"
-        ],
+        "include": ["src", "tests", "examples"],
         "rules": {
             "indent": {
                 "level": "error",
