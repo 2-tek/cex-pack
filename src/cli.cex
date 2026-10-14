@@ -70,7 +70,7 @@ class PackCLI {
         println("\x1b[1;36m   2-TEK CexPack CVM Integration & Manifest Synchronization       \x1b[0m");
         println("\x1b[1;34m================================================------------------\x1b[0m");
         println("Target Manifest : " + manifestPath);
-        if (cvmCfg != null && cvmCfg->isDefined) {
+        if (cvmCfg != nullptr && cvmCfg->isDefined) {
             println("CVM Config File : " + cvmCfg->configPath + " [LOADED]");
             println("CVM Package     : " + cvmCfg->packageName);
             println("CVM Engine      : " + cvmCfg->engine);

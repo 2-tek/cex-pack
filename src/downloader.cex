@@ -121,7 +121,7 @@ class DependencyDownloader {
             parentDir = manifestPath.substr(0, lastSlash) + "/";
         }
 
-        if (cvmConfig != null && cvmConfig->isDefined && cvmConfig->boxesDir.length() > 0) {
+        if (cvmConfig != nullptr && cvmConfig->isDefined && cvmConfig->boxesDir.length() > 0) {
             return cvmConfig->boxesDir;
         }
 
@@ -633,7 +633,7 @@ class DependencyDownloader {
         println("Target Directory: " + resolvedBoxDir + "/\n");
 
         let cvmCfg: CvmConfig* = CvmConfig::load(manifestPath);
-        if (cvmCfg != null && cvmCfg->isDefined) {
+        if (cvmCfg != nullptr && cvmCfg->isDefined) {
             println("CVM Config File : " + cvmCfg->configPath + " [LOADED]");
             if (cvmCfg->packageName.length() > 0) {
                 println("CVM Package     : " + cvmCfg->packageName);
