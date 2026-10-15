@@ -414,7 +414,7 @@ fn testDownloaderModule(): void {
     assertTrue(dep->percent == 0, "PackageDependency default percent is 0");
     assertTrue(dep->currentSize == "0.00Mb", "PackageDependency default currentSize is 0.00Mb");
     assertTrue(dep->totalSize == "0.00Mb", "PackageDependency default totalSize is 0.00Mb");
-    assertTrue(dep->linkedRef == "cex-pack-linked.json", "PackageDependency default linkedRef matches");
+    assertTrue(dep->linkedRef == "dependencies", "PackageDependency default linkedRef matches");
 
     // Exact version cleaning tests
     assertTrue(PackageDependency::cleanExactVersion("^1.0.0") == "1.0.0", "cleanExactVersion strips caret ^");
