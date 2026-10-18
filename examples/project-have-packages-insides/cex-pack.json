@@ -8,13 +8,18 @@
         "cexr": "^8",
         "cexp": "^6"
     },
-    "workspaces": ["packages/*"],
-    "packages": ["packages/core", "packages/ui"],
+    "workspaces": [
+        "packages/*"
+    ],
+    "packages": [
+        "packages/core",
+        "packages/ui"
+    ],
     "scripts": {
         "install": "cex-pack downloads",
         "downloads": "cex-pack downloads",
         "start": "cexr run src/main.cex",
-        "test": "cexr run tests/workspace.test.cex"
+        "test": "cext tests/workspace.test.cex"
     },
     "dependencies": {
         "cex-env": "1.0.0",
@@ -24,5 +29,9 @@
         "cex-service": "1.0.0",
         "cex-test": "1.0.0"
     },
-    "includeDirs": ["./src", "./packages/core/src", "./packages/ui/src"]
+    "includeDirs": [
+        "./src",
+        "./packages/core/src",
+        "./packages/ui/src"
+    ]
 }
