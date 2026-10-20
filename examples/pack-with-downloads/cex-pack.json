@@ -5,8 +5,8 @@
     "main": "src/main.cex",
     "target": "runtime",
     "required": {
-        "cexr": "^8",
-        "cexp": "^6"
+        "cexr-factory": "^8",
+        "cexp-v8": "^6"
     },
     "scripts": {
         "install": "cex-pack downloads",

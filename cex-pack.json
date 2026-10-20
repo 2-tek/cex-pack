@@ -13,8 +13,8 @@
     "branch": "main"
   },
   "required": {
-    "cexr": "^8",
-    "cexp": "^8"
+      "cexr-factory": "^8",
+      "cexp-v8": "^8"
   },
   "scripts": {
     "build": "cexp build src/index.cex -o bin/cex-pack",

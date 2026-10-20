@@ -5,8 +5,8 @@
     "main": "src/index.cex",
     "target": "runtime",
     "required": {
-        "cexr": "^8",
-        "cexp": "^6"
+        "cexr-factory": "^8",
+        "cexp-v8": "^6"
     },
     "dependencies": {
         "cex-env": "1.0.0",
