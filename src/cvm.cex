@@ -7,35 +7,21 @@ import "cpp.string";
 import "c.cstdlib";
 
 class CvmConfig {
-    public isDefined: bool;
-    public configPath: string;
-    public formatVersion: int;
-    public target: string;
-    public engine: string;
-    public packageName: string;
-    public boxesDir: string;
-    public patchFormat: string;
-    public compress: bool;
-    public author: string;
-    public remote: string;
-    public merge: string;
-    public branch: string;
+    public isDefined: bool = false;
+    public configPath: string = "";
+    public formatVersion: int = 2;
+    public target: string = "runtime";
+    public engine: string = "CexR-v8";
+    public packageName: string = "";
+    public boxesDir: string = ".cex_boxes";
+    public patchFormat: string = "2.0";
+    public compress: bool = true;
+    public author: string = "";
+    public remote: string = "origin";
+    public merge: string = "refs/heads/main";
+    public branch: string = "main";
 
-    public constructor() {
-        this.isDefined = false;
-        this.configPath = "";
-        this.formatVersion = 2;
-        this.target = "runtime";
-        this.engine = "CexR-v8";
-        this.packageName = "";
-        this.boxesDir = ".cex_boxes";
-        this.patchFormat = "2.0";
-        this.compress = true;
-        this.author = "";
-        this.remote = "origin";
-        this.merge = "refs/heads/main";
-        this.branch = "main";
-    }
+    public constructor() {}
 
     public static trim(s: string): string {
         let v: string = s;

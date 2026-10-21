@@ -1,67 +1,69 @@
 {
-  "name": "cex-pack",
-  "version": "1.1.0",
-  "description": "CexPack: Native Syntax Checker, Manifest Validator & Dependency Downloader for cex-pack.json configuration files in C-ext (Cex)",
-  "main": "src/index.cex",
-  "author": "2-TEK Ecosystem",
-  "license": "MIT",
-  "target": "runtime",
-  "cvm_repository": {
-    "type": "cvm",
-    "url": "cvm://localhost:3110/repo/cex-pack",
-    "path": "cex-pack.json",
-    "branch": "main"
-  },
-  "required": {
-      "cexr-factory": "^8",
-      "cexp-v8": "^8"
-  },
-  "scripts": {
-    "build": "cexp build src/index.cex -o bin/cex-pack",
-    "start": "cex-pack check",
-    "dev": "cex-pack check",
-    "lint": "cex-pack lint",
-    "downloads": "cex-pack downloads",
-    "download": "cex-pack downloads",
-    "test": "cxvm test",
-    "example:download": "cex-pack downloads examples/pack-with-downloads/cex-pack.json"
-  },
-  "dependencies": {
-    "cex-env": "1.0.0",
-    "cex-logger": "1.0.0",
-    "cex-cli": "1.0.0",
-    "cex-log": "1.0.0",
-    "cexr": "1.0.0",
-    "cex-service": "1.0.0",
-    "cex-test": "1.0.0"
-  },
-  "includeDirs": [
-    "./src"
-  ],
-  "lint": {
-    "onBuild": true,
-    "include": [
-      "src",
-      "tests",
-      "examples"
+    "name": "cex-pack",
+    "version": "1.1.0",
+    "description": "CexPack: Native Syntax Checker, Manifest Validator & Dependency Downloader for cex-pack.json configuration files in C-ext (Cex)",
+    "main": "src/index.cex",
+    "author": "2-TEK Ecosystem",
+    "license": "MIT",
+    "target": "runtime",
+    "cvm_repository": {
+        "type": "cvm",
+        "url": "cvm://localhost:3110/repo/cex-pack",
+        "path": "cex-pack.json",
+        "branch": "main"
+    },
+    "required": {
+        "cexr-factory": "^8",
+        "cexp-v8": "^8",
+        "cexr": "^8",
+        "cexp": "^8"
+    },
+    "scripts": {
+        "build": "cexp build src/index.cex -o bin/cex-pack",
+        "start": "cex-pack check",
+        "dev": "cex-pack check",
+        "lint": "cex-pack lint",
+        "downloads": "cex-pack downloads",
+        "download": "cex-pack downloads",
+        "test": "cxvm test",
+        "example:download": "cex-pack downloads examples/pack-with-downloads/cex-pack.json"
+    },
+    "dependencies": {
+        "cex-env": "1.0.0",
+        "cex-logger": "1.0.0",
+        "cex-cli": "1.0.0",
+        "cex-log": "1.0.0",
+        "cexr": "1.0.0",
+        "cex-service": "1.0.0",
+        "cex-test": "1.0.0"
+    },
+    "includeDirs": [
+        "./src"
     ],
-    "rules": {
-      "indent": {
-        "level": "error",
-        "size": 4
-      },
-      "quotes": {
-        "level": "error",
-        "style": "double"
-      },
-      "semi": "error",
-      "no-tabs": "error",
-      "no-trailing-spaces": "error",
-      "eol-last": "error"
+    "lint": {
+        "onBuild": true,
+        "include": [
+            "src",
+            "tests",
+            "examples"
+        ],
+        "rules": {
+            "indent": {
+                "level": "error",
+                "size": 4
+            },
+            "quotes": {
+                "level": "error",
+                "style": "double"
+            },
+            "semi": "error",
+            "no-tabs": "error",
+            "no-trailing-spaces": "error",
+            "eol-last": "error"
+        }
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/2-tek/cex-pack.git"
     }
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/2-tek/cex-pack.git"
-  }
 }

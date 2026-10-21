@@ -6,7 +6,9 @@
     "target": "runtime",
     "required": {
         "cexr-factory": "^8",
-        "cexp-v8": "^6"
+        "cexp-v8": "^6",
+        "cexr": "^8",
+        "cexp": "^8"
     },
     "dependencies": {
         "cex-env": "1.0.0",

@@ -17,19 +17,13 @@ class ValidationError {
 }
 
 class ValidationResult {
-    public isValid: bool;
-    public errors: Array<ValidationError*>*;
-    public warnings: Array<ValidationError*>*;
-    public errorCount: int;
-    public warningCount: int;
+    public isValid: bool = true;
+    public errors: Array<ValidationError*>* = new Array<ValidationError*>();
+    public warnings: Array<ValidationError*>* = new Array<ValidationError*>();
+    public errorCount: int = 0;
+    public warningCount: int = 0;
 
-    public constructor() {
-        this.isValid = true;
-        this.errors = new Array<ValidationError*>();
-        this.warnings = new Array<ValidationError*>();
-        this.errorCount = 0;
-        this.warningCount = 0;
-    }
+    public constructor() {}
 
     public addError(ruleId: string, msg: string, line: int, col: int): void {
         this.isValid = false;
@@ -60,15 +54,11 @@ class ThunderOutputPort {
 }
 
 class ThunderConfig {
-    public isDefined: bool;
-    public env: string;
-    public outputs: Array<ThunderOutputPort*>*;
+    public isDefined: bool = false;
+    public env: string = "";
+    public outputs: Array<ThunderOutputPort*>* = new Array<ThunderOutputPort*>();
 
-    public constructor() {
-        this.isDefined = false;
-        this.env = "";
-        this.outputs = new Array<ThunderOutputPort*>();
-    }
+    public constructor() {}
 
     public addOutput(cPort: int, cPortStr: string, oPort: int, oPortStr: string, name: string): void {
         this.outputs->push(new ThunderOutputPort(cPort, cPortStr, oPort, oPortStr, name));
@@ -102,13 +92,10 @@ class EnvMapping {
 }
 
 class EnvConfigOptions {
-    public envs: Array<EnvMapping*>*;
-    public activeEnvironment: string;
+    public envs: Array<EnvMapping*>* = new Array<EnvMapping*>();
+    public activeEnvironment: string = "";
 
-    public constructor() {
-        this.envs = new Array<EnvMapping*>();
-        this.activeEnvironment = "";
-    }
+    public constructor() {}
 
     public addEnv(envName: string, path: string): void {
         this.envs->push(new EnvMapping(envName, path));
@@ -138,23 +125,16 @@ class EnvConfigOptions {
 }
 
 class CvmRepositoryConfig {
-    public isDefined: bool;
-    public type: string;
-    public url: string;
-    public path: string;
-    public branch: string;
+    public isDefined: bool = false;
+    public type: string = "cvm";
+    public url: string = "";
+    public path: string = "cex-pack.json";
+    public branch: string = "main";
 
-    public constructor() {
-        this.isDefined = false;
-        this.type = "cvm";
-        this.url = "";
-        this.path = "cex-pack.json";
-        this.branch = "main";
-    }
+    public constructor() {}
 
     public constructor(url: string, p: string, b: string) {
         this.isDefined = true;
-        this.type = "cvm";
         this.url = url;
         this.path = (p.length() > 0) ? p : "cex-pack.json";
         this.branch = (b.length() > 0) ? b : "main";
@@ -162,43 +142,25 @@ class CvmRepositoryConfig {
 }
 
 class PackManifest {
-    public name: string;
-    public version: string;
-    public description: string;
-    public main: string;
-    public author: string;
-    public license: string;
-    public target: string;
-    public hasRequired: bool;
-    public hasTarget: bool;
-    public hasDependencies: bool;
-    public thunder: ThunderConfig*;
-    public envConfig: EnvConfigOptions*;
-    public processEnv: Array<EnvItem*>*;
-    public hasEnvs: bool;
-    public hasProcessEnv: bool;
-    public cvmRepository: CvmRepositoryConfig*;
-    public hasCvmRepository: bool;
+    public name: string = "";
+    public version: string = "";
+    public description: string = "";
+    public main: string = "";
+    public author: string = "";
+    public license: string = "";
+    public target: string = "";
+    public hasRequired: bool = false;
+    public hasTarget: bool = false;
+    public hasDependencies: bool = false;
+    public thunder: ThunderConfig* = new ThunderConfig();
+    public envConfig: EnvConfigOptions* = new EnvConfigOptions();
+    public processEnv: Array<EnvItem*>* = new Array<EnvItem*>();
+    public hasEnvs: bool = false;
+    public hasProcessEnv: bool = false;
+    public cvmRepository: CvmRepositoryConfig* = new CvmRepositoryConfig();
+    public hasCvmRepository: bool = false;
 
-    public constructor() {
-        this.name = "";
-        this.version = "";
-        this.description = "";
-        this.main = "";
-        this.author = "";
-        this.license = "";
-        this.target = "";
-        this.hasRequired = false;
-        this.hasTarget = false;
-        this.hasDependencies = false;
-        this.thunder = new ThunderConfig();
-        this.envConfig = new EnvConfigOptions();
-        this.processEnv = new Array<EnvItem*>();
-        this.hasEnvs = false;
-        this.hasProcessEnv = false;
-        this.cvmRepository = new CvmRepositoryConfig();
-        this.hasCvmRepository = false;
-    }
+    public constructor() {}
 
     public addEnvMapping(envName: string, path: string): void {
         this.envConfig->addEnv(envName, path);

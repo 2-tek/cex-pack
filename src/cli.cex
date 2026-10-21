@@ -10,13 +10,10 @@ import fs from "fs";
 import "c.cstdlib";
 
 class PackCLI {
-    private validator: PackValidator*;
-    private downloader: DependencyDownloader*;
+    private validator: PackValidator* = new PackValidator();
+    private downloader: DependencyDownloader* = new DependencyDownloader();
 
-    public constructor() {
-        this.validator = new PackValidator();
-        this.downloader = new DependencyDownloader();
-    }
+    public constructor() {}
 
     public printHelp(): void {
         println("================================================------------------");

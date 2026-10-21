@@ -2,11 +2,10 @@
 
 class CoreService {
     private serviceName: string;
-    private initialized: bool;
+    private initialized: bool = true;
 
     public constructor(name: string) {
         this.serviceName = name;
-        this.initialized = true;
     }
 
     public getStatus(): string {

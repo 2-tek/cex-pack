@@ -7,13 +7,10 @@ import "./reporter.cex";
 import fs from "fs";
 
 class PackValidator {
-    private schemaVal: SchemaValidator*;
-    private reporter: DiagnosticReporter*;
+    private schemaVal: SchemaValidator* = new SchemaValidator();
+    private reporter: DiagnosticReporter* = new DiagnosticReporter();
 
-    public constructor() {
-        this.schemaVal = new SchemaValidator();
-        this.reporter = new DiagnosticReporter();
-    }
+    public constructor() {}
 
     public validateContent(manifestContent: string): ValidationResult* {
         // 1. JSON Syntax & Structural Token Parsing

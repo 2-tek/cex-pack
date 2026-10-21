@@ -14,14 +14,14 @@ class PackageDependency {
     public packageName: string;
     public versionSpec: string;
     public exactVersion: string;
-    public downloadUrl: string;
-    public encryptedUrl: string;
-    public installedPath: string;
-    public status: string;
-    public currentSize: string;
-    public totalSize: string;
-    public percent: int;
-    public linkedRef: string;
+    public downloadUrl: string = "";
+    public encryptedUrl: string = "";
+    public installedPath: string = "";
+    public status: string = "PENDING";
+    public currentSize: string = "0.00Mb";
+    public totalSize: string = "0.00Mb";
+    public percent: int = 0;
+    public linkedRef: string = "dependencies";
 
     public static cleanExactVersion(spec: string): string {
         let v: string = spec;
@@ -70,23 +70,13 @@ class PackageDependency {
         this.packageName = name;
         this.versionSpec = version;
         this.exactVersion = PackageDependency::cleanExactVersion(version);
-        this.downloadUrl = "";
-        this.encryptedUrl = "";
-        this.installedPath = "";
-        this.status = "PENDING";
-        this.currentSize = "0.00Mb";
-        this.totalSize = "0.00Mb";
-        this.percent = 0;
-        this.linkedRef = "dependencies";
     }
 }
 
 class DependencyDownloader {
-    private validator: PackValidator*;
+    private validator: PackValidator* = new PackValidator();
 
-    public constructor() {
-        this.validator = new PackValidator();
-    }
+    public constructor() {}
 
     public static mkdirRecursive(dirPath: string): void {
         if (dirPath.length() == 0 || fs.exists(dirPath)) {

@@ -5,16 +5,13 @@ import "./types.cex";
 class JsonParser {
     public content: string;
     public length: int;
-    public position: int;
-    public line: int;
-    public column: int;
+    public position: int = 0;
+    public line: int = 1;
+    public column: int = 1;
 
     public constructor(jsonStr: string) {
         this.content = jsonStr;
         this.length = (int)jsonStr.length();
-        this.position = 0;
-        this.line = 1;
-        this.column = 1;
     }
 
     public parseAndValidateSyntax(): ValidationResult* {
