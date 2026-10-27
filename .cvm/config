@@ -3,7 +3,7 @@
     target = runtime
     engine = CexR-v8
     package = @2tek/pack
-    boxes = .cexboxes
+    boxes = cex_boxes
 
 [cvm]
     patchFormat = 2.0

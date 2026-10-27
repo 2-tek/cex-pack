@@ -115,20 +115,20 @@ class DependencyDownloader {
             return cvmConfig->boxesDir;
         }
 
-        if (fs.exists(parentDir + ".cex_boxes") || fs.exists(".cex_boxes")) {
-            return ".cex_boxes";
+        if (fs.exists(parentDir + "cex_boxes") || fs.exists("cex_boxes")) {
+            return "cex_boxes";
         }
 
         if (fs.exists(parentDir + ".cex_boxes") || fs.exists(".cex_boxes")) {
-            return ".cex_boxes";
+            return "cex_boxes";
         }
 
-        return ".cex_boxes";
+        return "cex_boxes";
     }
 
     private resolveProjectTargetBoxDir(manifestPath: string, targetBoxDir: string): string {
         let actualBoxDir: string = targetBoxDir;
-        if (actualBoxDir.length() == 0 || actualBoxDir == ".cex_boxes") {
+        if (actualBoxDir.length() == 0 || actualBoxDir == ".cex_boxes" || actualBoxDir == "cex_boxes") {
             let cvmCfg: CvmConfig* = CvmConfig::load(manifestPath);
             actualBoxDir = DependencyDownloader::resolveDefaultBoxDirectory(manifestPath, cvmCfg);
         }
@@ -231,7 +231,7 @@ class DependencyDownloader {
     public writeProgressFile(resolvedBoxDir: string, deps: Array<PackageDependency*>*, totalSizeStr: string, overallPercent: int): void {
         let progressPath: string = resolvedBoxDir + "/PROGRESS.md";
         let content: string = "current: " + totalSizeStr + "\n";
-        let boxDirName: string = ".cex_boxes";
+        let boxDirName: string = "cex_boxes";
         let lastSlash: int = -1;
         let bLen: int = (int)resolvedBoxDir.length();
         for (let i: int = 0; i < bLen; i = i + 1) {
@@ -606,7 +606,7 @@ class DependencyDownloader {
         let resolvedBoxDir: string = this.resolveProjectTargetBoxDir(manifestPath, targetBoxDir);
         let linkedPath: string = this.resolveLinkedManifestPath(manifestPath);
 
-        let boxDirName: string = ".cex_boxes";
+        let boxDirName: string = "cex_boxes";
         let lastSlash: int = -1;
         let bLen: int = (int)resolvedBoxDir.length();
         for (let i: int = 0; i < bLen; i = i + 1) {
