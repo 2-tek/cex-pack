@@ -1,7 +1,7 @@
 {
     "name": "sample-pack-app",
     "version": "1.0.0",
-    "description": "Sample Cex Application demonstrating cex-pack downloads dependency installer into .cex_boxes/",
+    "description": "Sample Cex Application demonstrating cex-pack downloads dependency installer into cex_boxes/",
     "main": "src/main.cex",
     "target": "runtime",
     "required": {
