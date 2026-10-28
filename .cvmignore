@@ -5,3 +5,8 @@ dist/
 tmp/
 .cex_cache/
 bin/
+
+# Cex Box dependencies & local box caches
+cex_boxes/
+**/cex_boxes/
+**/.cex_boxes/
