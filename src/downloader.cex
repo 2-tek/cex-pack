@@ -11,20 +11,20 @@ import "cpp.string";
 import "c.cstdlib";
 
 class PackageDependency {
-    public packageName: string;
-    public versionSpec: string;
-    public exactVersion: string;
-    public downloadUrl: string = "";
-    public encryptedUrl: string = "";
-    public installedPath: string = "";
-    public status: string = "PENDING";
-    public currentSize: string = "0.00Mb";
-    public totalSize: string = "0.00Mb";
-    public percent: int = 0;
-    public linkedRef: string = "dependencies";
+    public string packageName;
+    public string versionSpec;
+    public string exactVersion;
+    public string downloadUrl = "";
+    public string encryptedUrl = "";
+    public string installedPath = "";
+    public string status = "PENDING";
+    public string currentSize = "0.00Mb";
+    public string totalSize = "0.00Mb";
+    public int percent = 0;
+    public string linkedRef = "dependencies";
 
-    public static cleanExactVersion(spec: string): string {
-        let v: string = spec;
+    static public string cleanExactVersion(string spec) {
+        string v = spec;
         while (v.length() > 0 && (v.substr(0, 1) == " " || v.substr(0, 1) == "\t")) {
             v = v.substr(1, v.length() - 1);
         }
@@ -37,7 +37,7 @@ class PackageDependency {
             v = v.substr(1, v.length() - 1);
         }
         if (v.length() > 1 && (v.substr(0, 1) == "v" || v.substr(0, 1) == "V")) {
-            let nextChar: string = v.substr(1, 1);
+            string nextChar = v.substr(1, 1);
             if (nextChar >= "0" && nextChar <= "9") {
                 v = v.substr(1, v.length() - 1);
             }
@@ -45,11 +45,11 @@ class PackageDependency {
         while (v.length() > 0 && (v.substr(v.length() - 1, 1) == " " || v.substr(v.length() - 1, 1) == "\t" || v.substr(v.length() - 1, 1) == "\r" || v.substr(v.length() - 1, 1) == "\n")) {
             v = v.substr(0, v.length() - 1);
         }
-        let dotCount: int = 0;
-        let vLen: int = (int)v.length();
-        let allDigitsOrDots: bool = true;
-        for (let i: int = 0; i < vLen; i = i + 1) {
-            let ch: string = v.substr(i, 1);
+        int dotCount = 0;
+        int vLen = (int)v.length();
+        bool allDigitsOrDots = true;
+        for (int i = 0; i < vLen; i = i + 1) {
+            string ch = v.substr(i, 1);
             if (ch == ".") {
                 dotCount = dotCount + 1;
             } else if (ch < "0" || ch > "9") {
@@ -66,7 +66,7 @@ class PackageDependency {
         return v;
     }
 
-    public constructor(name: string, version: string) {
+    public constructor(string name, string version) {
         this.packageName = name;
         this.versionSpec = version;
         this.exactVersion = PackageDependency::cleanExactVersion(version);
@@ -74,18 +74,18 @@ class PackageDependency {
 }
 
 class DependencyDownloader {
-    private validator: PackValidator* = new PackValidator();
+    private PackValidator* validator = new PackValidator();
 
     public constructor() {}
 
-    public static mkdirRecursive(dirPath: string): void {
+    static public void mkdirRecursive(string dirPath) {
         if (dirPath.length() == 0 || fs.exists(dirPath)) {
             return;
         }
-        let len: int = (int)dirPath.length();
-        let cur: string = "";
-        for (let i: int = 0; i < len; i = i + 1) {
-            let ch: string = dirPath.substr(i, 1);
+        int len = (int)dirPath.length();
+        string cur = "";
+        for (int i = 0; i < len; i = i + 1) {
+            string ch = dirPath.substr(i, 1);
             if (ch == "/" && cur.length() > 0) {
                 if (!fs.exists(cur)) {
                     fs.mkdir(cur);
@@ -98,11 +98,11 @@ class DependencyDownloader {
         }
     }
 
-    public static resolveDefaultBoxDirectory(manifestPath: string, cvmConfig: CvmConfig*): string {
-        let parentDir: string = "";
-        let lastSlash: int = -1;
-        let len: int = (int)manifestPath.length();
-        for (let i: int = 0; i < len; i = i + 1) {
+    static public string resolveDefaultBoxDirectory(string manifestPath, CvmConfig* cvmConfig) {
+        string parentDir = "";
+        int lastSlash = -1;
+        int len = (int)manifestPath.length();
+        for (int i = 0; i < len; i = i + 1) {
             if (manifestPath.substr(i, 1) == "/") {
                 lastSlash = i;
             }
@@ -126,24 +126,24 @@ class DependencyDownloader {
         return "cex_boxes";
     }
 
-    private resolveProjectTargetBoxDir(manifestPath: string, targetBoxDir: string): string {
-        let actualBoxDir: string = targetBoxDir;
+    private string resolveProjectTargetBoxDir(string manifestPath, string targetBoxDir) {
+        string actualBoxDir = targetBoxDir;
         if (actualBoxDir.length() == 0 || actualBoxDir == ".cex_boxes" || actualBoxDir == "cex_boxes") {
-            let cvmCfg: CvmConfig* = CvmConfig::load(manifestPath);
+            CvmConfig* cvmCfg = CvmConfig::load(manifestPath);
             actualBoxDir = DependencyDownloader::resolveDefaultBoxDirectory(manifestPath, cvmCfg);
         }
         if (actualBoxDir.length() > 0 && actualBoxDir.substr(0, 1) == "/") {
             return actualBoxDir;
         }
-        let lastSlash: int = -1;
-        let len: int = (int)manifestPath.length();
-        for (let i: int = 0; i < len; i = i + 1) {
+        int lastSlash = -1;
+        int len = (int)manifestPath.length();
+        for (int i = 0; i < len; i = i + 1) {
             if (manifestPath.substr(i, 1) == "/") {
                 lastSlash = i;
             }
         }
         if (lastSlash != -1) {
-            let parentDir: string = manifestPath.substr(0, lastSlash);
+            string parentDir = manifestPath.substr(0, lastSlash);
             if (actualBoxDir.find(parentDir) == 0) {
                 return actualBoxDir;
             }
@@ -155,25 +155,25 @@ class DependencyDownloader {
         return actualBoxDir;
     }
 
-    private resolveLinkedManifestPath(manifestPath: string): string {
-        let lastSlash: int = -1;
-        let len: int = (int)manifestPath.length();
-        for (let i: int = 0; i < len; i = i + 1) {
+    private string resolveLinkedManifestPath(string manifestPath) {
+        int lastSlash = -1;
+        int len = (int)manifestPath.length();
+        for (int i = 0; i < len; i = i + 1) {
             if (manifestPath.substr(i, 1) == "/") {
                 lastSlash = i;
             }
         }
         if (lastSlash != -1) {
-            let parentDir: string = manifestPath.substr(0, lastSlash);
+            string parentDir = manifestPath.substr(0, lastSlash);
             return parentDir + "/cex-pack-linked.json";
         }
         return "cex-pack-linked.json";
     }
 
-    public static stripScopeAlias(pkgName: string): string {
-        let result: string = pkgName;
+    static public string stripScopeAlias(string pkgName) {
+        string result = pkgName;
         if (result.length() > 0 && result.substr(0, 1) == "@") {
-            let slashPos: int = result.find("/");
+            int slashPos = result.find("/");
             if (slashPos != -1) {
                 result = result.substr(slashPos + 1, result.length() - slashPos - 1);
             } else {
@@ -183,43 +183,43 @@ class DependencyDownloader {
         return result;
     }
 
-    public parseDependenciesFromManifest(manifestContent: string): Array<PackageDependency*>* {
-        let deps: Array<PackageDependency*>* = new Array<PackageDependency*>();
+    public Array<PackageDependency*>* parseDependenciesFromManifest(string manifestContent) {
+        Array<PackageDependency*>* deps = new Array<PackageDependency*>();
 
-        let depIndex: int = manifestContent.find("\"dependencies\"");
+        int depIndex = manifestContent.find("\"dependencies\"");
         if (depIndex == -1) {
             return deps;
         }
 
-        let openBrace: int = manifestContent.find("{", depIndex);
-        let closeBrace: int = manifestContent.find("}", openBrace);
+        int openBrace = manifestContent.find("{", depIndex);
+        int closeBrace = manifestContent.find("}", openBrace);
         if (openBrace == -1 || closeBrace == -1 || closeBrace <= openBrace) {
             return deps;
         }
 
-        let depBlock: string = manifestContent.substr(openBrace + 1, closeBrace - openBrace - 1);
-        let len: int = (int)depBlock.length();
-        let pos: int = 0;
+        string depBlock = manifestContent.substr(openBrace + 1, closeBrace - openBrace - 1);
+        int len = (int)depBlock.length();
+        int pos = 0;
 
         while (pos < len) {
-            let keyStart: int = depBlock.find("\"", pos);
+            int keyStart = depBlock.find("\"", pos);
             if (keyStart == -1) break;
 
-            let keyEnd: int = depBlock.find("\"", keyStart + 1);
+            int keyEnd = depBlock.find("\"", keyStart + 1);
             if (keyEnd == -1) break;
 
-            let pkgName: string = depBlock.substr(keyStart + 1, keyEnd - keyStart - 1);
+            string pkgName = depBlock.substr(keyStart + 1, keyEnd - keyStart - 1);
 
-            let colonPos: int = depBlock.find(":", keyEnd + 1);
+            int colonPos = depBlock.find(":", keyEnd + 1);
             if (colonPos == -1) break;
 
-            let valStart: int = depBlock.find("\"", colonPos + 1);
+            int valStart = depBlock.find("\"", colonPos + 1);
             if (valStart == -1) break;
 
-            let valEnd: int = depBlock.find("\"", valStart + 1);
+            int valEnd = depBlock.find("\"", valStart + 1);
             if (valEnd == -1) break;
 
-            let versionSpec: string = depBlock.substr(valStart + 1, valEnd - valStart - 1);
+            string versionSpec = depBlock.substr(valStart + 1, valEnd - valStart - 1);
 
             deps->push(new PackageDependency(pkgName, versionSpec));
             pos = valEnd + 1;
@@ -228,13 +228,13 @@ class DependencyDownloader {
         return deps;
     }
 
-    public writeProgressFile(resolvedBoxDir: string, deps: Array<PackageDependency*>*, totalSizeStr: string, overallPercent: int): void {
-        let progressPath: string = resolvedBoxDir + "/PROGRESS.md";
-        let content: string = "current: " + totalSizeStr + "\n";
-        let boxDirName: string = "cex_boxes";
-        let lastSlash: int = -1;
-        let bLen: int = (int)resolvedBoxDir.length();
-        for (let i: int = 0; i < bLen; i = i + 1) {
+    public void writeProgressFile(string resolvedBoxDir, Array<PackageDependency*>* deps, string totalSizeStr, int overallPercent) {
+        string progressPath = resolvedBoxDir + "/PROGRESS.md";
+        string content = "current: " + totalSizeStr + "\n";
+        string boxDirName = "cex_boxes";
+        int lastSlash = -1;
+        int bLen = (int)resolvedBoxDir.length();
+        for (int i = 0; i < bLen; i = i + 1) {
             if (resolvedBoxDir.substr(i, 1) == "/") {
                 lastSlash = i;
             }
@@ -246,10 +246,10 @@ class DependencyDownloader {
         }
         content = content + boxDirName + " -> PROGRESS.md\n\n";
 
-        let len: int = (int)deps->length();
-        for (let i: int = 0; i < len; i = i + 1) {
-            let dep: PackageDependency* = deps->get(i);
-            let line: string = "[" + dep->status + "][" + std::to_string(dep->percent) + "%][" + dep->currentSize + "][" + dep->totalSize + "][" + dep->packageName + "][" + dep->linkedRef + "]\n";
+        int len = (int)deps->length();
+        for (int i = 0; i < len; i = i + 1) {
+            PackageDependency* dep = deps->get(i);
+            string line = "[" + dep->status + "][" + std::to_string(dep->percent) + "%][" + dep->currentSize + "][" + dep->totalSize + "][" + dep->packageName + "][" + dep->linkedRef + "]\n";
             content = content + line;
         }
 
@@ -257,12 +257,12 @@ class DependencyDownloader {
         fs.writeFile(progressPath, content);
     }
 
-    public static safeParseInt(s: string): int {
-        let val: int = 0;
-        let len: int = (int)s.length();
-        let foundDigit: bool = false;
-        for (let i: int = 0; i < len; i = i + 1) {
-            let ch: string = s.substr(i, 1);
+    static public int safeParseInt(string s) {
+        int val = 0;
+        int len = (int)s.length();
+        bool foundDigit = false;
+        for (int i = 0; i < len; i = i + 1) {
+            string ch = s.substr(i, 1);
             if (ch >= "0" && ch <= "9") {
                 val = val * 10 + std::stoi(ch);
                 foundDigit = true;
@@ -273,17 +273,17 @@ class DependencyDownloader {
         return val;
     }
 
-    public static computeDirectorySizeKb(dirPath: string): int {
+    static public int computeDirectorySizeKb(string dirPath) {
         if (!fs.exists(dirPath)) {
             return 1;
         }
-        let tmpFile: string = dirPath + "/.size_tmp";
-        let cmd: string = "du -sk " + dirPath + " 2>/dev/null > " + tmpFile;
-        let res: int = system(cmd.c_str());
+        string tmpFile = dirPath + "/.size_tmp";
+        string cmd = "du -sk " + dirPath + " 2>/dev/null > " + tmpFile;
+        int res = system(cmd.c_str());
         if (res == 0 && fs.exists(tmpFile)) {
-            let sContent: string = fs.readFile(tmpFile);
+            string sContent = fs.readFile(tmpFile);
             fs.removeFile(tmpFile);
-            let kb: int = DependencyDownloader::safeParseInt(sContent);
+            int kb = DependencyDownloader::safeParseInt(sContent);
             if (kb > 0) {
                 return kb;
             }
@@ -291,71 +291,71 @@ class DependencyDownloader {
         return 50;
     }
 
-    public static formatKbToMb(kb: int): string {
-        let wholeMb: int = kb / 1024;
-        let fracMb: int = ((kb % 1024) * 100) / 1024;
-        let fracStr: string = std::to_string(fracMb);
+    static public string formatKbToMb(int kb) {
+        int wholeMb = kb / 1024;
+        int fracMb = ((kb % 1024) * 100) / 1024;
+        string fracStr = std::to_string(fracMb);
         if (fracMb < 10) {
             fracStr = "0" + fracStr;
         }
         return std::to_string(wholeMb) + "." + fracStr + "Mb";
     }
 
-    public static parseVersionTriplet(ver: string, outMajor: int&, outMinor: int&, outPatch: int&): void {
-        let clean: string = PackageDependency::cleanExactVersion(ver);
+    static public void parseVersionTriplet(string ver, int& outMajor, int& outMinor, int& outPatch) {
+        string clean = PackageDependency::cleanExactVersion(ver);
         outMajor = 0;
         outMinor = 0;
         outPatch = 0;
-        let dot1: int = clean.find(".");
+        int dot1 = clean.find(".");
         if (dot1 == -1) {
             if (clean.length() > 0) {
                 outMajor = DependencyDownloader::safeParseInt(clean);
             }
             return;
         }
-        let majStr: string = clean.substr(0, dot1);
+        string majStr = clean.substr(0, dot1);
         if (majStr.length() > 0) {
             outMajor = DependencyDownloader::safeParseInt(majStr);
         }
-        let dot2: int = clean.find(".", dot1 + 1);
+        int dot2 = clean.find(".", dot1 + 1);
         if (dot2 == -1) {
-            let minStr: string = clean.substr(dot1 + 1, clean.length() - dot1 - 1);
+            string minStr = clean.substr(dot1 + 1, clean.length() - dot1 - 1);
             if (minStr.length() > 0) {
                 outMinor = DependencyDownloader::safeParseInt(minStr);
             }
             return;
         }
-        let minStr: string = clean.substr(dot1 + 1, dot2 - dot1 - 1);
+        string minStr = clean.substr(dot1 + 1, dot2 - dot1 - 1);
         if (minStr.length() > 0) {
             outMinor = DependencyDownloader::safeParseInt(minStr);
         }
-        let patStr: string = clean.substr(dot2 + 1, clean.length() - dot2 - 1);
+        string patStr = clean.substr(dot2 + 1, clean.length() - dot2 - 1);
         if (patStr.length() > 0) {
             outPatch = DependencyDownloader::safeParseInt(patStr);
         }
     }
 
-    public static isVersionMatch(lockedVersion: string, versionSpec: string): bool {
+    static public bool isVersionMatch(string lockedVersion, string versionSpec) {
         if (versionSpec.length() == 0 || versionSpec == lockedVersion) {
             return true;
         }
-        let cleanLocked: string = PackageDependency::cleanExactVersion(lockedVersion);
-        let cleanSpec: string = PackageDependency::cleanExactVersion(versionSpec);
+        string cleanLocked = PackageDependency::cleanExactVersion(lockedVersion);
+        string cleanSpec = PackageDependency::cleanExactVersion(versionSpec);
         if (cleanLocked == cleanSpec) {
             return true;
         }
 
-        let lMaj: int = 0;
-        let lMin: int = 0;
-        let lPat: int = 0;
+        int lMaj = 0;
+        int lMin = 0;
+        int lPat = 0;
         DependencyDownloader::parseVersionTriplet(lockedVersion, lMaj, lMin, lPat);
 
-        let sMaj: int = 0;
-        let sMin: int = 0;
-        let sPat: int = 0;
+        int sMaj = 0;
+        int sMin = 0;
+        int sPat = 0;
         DependencyDownloader::parseVersionTriplet(versionSpec, sMaj, sMin, sPat);
 
-        let trimmedSpec: string = versionSpec;
+        string trimmedSpec = versionSpec;
         while (trimmedSpec.length() > 0 && (trimmedSpec.substr(0, 1) == " " || trimmedSpec.substr(0, 1) == "\t")) {
             trimmedSpec = trimmedSpec.substr(1, trimmedSpec.length() - 1);
         }
@@ -391,24 +391,24 @@ class DependencyDownloader {
         return cleanLocked == cleanSpec;
     }
 
-    public static extractDependencyBlock(linkedContent: string): string {
-        let depIndex: int = linkedContent.find("\"dependencies\"");
+    static public string extractDependencyBlock(string linkedContent) {
+        int depIndex = linkedContent.find("\"dependencies\"");
         if (depIndex == -1) {
             return "";
         }
-        let openBrace: int = linkedContent.find("{", depIndex);
+        int openBrace = linkedContent.find("{", depIndex);
         if (openBrace == -1) {
             return "";
         }
-        let len: int = (int)linkedContent.length();
-        let depth: int = 1;
-        let inString: bool = false;
-        let closeBrace: int = -1;
-        for (let i: int = openBrace + 1; i < len; i = i + 1) {
-            let ch: string = linkedContent.substr(i, 1);
+        int len = (int)linkedContent.length();
+        int depth = 1;
+        bool inString = false;
+        int closeBrace = -1;
+        for (int i = openBrace + 1; i < len; i = i + 1) {
+            string ch = linkedContent.substr(i, 1);
             if (ch == "\"") {
-                let backslashCount: int = 0;
-                let k: int = i - 1;
+                int backslashCount = 0;
+                int k = i - 1;
                 while (k >= 0 && linkedContent.substr(k, 1) == "\\") {
                     backslashCount = backslashCount + 1;
                     k = k - 1;
@@ -434,17 +434,17 @@ class DependencyDownloader {
         return linkedContent.substr(openBrace);
     }
 
-    public static extractLockedVersion(linkedContent: string, pkgName: string): string {
+    static public string extractLockedVersion(string linkedContent, string pkgName) {
         if (linkedContent.length() == 0 || pkgName.length() == 0) {
             return "";
         }
-        let depBlock: string = DependencyDownloader::extractDependencyBlock(linkedContent);
+        string depBlock = DependencyDownloader::extractDependencyBlock(linkedContent);
         if (depBlock.length() == 0) {
             return "";
         }
 
-        let cleanPkg: string = DependencyDownloader::stripScopeAlias(pkgName);
-        let candidates: Array<string>* = new Array<string>();
+        string cleanPkg = DependencyDownloader::stripScopeAlias(pkgName);
+        Array<string>* candidates = new Array<string>();
         candidates->push(pkgName);
         if (cleanPkg != pkgName) {
             candidates->push(cleanPkg);
@@ -455,55 +455,55 @@ class DependencyDownloader {
             candidates->push("@2tek/" + cleanPkg);
         }
 
-        let cCount: int = (int)candidates->length();
-        for (let c: int = 0; c < cCount; c = c + 1) {
-            let candidate: string = candidates->get(c);
-            let needle: string = "\"" + candidate + "\"";
-            let pos: int = 0;
-            let dLen: int = (int)depBlock.length();
+        int cCount = (int)candidates->length();
+        for (int c = 0; c < cCount; c = c + 1) {
+            string candidate = candidates->get(c);
+            string needle = "\"" + candidate + "\"";
+            int pos = 0;
+            int dLen = (int)depBlock.length();
             while (pos < dLen) {
-                let pkgPos: int = depBlock.find(needle, pos);
+                int pkgPos = depBlock.find(needle, pos);
                 if (pkgPos == -1) {
                     break;
                 }
-                let colonPos: int = depBlock.find(":", pkgPos + (int)needle.length());
+                int colonPos = depBlock.find(":", pkgPos + (int)needle.length());
                 if (colonPos != -1) {
-                    let between: string = depBlock.substr(pkgPos + needle.length(), colonPos - (pkgPos + needle.length()));
-                    let onlyWs: bool = true;
-                    let bLen: int = (int)between.length();
-                    for (let b: int = 0; b < bLen; b = b + 1) {
-                        let bCh: string = between.substr(b, 1);
+                    string between = depBlock.substr(pkgPos + needle.length(), colonPos - (pkgPos + needle.length()));
+                    bool onlyWs = true;
+                    int bLen = (int)between.length();
+                    for (int b = 0; b < bLen; b = b + 1) {
+                        string bCh = between.substr(b, 1);
                         if (bCh != " " && bCh != "\t" && bCh != "\r" && bCh != "\n") {
                             onlyWs = false;
                         }
                     }
                     if (onlyWs) {
-                        let valStart: int = -1;
-                        for (let v: int = colonPos + 1; v < dLen; v = v + 1) {
-                            let vCh: string = depBlock.substr(v, 1);
+                        int valStart = -1;
+                        for (int v = colonPos + 1; v < dLen; v = v + 1) {
+                            string vCh = depBlock.substr(v, 1);
                             if (vCh != " " && vCh != "\t" && vCh != "\r" && vCh != "\n") {
                                 valStart = v;
                                 break;
                             }
                         }
                         if (valStart != -1) {
-                            let firstCh: string = depBlock.substr(valStart, 1);
+                            string firstCh = depBlock.substr(valStart, 1);
                             if (firstCh == "\"") {
-                                let endQ: int = depBlock.find("\"", valStart + 1);
+                                int endQ = depBlock.find("\"", valStart + 1);
                                 if (endQ != -1) {
                                     return depBlock.substr(valStart + 1, endQ - valStart - 1);
                                 }
                             } else if (firstCh == "{") {
-                                let objEnd: int = depBlock.find("}", valStart);
+                                int objEnd = depBlock.find("}", valStart);
                                 if (objEnd != -1) {
-                                    let subObj: string = depBlock.substr(valStart, objEnd - valStart + 1);
-                                    let vIdx: int = subObj.find("\"version\"");
+                                    string subObj = depBlock.substr(valStart, objEnd - valStart + 1);
+                                    int vIdx = subObj.find("\"version\"");
                                     if (vIdx != -1) {
-                                        let vColon: int = subObj.find(":", vIdx);
+                                        int vColon = subObj.find(":", vIdx);
                                         if (vColon != -1) {
-                                            let q1: int = subObj.find("\"", vColon + 1);
+                                            int q1 = subObj.find("\"", vColon + 1);
                                             if (q1 != -1) {
-                                                let q2: int = subObj.find("\"", q1 + 1);
+                                                int q2 = subObj.find("\"", q1 + 1);
                                                 if (q2 != -1) {
                                                     return subObj.substr(q1 + 1, q2 - q1 - 1);
                                                 }
@@ -522,17 +522,17 @@ class DependencyDownloader {
         return "";
     }
 
-    public static extractLockedUrl(linkedContent: string, pkgName: string): string {
+    static public string extractLockedUrl(string linkedContent, string pkgName) {
         if (linkedContent.length() == 0 || pkgName.length() == 0) {
             return "";
         }
-        let depBlock: string = DependencyDownloader::extractDependencyBlock(linkedContent);
+        string depBlock = DependencyDownloader::extractDependencyBlock(linkedContent);
         if (depBlock.length() == 0) {
             return "";
         }
 
-        let cleanPkg: string = DependencyDownloader::stripScopeAlias(pkgName);
-        let candidates: Array<string>* = new Array<string>();
+        string cleanPkg = DependencyDownloader::stripScopeAlias(pkgName);
+        Array<string>* candidates = new Array<string>();
         candidates->push(pkgName);
         if (cleanPkg != pkgName) {
             candidates->push(cleanPkg);
@@ -543,48 +543,48 @@ class DependencyDownloader {
             candidates->push("@2tek/" + cleanPkg);
         }
 
-        let cCount: int = (int)candidates->length();
-        for (let c: int = 0; c < cCount; c = c + 1) {
-            let candidate: string = candidates->get(c);
-            let needle: string = "\"" + candidate + "\"";
-            let pos: int = 0;
-            let dLen: int = (int)depBlock.length();
+        int cCount = (int)candidates->length();
+        for (int c = 0; c < cCount; c = c + 1) {
+            string candidate = candidates->get(c);
+            string needle = "\"" + candidate + "\"";
+            int pos = 0;
+            int dLen = (int)depBlock.length();
             while (pos < dLen) {
-                let pkgPos: int = depBlock.find(needle, pos);
+                int pkgPos = depBlock.find(needle, pos);
                 if (pkgPos == -1) {
                     break;
                 }
-                let colonPos: int = depBlock.find(":", pkgPos + (int)needle.length());
+                int colonPos = depBlock.find(":", pkgPos + (int)needle.length());
                 if (colonPos != -1) {
-                    let between: string = depBlock.substr(pkgPos + needle.length(), colonPos - (pkgPos + needle.length()));
-                    let onlyWs: bool = true;
-                    let bLen: int = (int)between.length();
-                    for (let b: int = 0; b < bLen; b = b + 1) {
-                        let bCh: string = between.substr(b, 1);
+                    string between = depBlock.substr(pkgPos + needle.length(), colonPos - (pkgPos + needle.length()));
+                    bool onlyWs = true;
+                    int bLen = (int)between.length();
+                    for (int b = 0; b < bLen; b = b + 1) {
+                        string bCh = between.substr(b, 1);
                         if (bCh != " " && bCh != "\t" && bCh != "\r" && bCh != "\n") {
                             onlyWs = false;
                         }
                     }
                     if (onlyWs) {
-                        let valStart: int = -1;
-                        for (let v: int = colonPos + 1; v < dLen; v = v + 1) {
-                            let vCh: string = depBlock.substr(v, 1);
+                        int valStart = -1;
+                        for (int v = colonPos + 1; v < dLen; v = v + 1) {
+                            string vCh = depBlock.substr(v, 1);
                             if (vCh != " " && vCh != "\t" && vCh != "\r" && vCh != "\n") {
                                 valStart = v;
                                 break;
                             }
                         }
                         if (valStart != -1 && depBlock.substr(valStart, 1) == "{") {
-                            let objEnd: int = depBlock.find("}", valStart);
+                            int objEnd = depBlock.find("}", valStart);
                             if (objEnd != -1) {
-                                let subObj: string = depBlock.substr(valStart, objEnd - valStart + 1);
-                                let uIdx: int = subObj.find("\"url\"");
+                                string subObj = depBlock.substr(valStart, objEnd - valStart + 1);
+                                int uIdx = subObj.find("\"url\"");
                                 if (uIdx != -1) {
-                                    let uColon: int = subObj.find(":", uIdx);
+                                    int uColon = subObj.find(":", uIdx);
                                     if (uColon != -1) {
-                                        let q1: int = subObj.find("\"", uColon + 1);
+                                        int q1 = subObj.find("\"", uColon + 1);
                                         if (q1 != -1) {
-                                            let q2: int = subObj.find("\"", q1 + 1);
+                                            int q2 = subObj.find("\"", q1 + 1);
                                             if (q2 != -1) {
                                                 return subObj.substr(q1 + 1, q2 - q1 - 1);
                                             }
@@ -602,14 +602,14 @@ class DependencyDownloader {
         return "";
     }
 
-    public downloadDependencies(manifestPath: string, targetBoxDir: string): bool {
-        let resolvedBoxDir: string = this.resolveProjectTargetBoxDir(manifestPath, targetBoxDir);
-        let linkedPath: string = this.resolveLinkedManifestPath(manifestPath);
+    public bool downloadDependencies(string manifestPath, string targetBoxDir) {
+        string resolvedBoxDir = this.resolveProjectTargetBoxDir(manifestPath, targetBoxDir);
+        string linkedPath = this.resolveLinkedManifestPath(manifestPath);
 
-        let boxDirName: string = "cex_boxes";
-        let lastSlash: int = -1;
-        let bLen: int = (int)resolvedBoxDir.length();
-        for (let i: int = 0; i < bLen; i = i + 1) {
+        string boxDirName = "cex_boxes";
+        int lastSlash = -1;
+        int bLen = (int)resolvedBoxDir.length();
+        for (int i = 0; i < bLen; i = i + 1) {
             if (resolvedBoxDir.substr(i, 1) == "/") {
                 lastSlash = i;
             }
@@ -627,7 +627,7 @@ class DependencyDownloader {
         println("Target Manifest : " + manifestPath);
         println("Target Directory: " + resolvedBoxDir + "/\n");
 
-        let cvmCfg: CvmConfig* = CvmConfig::load(manifestPath);
+        CvmConfig* cvmCfg = CvmConfig::load(manifestPath);
         if (cvmCfg != nullptr && cvmCfg->isDefined) {
             println("CVM Config File : " + cvmCfg->configPath + " [LOADED]");
             if (cvmCfg->packageName.length() > 0) {
@@ -643,44 +643,44 @@ class DependencyDownloader {
             return false;
         }
 
-        let manifestContent: string = fs.readFile(manifestPath);
+        string manifestContent = fs.readFile(manifestPath);
         if (manifestContent.length() == 0) {
             println("\x1b[1;31m[ERROR] Could not read manifest file: " + manifestPath + "\x1b[0m");
             return false;
         }
 
-        let deps: Array<PackageDependency*>* = this.parseDependenciesFromManifest(manifestContent);
+        Array<PackageDependency*>* deps = this.parseDependenciesFromManifest(manifestContent);
 
-        let cvmUrl: string = SchemaValidator::extractCvmRepositoryUrl(manifestContent);
+        string cvmUrl = SchemaValidator::extractCvmRepositoryUrl(manifestContent);
         if (cvmUrl.length() > 0) {
             println("CVM Remote Repo : " + cvmUrl);
         }
 
-        let cvmPath: string = SchemaValidator::extractCvmRepositoryPath(manifestContent);
+        string cvmPath = SchemaValidator::extractCvmRepositoryPath(manifestContent);
         if (cvmPath.length() > 0 && cvmPath != "cex-pack.json" && cvmPath != manifestPath) {
             println("CVM Target Path : " + cvmPath);
-            let lastSlash: int = -1;
-            let len: int = (int)manifestPath.length();
-            for (let i: int = 0; i < len; i = i + 1) {
+            int lastSlash = -1;
+            int len = (int)manifestPath.length();
+            for (int i = 0; i < len; i = i + 1) {
                 if (manifestPath.substr(i, 1) == "/") {
                     lastSlash = i;
                 }
             }
-            let secondaryPath: string = (lastSlash != -1) ? (manifestPath.substr(0, lastSlash) + "/" + cvmPath) : cvmPath;
+            string secondaryPath = (lastSlash != -1) ? (manifestPath.substr(0, lastSlash) + "/" + cvmPath) : cvmPath;
             if (fs.exists(secondaryPath)) {
                 println("  • [CVM] Parsing secondary dependencies from configured path: " + secondaryPath);
-                let secContent: string = fs.readFile(secondaryPath);
+                string secContent = fs.readFile(secondaryPath);
                 if (secContent.length() > 0) {
-                    let secDeps: Array<PackageDependency*>* = this.parseDependenciesFromManifest(secContent);
-                    let secTotal: int = (int)secDeps->length();
-                    for (let s: int = 0; s < secTotal; s = s + 1) {
+                    Array<PackageDependency*>* secDeps = this.parseDependenciesFromManifest(secContent);
+                    int secTotal = (int)secDeps->length();
+                    for (int s = 0; s < secTotal; s = s + 1) {
                         deps->push(secDeps->get(s));
                     }
                 }
             }
         }
 
-        let total: int = (int)deps->length();
+        int total = (int)deps->length();
 
         if (total == 0) {
             println("\x1b[1;33m[WARN] No dependencies declared in " + manifestPath + "\x1b[0m");
@@ -689,13 +689,13 @@ class DependencyDownloader {
 
         DependencyDownloader::mkdirRecursive(resolvedBoxDir);
 
-        let downloadedCount: int = 0;
-        let totalKb: int = 0;
+        int downloadedCount = 0;
+        int totalKb = 0;
 
-        for (let i: int = 0; i < total; i = i + 1) {
-            let dep: PackageDependency* = deps->get(i);
-            let cleanPkgName: string = this.stripScopeAlias(dep->packageName);
-            let targetPath: string = resolvedBoxDir + "/" + cleanPkgName;
+        for (int i = 0; i < total; i = i + 1) {
+            PackageDependency* dep = deps->get(i);
+            string cleanPkgName = this.stripScopeAlias(dep->packageName);
+            string targetPath = resolvedBoxDir + "/" + cleanPkgName;
             dep->installedPath = targetPath;
             dep->status = "UPDATED";
             dep->percent = 100;
@@ -708,22 +708,22 @@ class DependencyDownloader {
             DependencyDownloader::mkdirRecursive(targetPath);
 
             if (fs.exists(targetPath + "/.git")) {
-                let checkoutTagCmd: string = "git -C " + targetPath + " checkout v" + dep->exactVersion + " 2>/dev/null";
-                let code: int = system(checkoutTagCmd.c_str());
+                string checkoutTagCmd = "git -C " + targetPath + " checkout v" + dep->exactVersion + " 2>/dev/null";
+                int code = system(checkoutTagCmd.c_str());
                 if (code != 0) {
-                    let checkoutVerCmd: string = "git -C " + targetPath + " checkout " + dep->exactVersion + " 2>/dev/null";
+                    string checkoutVerCmd = "git -C " + targetPath + " checkout " + dep->exactVersion + " 2>/dev/null";
                     system(checkoutVerCmd.c_str());
                 }
             }
 
-            let targetManifest: string = targetPath + "/cex-pack.json";
+            string targetManifest = targetPath + "/cex-pack.json";
             if (!fs.exists(targetManifest)) {
-                let boxManifest: string = "{\n    \"name\": \"" + cleanPkgName + "\",\n    \"version\": \"" + dep->exactVersion + "\",\n    \"target\": \"runtime\"\n}\n";
+                string boxManifest = "{\n    \"name\": \"" + cleanPkgName + "\",\n    \"version\": \"" + dep->exactVersion + "\",\n    \"target\": \"runtime\"\n}\n";
                 fs.writeFile(targetManifest, boxManifest);
             }
 
-            let pkgKb: int = DependencyDownloader::computeDirectorySizeKb(targetPath);
-            let pkgSizeStr: string = DependencyDownloader::formatKbToMb(pkgKb);
+            int pkgKb = DependencyDownloader::computeDirectorySizeKb(targetPath);
+            string pkgSizeStr = DependencyDownloader::formatKbToMb(pkgKb);
             dep->currentSize = pkgSizeStr;
             dep->totalSize = pkgSizeStr;
             totalKb = totalKb + pkgKb;
@@ -733,7 +733,7 @@ class DependencyDownloader {
             downloadedCount = downloadedCount + 1;
         }
 
-        let totalSizeStr: string = DependencyDownloader::formatKbToMb(totalKb);
+        string totalSizeStr = DependencyDownloader::formatKbToMb(totalKb);
 
         this.writeProgressFile(resolvedBoxDir, deps, totalSizeStr, 100);
 
@@ -745,8 +745,8 @@ class DependencyDownloader {
         return true;
     }
 
-    public validateLinkedAgainstManifest(manifestPath: string): bool {
-        let targetManifest: string = manifestPath;
+    public bool validateLinkedAgainstManifest(string manifestPath) {
+        string targetManifest = manifestPath;
         if (targetManifest.length() == 0) {
             targetManifest = "cex-pack.json";
         }
@@ -754,30 +754,30 @@ class DependencyDownloader {
             return true;
         }
 
-        let linkedPath: string = this.resolveLinkedManifestPath(targetManifest);
+        string linkedPath = this.resolveLinkedManifestPath(targetManifest);
         if (!fs.exists(linkedPath)) {
             return true;
         }
 
-        let manifestContent: string = fs.readFile(targetManifest);
-        let linkedContent: string = fs.readFile(linkedPath);
+        string manifestContent = fs.readFile(targetManifest);
+        string linkedContent = fs.readFile(linkedPath);
         if (manifestContent.length() == 0 || linkedContent.length() == 0) {
             return true;
         }
 
-        let allMatched: bool = true;
-        let projVer: string = SchemaValidator::extractPackageVersion(manifestContent);
-        let linkedVer: string = SchemaValidator::extractPackageVersion(linkedContent);
+        bool allMatched = true;
+        string projVer = SchemaValidator::extractPackageVersion(manifestContent);
+        string linkedVer = SchemaValidator::extractPackageVersion(linkedContent);
         if (projVer.length() > 0 && linkedVer.length() > 0 && projVer != linkedVer) {
             println("\x1b[1;33m  • [WARN] Project version in " + linkedPath + " ('" + linkedVer + "') does not match " + targetManifest + " ('" + projVer + "')\x1b[0m");
             allMatched = false;
         }
 
-        let deps: Array<PackageDependency*>* = this.parseDependenciesFromManifest(manifestContent);
-        let total: int = (int)deps->length();
-        for (let i: int = 0; i < total; i = i + 1) {
-            let dep: PackageDependency* = deps->get(i);
-            let locked: string = DependencyDownloader::extractLockedVersion(linkedContent, dep->packageName);
+        Array<PackageDependency*>* deps = this.parseDependenciesFromManifest(manifestContent);
+        int total = (int)deps->length();
+        for (int i = 0; i < total; i = i + 1) {
+            PackageDependency* dep = deps->get(i);
+            string locked = DependencyDownloader::extractLockedVersion(linkedContent, dep->packageName);
             if (locked.length() == 0) {
                 println("\x1b[1;33m  • [WARN] Dependency '" + dep->packageName + "' from " + targetManifest + " is missing in " + linkedPath + "\x1b[0m");
                 allMatched = false;
@@ -790,8 +790,8 @@ class DependencyDownloader {
         return allMatched;
     }
 
-    public linkManifest(manifestPath: string): bool {
-        let targetManifest: string = manifestPath;
+    public bool linkManifest(string manifestPath) {
+        string targetManifest = manifestPath;
         if (targetManifest.length() == 0) {
             targetManifest = "cex-pack.json";
         }
@@ -800,14 +800,14 @@ class DependencyDownloader {
             return false;
         }
 
-        let content: string = fs.readFile(targetManifest);
+        string content = fs.readFile(targetManifest);
         if (content.length() == 0) {
             println("\x1b[1;31m[ERROR] Manifest file is empty: " + targetManifest + "\x1b[0m");
             return false;
         }
 
-        let projName: string = SchemaValidator::extractPackageName(content);
-        let projVer: string = SchemaValidator::extractPackageVersion(content);
+        string projName = SchemaValidator::extractPackageName(content);
+        string projVer = SchemaValidator::extractPackageVersion(content);
         if (projName.length() == 0) {
             projName = "cex-project";
         }
@@ -815,15 +815,15 @@ class DependencyDownloader {
             projVer = "1.0.0";
         }
 
-        let deps: Array<PackageDependency*>* = this.parseDependenciesFromManifest(content);
-        let linkedPath: string = this.resolveLinkedManifestPath(targetManifest);
+        Array<PackageDependency*>* deps = this.parseDependenciesFromManifest(content);
+        string linkedPath = this.resolveLinkedManifestPath(targetManifest);
 
-        let existingLinked: string = "";
+        string existingLinked = "";
         if (fs.exists(linkedPath)) {
             existingLinked = fs.readFile(linkedPath);
         }
 
-        let out: string = "{\n";
+        string out = "{\n";
         out = out + "    \"name\": \"" + projName + "\",\n";
         out = out + "    \"version\": \"" + projVer + "\",\n";
         out = out + "    \"lockfileVersion\": 1,\n";
@@ -833,15 +833,15 @@ class DependencyDownloader {
         out = out + "    },\n";
         out = out + "    \"dependencies\": {\n";
 
-        let total: int = (int)deps->length();
-        for (let i: int = 0; i < total; i = i + 1) {
-            let dep: PackageDependency* = deps->get(i);
-            let cleanPkg: string = DependencyDownloader::stripScopeAlias(dep->packageName);
-            let targetVersion: string = PackageDependency::cleanExactVersion(dep->versionSpec);
-            let existingUrl: string = "";
+        int total = (int)deps->length();
+        for (int i = 0; i < total; i = i + 1) {
+            PackageDependency* dep = deps->get(i);
+            string cleanPkg = DependencyDownloader::stripScopeAlias(dep->packageName);
+            string targetVersion = PackageDependency::cleanExactVersion(dep->versionSpec);
+            string existingUrl = "";
 
             if (existingLinked.length() > 0) {
-                let oldLockedVer: string = DependencyDownloader::extractLockedVersion(existingLinked, cleanPkg);
+                string oldLockedVer = DependencyDownloader::extractLockedVersion(existingLinked, cleanPkg);
                 if (oldLockedVer.length() == 0) {
                     oldLockedVer = DependencyDownloader::extractLockedVersion(existingLinked, dep->packageName);
                 }

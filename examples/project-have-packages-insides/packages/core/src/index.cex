@@ -1,21 +1,21 @@
 // Example Internal Core Package (C-ext)
 
 class CoreService {
-    private serviceName: string;
-    private initialized: bool = true;
+    private string serviceName;
+    private bool initialized = true;
 
-    public constructor(name: string) {
+    public constructor(string name) {
         this.serviceName = name;
     }
 
-    public getStatus(): string {
+    public string getStatus() {
         if (this.initialized) {
             return "ONLINE: Core service [" + this.serviceName + "] operational.";
         }
         return "OFFLINE";
     }
 
-    public calculate(val1: int, val2: int): int {
+    public int calculate(int val1, int val2) {
         return val1 + val2;
     }
 }

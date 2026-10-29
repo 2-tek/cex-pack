@@ -7,15 +7,15 @@ import "./reporter.cex";
 import fs from "fs";
 
 class PackValidator {
-    private schemaVal: SchemaValidator* = new SchemaValidator();
-    private reporter: DiagnosticReporter* = new DiagnosticReporter();
+    private SchemaValidator* schemaVal = new SchemaValidator();
+    private DiagnosticReporter* reporter = new DiagnosticReporter();
 
     public constructor() {}
 
-    public validateContent(manifestContent: string): ValidationResult* {
+    public ValidationResult* validateContent(string manifestContent) {
         // 1. JSON Syntax & Structural Token Parsing
-        let parser: JsonParser* = new JsonParser(manifestContent);
-        let result: ValidationResult* = parser->parseAndValidateSyntax();
+        JsonParser* parser = new JsonParser(manifestContent);
+        ValidationResult* result = parser->parseAndValidateSyntax();
 
         // 2. Schema and Rule 69 Validation
         this.schemaVal->validateManifestSchema(manifestContent, result);
@@ -36,23 +36,23 @@ class PackValidator {
         return result;
     }
 
-    public validateFile(filepath: string): bool {
+    public bool validateFile(string filepath) {
         if (!fs.exists(filepath)) {
-            let emptyRes: ValidationResult* = new ValidationResult();
+            ValidationResult* emptyRes = new ValidationResult();
             emptyRes->addError("FILE_NOT_FOUND", "Could not read file or file is empty: " + filepath, 1, 1);
             this.reporter->printResult(filepath, emptyRes);
             return false;
         }
 
-        let content: string = fs.readFile(filepath);
+        string content = fs.readFile(filepath);
         if (content.length() == 0) {
-            let emptyRes: ValidationResult* = new ValidationResult();
+            ValidationResult* emptyRes = new ValidationResult();
             emptyRes->addError("FILE_NOT_FOUND", "Could not read file or file is empty: " + filepath, 1, 1);
             this.reporter->printResult(filepath, emptyRes);
             return false;
         }
 
-        let result: ValidationResult* = this.validateContent(content);
+        ValidationResult* result = this.validateContent(content);
         this.reporter->printResult(filepath, result);
         return result->isValid;
     }

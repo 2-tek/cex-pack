@@ -5,7 +5,7 @@ import "./types.cex";
 class SchemaValidator {
     public constructor() {}
 
-    public validateManifestSchema(content: string, result: ValidationResult*): void {
+    public void validateManifestSchema(string content, ValidationResult* result) {
         // 1. Mandatory Property Check: "name"
         if (content.find("\"name\"") == -1) {
             result->addError("SCHEMA_MISSING_NAME", "Mandatory property 'name' is missing from cex-pack.json", 1, 1);
@@ -42,12 +42,12 @@ class SchemaValidator {
         }
 
         // 7. Rule RULE_NO_EXTERNAL_INCLUDEDIRS: Prohibition of External and CexP/CexR includeDirs
-        let incIdx: int = (int)content.find("\"includeDirs\"");
+        int incIdx = (int)content.find("\"includeDirs\"");
         if (incIdx != -1) {
-            let openBracket: int = (int)content.find("[", incIdx);
-            let closeBracket: int = (int)content.find("]", incIdx);
+            int openBracket = (int)content.find("[", incIdx);
+            int closeBracket = (int)content.find("]", incIdx);
             if (openBracket != -1 && closeBracket != -1 && closeBracket > openBracket) {
-                let incContent: string = content.substr(openBracket, closeBracket - openBracket + 1);
+                string incContent = content.substr(openBracket, closeBracket - openBracket + 1);
                 if (incContent.find("..") != -1) {
                     result->addError("RULE_NO_EXTERNAL_INCLUDEDIRS", "Rule Violation: Manifest 'includeDirs' cannot contain parent traversal ('..'). Paths must stay within project root", 1, 1);
                 }
@@ -58,8 +58,8 @@ class SchemaValidator {
         }
     }
 
-    public validateEofNewline(content: string, result: ValidationResult*): void {
-        let len: int = (int)content.length();
+    public void validateEofNewline(string content, ValidationResult* result) {
+        int len = (int)content.length();
         if (len == 0) {
             return;
         }
@@ -69,23 +69,23 @@ class SchemaValidator {
         }
     }
 
-    public validateThunderRule(content: string, result: ValidationResult*): void {
-        let thunIdx: int = (int)content.find("\"thunder\"");
+    public void validateThunderRule(string content, ValidationResult* result) {
+        int thunIdx = (int)content.find("\"thunder\"");
         if (thunIdx == -1) {
             return;
         }
 
         // Rule: Quick Define Thunder Build Without Any File (RULE_THUNDER_QUICK_DEFINE)
-        let envIdx: int = (int)content.find("\"env\"", thunIdx);
+        int envIdx = (int)content.find("\"env\"", thunIdx);
         if (envIdx != -1) {
-            let colonIdx: int = (int)content.find(":", envIdx);
+            int colonIdx = (int)content.find(":", envIdx);
             if (colonIdx == -1) {
                 result->addError("RULE_THUNDER_INVALID_ENV", "Invalid 'env' property definition in thunder configuration", 1, 1);
             }
         }
 
         // Check output/ouput definition (supporting 'output' and shorthand 'ouput')
-        let outIdx: int = (int)content.find("\"output\"", thunIdx);
+        int outIdx = (int)content.find("\"output\"", thunIdx);
         if (outIdx == -1) {
             outIdx = (int)content.find("\"ouput\"", thunIdx);
         }
@@ -93,14 +93,14 @@ class SchemaValidator {
         if (outIdx == -1) {
             result->addWarning("RULE_THUNDER_NO_OUTPUT", "Thunder configuration does not declare 'output' port mappings (default port 3000 will be used)", 1, 1);
         } else {
-            let bracketIdx: int = (int)content.find("[", outIdx);
-            let colonIdx: int = (int)content.find(":", outIdx);
+            int bracketIdx = (int)content.find("[", outIdx);
+            int colonIdx = (int)content.find(":", outIdx);
             if (bracketIdx == -1 || (colonIdx != -1 && bracketIdx > colonIdx + 10)) {
                 result->addError("RULE_THUNDER_INVALID_OUTPUT", "Thunder 'output' must be an array of port mappings: [{container: {PORT}, out: {PORT}, name: ...}]", 1, 1);
             } else {
-                let closeBracket: int = (int)content.find("]", bracketIdx);
+                int closeBracket = (int)content.find("]", bracketIdx);
                 if (closeBracket != -1) {
-                    let outSub: string = content.substr(bracketIdx, closeBracket - bracketIdx + 1);
+                    string outSub = content.substr(bracketIdx, closeBracket - bracketIdx + 1);
                     if (outSub.find("\"container\"") == -1) {
                         result->addError("RULE_THUNDER_MISSING_CONTAINER_PORT", "Thunder output mapping missing mandatory 'container' port definition", 1, 1);
                     }
@@ -112,38 +112,38 @@ class SchemaValidator {
         }
     }
 
-    public validateEnvsRule(content: string, result: ValidationResult*): void {
-        let envsIdx: int = (int)content.find("\"envs\"");
+    public void validateEnvsRule(string content, ValidationResult* result) {
+        int envsIdx = (int)content.find("\"envs\"");
         if (envsIdx == -1) {
             return;
         }
 
-        let colonIdx: int = (int)content.find(":", envsIdx);
+        int colonIdx = (int)content.find(":", envsIdx);
         if (colonIdx == -1) {
             result->addError("RULE_ENVS_INVALID_FORMAT", "Manifest 'envs' must be followed by ':' and an object of environment paths", 1, 1);
             return;
         }
 
-        let nextOpen: int = (int)content.find("{", colonIdx);
-        let nextQuote: int = (int)content.find("\"", colonIdx);
-        let nextBracket: int = (int)content.find("[", colonIdx);
+        int nextOpen = (int)content.find("{", colonIdx);
+        int nextQuote = (int)content.find("\"", colonIdx);
+        int nextBracket = (int)content.find("[", colonIdx);
 
         if (nextOpen == -1 || (nextQuote != -1 && nextQuote < nextOpen) || (nextBracket != -1 && nextBracket < nextOpen)) {
             result->addError("RULE_ENVS_INVALID_TYPE", "Manifest 'envs' configuration must be an object: { [environmentName]: [root env path] }", 1, 1);
         }
     }
 
-    public validateProcessEnvRule(content: string, result: ValidationResult*): void {
-        let pos: int = 0;
-        let cLen: int = (int)content.length();
-        let targetPrefix: string = "ENV::[";
+    public void validateProcessEnvRule(string content, ValidationResult* result) {
+        int pos = 0;
+        int cLen = (int)content.length();
+        string targetPrefix = "ENV::[";
         while (pos < cLen) {
-            let idx: int = (int)content.find(targetPrefix, pos);
+            int idx = (int)content.find(targetPrefix, pos);
             if (idx == -1) {
                 break;
             }
-            let nextQuote: int = (int)content.find("\"", idx);
-            let nextClose: int = (int)content.find("]", idx);
+            int nextQuote = (int)content.find("\"", idx);
+            int nextClose = (int)content.find("]", idx);
             if (nextClose == -1 || (nextQuote != -1 && nextClose > nextQuote)) {
                 result->addError("SCHEMA_UNCLOSED_ENV_BRACKET", "Unclosed bracket in ENV::[variableName] expression in manifest", 1, 1);
             } else if (nextClose == idx + 6) {
@@ -157,22 +157,22 @@ class SchemaValidator {
         }
     }
 
-    public validateCvmRepositoryRule(content: string, result: ValidationResult*): void {
-        let cvmIdx: int = (int)content.find("\"cvm_repository\"");
+    public void validateCvmRepositoryRule(string content, ValidationResult* result) {
+        int cvmIdx = (int)content.find("\"cvm_repository\"");
         if (cvmIdx == -1) {
             return;
         }
 
-        let colonIdx: int = (int)content.find(":", cvmIdx);
+        int colonIdx = (int)content.find(":", cvmIdx);
         if (colonIdx == -1) {
             result->addError("RULE_CVM_REPO_INVALID", "Invalid cvm_repository definition in manifest", 1, 1);
             return;
         }
 
-        let cLen: int = (int)content.length();
-        let valStart: int = -1;
-        for (let i: int = colonIdx + 1; i < cLen; i = i + 1) {
-            let ch: string = content.substr(i, 1);
+        int cLen = (int)content.length();
+        int valStart = -1;
+        for (int i = colonIdx + 1; i < cLen; i = i + 1) {
+            string ch = content.substr(i, 1);
             if (ch != " " && ch != "\t" && ch != "\r" && ch != "\n") {
                 valStart = i;
                 break;
@@ -184,36 +184,36 @@ class SchemaValidator {
             return;
         }
 
-        let firstChar: string = content.substr(valStart, 1);
+        string firstChar = content.substr(valStart, 1);
         if (firstChar == "\"") {
-            let endQuote: int = (int)content.find("\"", valStart + 1);
+            int endQuote = (int)content.find("\"", valStart + 1);
             if (endQuote == -1) {
                 result->addError("RULE_CVM_REPO_UNCLOSED_STRING", "Unclosed string literal in cvm_repository", 1, 1);
                 return;
             }
-            let repoUrl: string = content.substr(valStart + 1, endQuote - valStart - 1);
+            string repoUrl = content.substr(valStart + 1, endQuote - valStart - 1);
             if (repoUrl.length() == 0) {
                 result->addError("RULE_CVM_REPO_EMPTY_URL", "cvm_repository URL cannot be empty", 1, 1);
             }
         } else if (firstChar == "{") {
-            let openBrace: int = valStart;
-            let closeBrace: int = (int)content.find("}", openBrace);
+            int openBrace = valStart;
+            int closeBrace = (int)content.find("}", openBrace);
             if (closeBrace == -1) {
                 result->addError("RULE_CVM_REPO_UNCLOSED_OBJECT", "Unclosed object in cvm_repository configuration", 1, 1);
                 return;
             }
 
-            let objSub: string = content.substr(openBrace, closeBrace - openBrace + 1);
+            string objSub = content.substr(openBrace, closeBrace - openBrace + 1);
 
-            let pathIdx: int = (int)objSub.find("\"path\"");
+            int pathIdx = (int)objSub.find("\"path\"");
             if (pathIdx != -1) {
-                let pColon: int = (int)objSub.find(":", pathIdx);
+                int pColon = (int)objSub.find(":", pathIdx);
                 if (pColon != -1) {
-                    let pStart: int = (int)objSub.find("\"", pColon);
+                    int pStart = (int)objSub.find("\"", pColon);
                     if (pStart != -1) {
-                        let pEnd: int = (int)objSub.find("\"", pStart + 1);
+                        int pEnd = (int)objSub.find("\"", pStart + 1);
                         if (pEnd != -1) {
-                            let pathVal: string = objSub.substr(pStart + 1, pEnd - pStart - 1);
+                            string pathVal = objSub.substr(pStart + 1, pEnd - pStart - 1);
                             if (pathVal.length() == 0) {
                                 result->addError("RULE_CVM_REPO_EMPTY_PATH", "cvm_repository path property cannot be empty", 1, 1);
                             }
@@ -225,15 +225,15 @@ class SchemaValidator {
                 }
             }
 
-            let urlIdx: int = (int)objSub.find("\"url\"");
+            int urlIdx = (int)objSub.find("\"url\"");
             if (urlIdx != -1) {
-                let uColon: int = (int)objSub.find(":", urlIdx);
+                int uColon = (int)objSub.find(":", urlIdx);
                 if (uColon != -1) {
-                    let uStart: int = (int)objSub.find("\"", uColon);
+                    int uStart = (int)objSub.find("\"", uColon);
                     if (uStart != -1) {
-                        let uEnd: int = (int)objSub.find("\"", uStart + 1);
+                        int uEnd = (int)objSub.find("\"", uStart + 1);
                         if (uEnd != -1) {
-                            let urlVal: string = objSub.substr(uStart + 1, uEnd - uStart - 1);
+                            string urlVal = objSub.substr(uStart + 1, uEnd - uStart - 1);
                             if (urlVal.length() == 0) {
                                 result->addError("RULE_CVM_REPO_EMPTY_URL", "cvm_repository url property cannot be empty", 1, 1);
                             }
@@ -246,90 +246,90 @@ class SchemaValidator {
         }
     }
 
-    public static extractPackageName(content: string): string {
-        let nameIdx: int = (int)content.find("\"name\"");
+    static public string extractPackageName(string content) {
+        int nameIdx = (int)content.find("\"name\"");
         if (nameIdx == -1) {
             return "";
         }
-        let colonIdx: int = (int)content.find(":", nameIdx);
+        int colonIdx = (int)content.find(":", nameIdx);
         if (colonIdx == -1) {
             return "";
         }
-        let q1: int = (int)content.find("\"", colonIdx);
+        int q1 = (int)content.find("\"", colonIdx);
         if (q1 == -1) {
             return "";
         }
-        let q2: int = (int)content.find("\"", q1 + 1);
+        int q2 = (int)content.find("\"", q1 + 1);
         if (q2 == -1) {
             return "";
         }
         return content.substr(q1 + 1, q2 - q1 - 1);
     }
 
-    public static extractPackageVersion(content: string): string {
-        let verIdx: int = (int)content.find("\"version\"");
+    static public string extractPackageVersion(string content) {
+        int verIdx = (int)content.find("\"version\"");
         if (verIdx == -1) {
             return "";
         }
-        let colonIdx: int = (int)content.find(":", verIdx);
+        int colonIdx = (int)content.find(":", verIdx);
         if (colonIdx == -1) {
             return "";
         }
-        let q1: int = (int)content.find("\"", colonIdx);
+        int q1 = (int)content.find("\"", colonIdx);
         if (q1 == -1) {
             return "";
         }
-        let q2: int = (int)content.find("\"", q1 + 1);
+        int q2 = (int)content.find("\"", q1 + 1);
         if (q2 == -1) {
             return "";
         }
         return content.substr(q1 + 1, q2 - q1 - 1);
     }
 
-    public static extractCvmRepositoryPath(content: string): string {
-        let cvmIdx: int = (int)content.find("\"cvm_repository\"");
+    static public string extractCvmRepositoryPath(string content) {
+        int cvmIdx = (int)content.find("\"cvm_repository\"");
         if (cvmIdx == -1) {
             return "cex-pack.json";
         }
-        let pathIdx: int = (int)content.find("\"path\"", cvmIdx);
+        int pathIdx = (int)content.find("\"path\"", cvmIdx);
         if (pathIdx == -1) {
             return "cex-pack.json";
         }
-        let colonIdx: int = (int)content.find(":", pathIdx);
+        int colonIdx = (int)content.find(":", pathIdx);
         if (colonIdx == -1) {
             return "cex-pack.json";
         }
-        let quoteStart: int = (int)content.find("\"", colonIdx);
+        int quoteStart = (int)content.find("\"", colonIdx);
         if (quoteStart == -1) {
             return "cex-pack.json";
         }
-        let quoteEnd: int = (int)content.find("\"", quoteStart + 1);
+        int quoteEnd = (int)content.find("\"", quoteStart + 1);
         if (quoteEnd == -1) {
             return "cex-pack.json";
         }
-        let pathVal: string = content.substr(quoteStart + 1, quoteEnd - quoteStart - 1);
+        string pathVal = content.substr(quoteStart + 1, quoteEnd - quoteStart - 1);
         return (pathVal.length() > 0) ? pathVal : "cex-pack.json";
     }
 
-    public static extractCvmRepositoryUrl(content: string): string {
-        let cvmIdx: int = (int)content.find("\"cvm_repository\"");
+    static public string extractCvmRepositoryUrl(string content) {
+        int cvmIdx = (int)content.find("\"cvm_repository\"");
         if (cvmIdx == -1) {
             return "";
         }
-        let colonIdx: int = (int)content.find(":", cvmIdx);
+        int colonIdx = (int)content.find(":", cvmIdx);
         if (colonIdx == -1) {
             return "";
         }
-        let openBrace: int = (int)content.find("{", colonIdx);
-        let firstQuote: int = (int)content.find("\"", colonIdx);
+        int openBrace = (int)content.find("{", colonIdx);
+        int firstQuote = (int)content.find("\"", colonIdx);
         if (openBrace != -1 && (firstQuote == -1 || openBrace < firstQuote)) {
-            let urlIdx: int = (int)content.find("\"url\"", openBrace);
+            int urlIdx = (int)content.find("\"url\"", openBrace);
             if (urlIdx != -1) {
-                let uColon: int = (int)content.find(":", urlIdx);
+                int uColon = (int)content.find(":", urlIdx);
                 if (uColon != -1) {
-                    let uQuoteStart: int = (int)content.find("\"", uColon);
+                    int uQuoteStart = (int)content.find("\"", uColon);
                     if (uQuoteStart != -1) {
-                        let uQuoteEnd: int = (int)content.find("\"", uQuoteStart + 1);
+                        int uQuoteEnd = (int)content.find("\"", uQuoteStart + 1);
                         if (uQuoteEnd != -1) {
                             return content.substr(uQuoteStart + 1, uQuoteEnd - uQuoteStart - 1);
                         }
@@ -339,7 +339,7 @@ class SchemaValidator {
             return "";
         }
         if (firstQuote != -1) {
-            let quoteEnd: int = (int)content.find("\"", firstQuote + 1);
+            int quoteEnd = (int)content.find("\"", firstQuote + 1);
             if (quoteEnd != -1) {
                 return content.substr(firstQuote + 1, quoteEnd - firstQuote - 1);
             }
@@ -347,8 +347,8 @@ class SchemaValidator {
         return "";
     }
 
-    public static synthesizeThunderDockerfile(appName: string, mainPath: string, envPath: string, port: int): string {
-        let dockerfile: string = "FROM @2tek/thunder:latest\n";
+    static public string synthesizeThunderDockerfile(string appName, string mainPath, string envPath, int port) {
+        string dockerfile = "FROM @2tek/thunder:latest\n";
         dockerfile = dockerfile + "WORKDIR /app\n";
         dockerfile = dockerfile + "COPY . .\n";
         if (mainPath.length() > 0) {

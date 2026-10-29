@@ -1,25 +1,21 @@
 {
     "name": "sample-pack-app",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "Sample Cex Application demonstrating cex-pack downloads dependency installer into cex_boxes/",
     "main": "src/main.cex",
     "target": "runtime",
     "required": {
         "cexr-factory": "^8",
-        "cexp-v8": "^6",
-        "cexr": "^8",
-        "cexp": "^8"
+        "cexp-v8": "^6"
     },
     "scripts": {
         "install": "cex-pack downloads",
         "start": "cexr src/main.cex"
     },
     "dependencies": {
-        "cex-env": "1.0.0",
-        "cex-logger": "1.0.0",
-        "cex-cli": "1.0.0",
-        "cexr": "^8",
-        "cexp": "^6",
-        "cex-test": "1.0.0"
+        "cex-env": "2.0.0",
+        "cex-logger": "2.0.0",
+        "cex-cli": "2.0.0",
+        "cex-test": "2.0.0"
     }
 }

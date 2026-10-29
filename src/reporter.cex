@@ -5,7 +5,7 @@ import "./types.cex";
 class DiagnosticReporter {
     public constructor() {}
 
-    public printResult(filepath: string, result: ValidationResult*): void {
+    public void printResult(string filepath, ValidationResult* result) {
         println("------------------------------------------------------------------");
         print("  CexPack Manifest Diagnostics for: "); println(filepath);
         println("------------------------------------------------------------------");
@@ -19,8 +19,8 @@ class DiagnosticReporter {
 
         if (result->errorCount > 0) {
             println("  \033[1;31mERRORS DETECTED:\033[0m");
-            for (let i: int = 0; i < result->errors->length(); i = i + 1) {
-                let err: ValidationError* = result->errors->get(i);
+            for (int i = 0; i < result->errors->length(); i = i + 1) {
+                ValidationError* err = result->errors->get(i);
                 print("  \033[31m[ERROR]\033[0m Line ");
                 print(err->line);
                 print(":");
@@ -34,8 +34,8 @@ class DiagnosticReporter {
 
         if (result->warningCount > 0) {
             println("\n  \033[1;33mWARNINGS:\033[0m");
-            for (let j: int = 0; j < result->warnings->length(); j = j + 1) {
-                let warn: ValidationError* = result->warnings->get(j);
+            for (int j = 0; j < result->warnings->length(); j = j + 1) {
+                ValidationError* warn = result->warnings->get(j);
                 print("  \033[33m[WARN]\033[0m Line ");
                 print(warn->line);
                 print(":");

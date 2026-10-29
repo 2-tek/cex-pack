@@ -9,13 +9,13 @@ function main(): int {
     println("   Project With Internal Packages (project-have-packages-insides)   ");
     println("================================================================");
 
-    let core: CoreService* = new CoreService("TelemetryEngine");
+    CoreService* core = new CoreService("TelemetryEngine");
     println(core->getStatus());
 
-    let result: int = core->calculate(40, 2);
+    int result = core->calculate(40, 2);
     println("Core Calculation Result: " + to_string(result));
 
-    let ui: UIComponent* = new UIComponent("System Dashboard");
+    UIComponent* ui = new UIComponent("System Dashboard");
     ui->render();
 
     println("All internal packages and .cex_boxes dependencies verified!");

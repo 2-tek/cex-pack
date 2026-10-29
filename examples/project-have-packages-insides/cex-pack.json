@@ -1,6 +1,6 @@
 {
     "name": "project-have-packages-insides",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "Example Cex workspace demonstrating a project with internal packages inside packages/ directory",
     "main": "src/main.cex",
     "target": "runtime",
@@ -24,12 +24,11 @@
         "test": "cext tests/workspace.test.cex"
     },
     "dependencies": {
-        "cex-env": "1.0.0",
-        "cex-logger": "1.0.0",
-        "cex-cli": "1.0.0",
-        "cexr": "1.0.0",
-        "cex-service": "1.0.0",
-        "cex-test": "1.0.0"
+        "cex-env": "2.0.0",
+        "cex-logger": "2.0.0",
+        "cex-cli": "2.0.0",
+        "cex-service": "2.0.0",
+        "cex-test": "2.0.0"
     },
     "includeDirs": [
         "./src",

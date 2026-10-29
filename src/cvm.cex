@@ -7,24 +7,24 @@ import "cpp.string";
 import "c.cstdlib";
 
 class CvmConfig {
-    public isDefined: bool = false;
-    public configPath: string = "";
-    public formatVersion: int = 2;
-    public target: string = "runtime";
-    public engine: string = "CexR-v8";
-    public packageName: string = "";
-    public boxesDir: string = "cex_boxes";
-    public patchFormat: string = "2.0";
-    public compress: bool = true;
-    public author: string = "";
-    public remote: string = "origin";
-    public merge: string = "refs/heads/main";
-    public branch: string = "main";
+    public bool isDefined = false;
+    public string configPath = "";
+    public int formatVersion = 2;
+    public string target = "runtime";
+    public string engine = "CexR-v8";
+    public string packageName = "";
+    public string boxesDir = "cex_boxes";
+    public string patchFormat = "2.0";
+    public bool compress = true;
+    public string author = "";
+    public string remote = "origin";
+    public string merge = "refs/heads/main";
+    public string branch = "main";
 
     public constructor() {}
 
-    public static trim(s: string): string {
-        let v: string = s;
+    static public string trim(string s) {
+        string v = s;
         while (v.length() > 0 && (v.substr(0, 1) == " " || v.substr(0, 1) == "\t" || v.substr(0, 1) == "\r" || v.substr(0, 1) == "\n")) {
             v = v.substr(1, v.length() - 1);
         }
@@ -34,25 +34,25 @@ class CvmConfig {
         return v;
     }
 
-    public static stripQuotes(s: string): string {
-        let v: string = CvmConfig::trim(s);
+    static public string stripQuotes(string s) {
+        string v = CvmConfig::trim(s);
         if (v.length() >= 2 && ((v.substr(0, 1) == "\"" && v.substr(v.length() - 1, 1) == "\"") || (v.substr(0, 1) == "'" && v.substr(v.length() - 1, 1) == "'"))) {
             return v.substr(1, v.length() - 2);
         }
         return v;
     }
 
-    public static findCvmConfigFile(manifestPath: string): string {
-        let lastSlash: int = -1;
-        let len: int = (int)manifestPath.length();
-        for (let i: int = 0; i < len; i = i + 1) {
+    static public string findCvmConfigFile(string manifestPath) {
+        int lastSlash = -1;
+        int len = (int)manifestPath.length();
+        for (int i = 0; i < len; i = i + 1) {
             if (manifestPath.substr(i, 1) == "/") {
                 lastSlash = i;
             }
         }
         if (lastSlash != -1) {
-            let parentDir: string = manifestPath.substr(0, lastSlash);
-            let candidate: string = parentDir + "/.cvm/config";
+            string parentDir = manifestPath.substr(0, lastSlash);
+            string candidate = parentDir + "/.cvm/config";
             if (fs.exists(candidate)) {
                 return candidate;
             }
@@ -63,18 +63,18 @@ class CvmConfig {
         return "";
     }
 
-    public static parseCvmConfig(content: string, filePath: string): CvmConfig* {
-        let cfg: CvmConfig* = new CvmConfig();
+    static public CvmConfig* parseCvmConfig(string content, string filePath) {
+        CvmConfig* cfg = new CvmConfig();
         cfg->configPath = filePath;
         cfg->isDefined = true;
 
-        let len: int = (int)content.length();
-        let currentSection: string = "";
-        let lineStart: int = 0;
+        int len = (int)content.length();
+        string currentSection = "";
+        int lineStart = 0;
 
-        for (let i: int = 0; i <= len; i = i + 1) {
+        for (int i = 0; i <= len; i = i + 1) {
             if (i == len || content.substr(i, 1) == "\n") {
-                let line: string = content.substr(lineStart, i - lineStart);
+                string line = content.substr(lineStart, i - lineStart);
                 lineStart = i + 1;
                 line = CvmConfig::trim(line);
 
@@ -83,12 +83,12 @@ class CvmConfig {
                 }
 
                 if (line.substr(0, 1) == "[" && line.substr(line.length() - 1, 1) == "]") {
-                    let secHeader: string = line.substr(1, line.length() - 2);
+                    string secHeader = line.substr(1, line.length() - 2);
                     secHeader = CvmConfig::trim(secHeader);
                     if (secHeader.find("branch ") == 0) {
                         currentSection = "branch";
-                        let qStart: int = secHeader.find("\"");
-                        let qEnd: int = (qStart != -1) ? secHeader.find("\"", qStart + 1) : -1;
+                        int qStart = secHeader.find("\"");
+                        int qEnd = (qStart != -1) ? secHeader.find("\"", qStart + 1) : -1;
                         if (qStart != -1 && qEnd != -1) {
                             cfg->branch = secHeader.substr(qStart + 1, qEnd - qStart - 1);
                         }
@@ -96,10 +96,10 @@ class CvmConfig {
                         currentSection = secHeader;
                     }
                 } else {
-                    let eqPos: int = line.find("=");
+                    int eqPos = line.find("=");
                     if (eqPos != -1) {
-                        let k: string = CvmConfig::trim(line.substr(0, eqPos));
-                        let val: string = CvmConfig::stripQuotes(line.substr(eqPos + 1, line.length() - eqPos - 1));
+                        string k = CvmConfig::trim(line.substr(0, eqPos));
+                        string val = CvmConfig::stripQuotes(line.substr(eqPos + 1, line.length() - eqPos - 1));
 
                         if (currentSection == "repository") {
                             if (k == "formatversion") {
@@ -140,10 +140,10 @@ class CvmConfig {
         return cfg;
     }
 
-    public static load(manifestPath: string): CvmConfig* {
-        let cfgFile: string = CvmConfig::findCvmConfigFile(manifestPath);
+    static public CvmConfig* load(string manifestPath) {
+        string cfgFile = CvmConfig::findCvmConfigFile(manifestPath);
         if (cfgFile.length() > 0 && fs.exists(cfgFile)) {
-            let content: string = fs.readFile(cfgFile);
+            string content = fs.readFile(cfgFile);
             return CvmConfig::parseCvmConfig(content, cfgFile);
         }
         return new CvmConfig();

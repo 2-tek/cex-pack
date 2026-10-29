@@ -3,34 +3,34 @@
 import "./types.cex";
 
 class JsonParser {
-    public content: string;
-    public length: int;
-    public position: int = 0;
-    public line: int = 1;
-    public column: int = 1;
+    public string content;
+    public int length;
+    public int position = 0;
+    public int line = 1;
+    public int column = 1;
 
-    public constructor(jsonStr: string) {
+    public constructor(string jsonStr) {
         this.content = jsonStr;
         this.length = (int)jsonStr.length();
     }
 
-    public parseAndValidateSyntax(): ValidationResult* {
-        let result: ValidationResult* = new ValidationResult();
+    public ValidationResult* parseAndValidateSyntax() {
+        ValidationResult* result = new ValidationResult();
 
         if (this.length == 0) {
             result->addError("SYNTAX_001", "Manifest file is completely empty", 1, 1);
             return result;
         }
 
-        let braceDepth: int = 0;
-        let bracketDepth: int = 0;
-        let inString: bool = false;
-        let isEscaped: bool = false;
-        let currentLine: int = 1;
-        let currentCol: int = 1;
+        int braceDepth = 0;
+        int bracketDepth = 0;
+        bool inString = false;
+        bool isEscaped = false;
+        int currentLine = 1;
+        int currentCol = 1;
 
-        for (let i: int = 0; i < this.length; i = i + 1) {
-            let ch: string = this.content.substr(i, 1);
+        for (int i = 0; i < this.length; i = i + 1) {
+            string ch = this.content.substr(i, 1);
 
             if (ch == "\n") {
                 currentLine = currentLine + 1;
