@@ -7,8 +7,7 @@
     "required": {
         "cexr-factory": "^8",
         "cexp-v8": "^6",
-        "cexr": "^8",
-        "cexp": "^8"
+        "cexp-v8-stable": "^8"
     },
     "dependencies": {
         "cex-env": "2.0.0",

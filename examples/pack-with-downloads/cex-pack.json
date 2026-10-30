@@ -10,7 +10,7 @@
     },
     "scripts": {
         "install": "cex-pack downloads",
-        "start": "cexr src/main.cex"
+        "start": "cexr-factory src/main.cex"
     },
     "dependencies": {
         "cex-env": "2.0.0",

@@ -15,11 +15,10 @@
     "required": {
         "cexr-factory": "^8",
         "cexp-v8": "^8",
-        "cexr": "^8",
-        "cexp": "^8"
+        "cexp-v8-stable": "^8"
     },
     "scripts": {
-        "build": "cexp build src/index.cex -o bin/cex-pack",
+        "build": "cexp-v8-stable build src/index.cex -o bin/cex-pack",
         "start": "cex-pack check",
         "dev": "cex-pack check",
         "lint": "cex-pack lint",

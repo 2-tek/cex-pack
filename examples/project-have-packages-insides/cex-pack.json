@@ -7,8 +7,7 @@
     "required": {
         "cexr-factory": "^8",
         "cexp-v8": "^6",
-        "cexr": "^8",
-        "cexp": "^8"
+        "cexp-v8-stable": "^8"
     },
     "workspaces": [
         "packages/*"
@@ -20,7 +19,7 @@
     "scripts": {
         "install": "cex-pack downloads",
         "downloads": "cex-pack downloads",
-        "start": "cexr run src/main.cex",
+        "start": "cexr-factory run src/main.cex",
         "test": "cext tests/workspace.test.cex"
     },
     "dependencies": {

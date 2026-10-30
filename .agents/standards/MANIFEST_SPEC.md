@@ -6,7 +6,7 @@
 - **`version`**: String. SemVer compliant string (e.g. `1.0.0`).
 - **`main`**: String. Main entrypoint path relative to package root (e.g. `src/index.cex`).
 - **`target`**: String. Must strictly be `"runtime"` (Rule 69).
-- **`required`**: Object. Required execution engine versions (e.g. `"cexr": "^8"`).
+- **`required`**: Object. Required execution engine versions (e.g. `"cexr-factory": "^8"`).
 
 ## Optional Fields
 
