@@ -1,0 +1,56 @@
+// PerfectCex Example 01: Next.js-style RESTful API Microservice
+// Demonstrates building high-performance JSON API routes with dynamic parameters
+
+import "../src/types.cex";
+import "../src/request.cex";
+import "../src/response.cex";
+import "../src/middleware.cex";
+import "../src/router.cex";
+import "../src/ssr.cex";
+import "../src/app.cex";
+
+int main() {
+    println("=== PerfectCex Example 01: Next.js-style REST API Microservice ===");
+
+    PerfectApp* app = new PerfectApp();
+
+    // Standard API Middlewares
+    app->use(new TimingMiddleware());
+    app->use(new CorsMiddleware("*"));
+    app->use(new LoggerMiddleware());
+
+    // Register API Endpoints
+    app->api("GET", "/api/items", "List all inventory items", "[{\"id\": 1, \"name\": \"Widget\"}, {\"id\": 2, \"name\": \"Gadget\"}]");
+    app->api("GET", "/api/items/:id", "Fetch item by dynamic ID", "{\"name\": \"Quantum Processor\", \"stock\": 140}");
+    app->api("POST", "/api/items", "Create new inventory item", "{\"status\": \"created\", \"newId\": 305}");
+    app->api("DELETE", "/api/items/:id", "Delete item by dynamic ID", "{\"status\": \"deleted\"}");
+
+    app->router->displayRoutes();
+
+    // Test Requests
+    println("\n[Testing REST API Requests]");
+
+    println("\n>> GET /api/items");
+    PerfectResponse* r1 = app->simulateRequest("GET", "/api/items", "");
+    print("Status: "); println(r1->statusCode);
+    print("Payload: "); println(r1->body);
+
+    println("\n>> GET /api/items/99");
+    PerfectResponse* r2 = app->simulateRequest("GET", "/api/items/99", "");
+    print("Status: "); println(r2->statusCode);
+    print("Payload: "); println(r2->body);
+
+    println("\n>> POST /api/items");
+    PerfectResponse* r3 = app->simulateRequest("POST", "/api/items", "{\"name\": \"Laser Sensor\"}");
+    print("Status: "); println(r3->statusCode);
+    print("Payload: "); println(r3->body);
+
+    println("\n>> DELETE /api/items/99");
+    PerfectResponse* r4 = app->simulateRequest("DELETE", "/api/items/99", "");
+    print("Status: "); println(r4->statusCode);
+    print("Payload: "); println(r4->body);
+
+    app->displayMetrics();
+    println("\n=== REST API Microservice Demo Completed Successfully! ===");
+    return 0;
+}

@@ -1,0 +1,52 @@
+// PerfectCex Example 02: Next.js-style Server-Side Rendered (SSR) Pages
+// Demonstrates HTML document composition, SEO metadata, and JSON hydration state
+
+import "../src/types.cex";
+import "../src/request.cex";
+import "../src/response.cex";
+import "../src/middleware.cex";
+import "../src/router.cex";
+import "../src/ssr.cex";
+import "../src/app.cex";
+
+int main() {
+    println("=== PerfectCex Example 02: Server-Side Rendering (SSR) Demo ===");
+
+    PerfectApp* app = new PerfectApp();
+    app->use(new TimingMiddleware());
+
+    // 1. Home Page
+    string homeHtml = "<header><h1>2-TEK Cloud Platform</h1><p>High Performance C-ext Architecture</p></header>";
+    SSRDocument* homeDoc = new SSRDocument("LandingPage", "2-TEK Cloud - Native Performance", homeHtml, "{\"serverTime\": 1730000000, \"env\": \"production\"}");
+    app->page("/", homeDoc);
+
+    // 2. Documentation Page
+    string docsHtml = "<section><h2>Developer Documentation</h2><p>Learn how to build sub-millisecond backends with PerfectCex.</p></section>";
+    SSRDocument* docsDoc = new SSRDocument("DocsPage", "Documentation - PerfectCex", docsHtml, "{\"section\": \"getting-started\"}");
+    app->page("/docs", docsDoc);
+
+    // 3. Pricing Page
+    string pricingHtml = "<section><h2>Transparent Pricing</h2><p>Free, Open Source & Unlimited Native Throughput.</p></section>";
+    SSRDocument* pricingDoc = new SSRDocument("PricingPage", "Pricing - PerfectCex", pricingHtml, "{\"tier\": \"community\"}");
+    app->page("/pricing", pricingDoc);
+
+    app->router->displayRoutes();
+
+    // Render requests
+    println("\n[Simulating SSR Document Delivery]");
+
+    PerfectResponse* resHome = app->simulateRequest("GET", "/", "");
+    print("GET / -> Status: "); println(resHome->statusCode);
+    homeDoc->renderTerminalCard();
+
+    PerfectResponse* resDocs = app->simulateRequest("GET", "/docs", "");
+    print("GET /docs -> Status: "); println(resDocs->statusCode);
+    docsDoc->renderTerminalCard();
+
+    PerfectResponse* resPricing = app->simulateRequest("GET", "/pricing", "");
+    print("GET /pricing -> Status: "); println(resPricing->statusCode);
+    pricingDoc->renderTerminalCard();
+
+    println("\n=== SSR Pages Demo Completed Successfully! ===");
+    return 0;
+}

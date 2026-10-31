@@ -1,0 +1,41 @@
+// Cex-CLI Example 01: Build Pipeline Runner & Task Dispatcher
+// Demonstrates configuring build targets, options, and task dispatching via CexBuilder
+
+import "../src/types.cex";
+import "../src/config.cex";
+import "../src/terminal.cex";
+import "../src/builder.cex";
+
+int main() {
+    println("==================================================================");
+    println("   Cex-CLI Example 01: Build Pipeline Runner & Task Dispatcher   ");
+    println("==================================================================");
+
+    CexCliConfig* config = new CexCliConfig();
+    CexBuilder* builder = new CexBuilder(config);
+
+    // 1. Development Build
+    println("\n[1] Executing Development Build Target:");
+    BuildOptions* devOpts = new BuildOptions();
+    devOpts->target = "development";
+    devOpts->environment = "local";
+    devOpts->verbose = true;
+
+    BuildResult* devResult = builder->runBuild(devOpts);
+    print("Dev Build Status: ");
+    println(devResult->success ? "PASSED" : "FAILED");
+
+    // 2. Production Release Build
+    println("\n[2] Executing Production Release Build Target:");
+    BuildOptions* prodOpts = new BuildOptions();
+    prodOpts->target = "production";
+    prodOpts->environment = "staging";
+    prodOpts->verbose = false;
+
+    BuildResult* prodResult = builder->runBuild(prodOpts);
+    print("Production Build Status: ");
+    println(prodResult->success ? "PASSED" : "FAILED");
+
+    println("\nBuild Pipeline Runner Demonstration Completed Successfully!");
+    return 0;
+}

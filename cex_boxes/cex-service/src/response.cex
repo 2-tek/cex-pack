@@ -1,0 +1,81 @@
+// PerfectCex: Response Abstraction
+import "./types.cex";
+
+class PerfectResponse {
+    public int statusCode = 200;
+    public string statusText = "OK";
+    public Array<HttpHeader*>* headers = new Array<HttpHeader*>();
+    public string body = "";
+
+    public constructor() {
+        this.setHeader("Server", "PerfectCex/1.0.0 (C-ext High Performance)");
+    }
+
+    public PerfectResponse* status(int code) {
+        this.statusCode = code;
+        this.statusText = HttpStatus::getReasonPhrase(code);
+        return this;
+    }
+
+    public PerfectResponse* setHeader(string key, string val) {
+        // Update existing or add new
+        int count = (int)this.headers->length();
+        for (int i = 0; i < count; i++) {
+            HttpHeader* h = this.headers->get(i);
+            if (h->key === key) {
+                h->val = val;
+                return this;
+            }
+        }
+        this.headers->push(new HttpHeader(key, val));
+        return this;
+    }
+
+    public string getHeader(string key) {
+        int count = (int)this.headers->length();
+        for (int i = 0; i < count; i++) {
+            HttpHeader* h = this.headers->get(i);
+            if (h->key === key) {
+                return h->val;
+            }
+        }
+        return "";
+    }
+
+    public void json(string jsonContent) {
+        this.setHeader("Content-Type", "application/json; charset=utf-8");
+        this.body = jsonContent;
+    }
+
+    public void html(string htmlContent) {
+        this.setHeader("Content-Type", "text/html; charset=utf-8");
+        this.body = htmlContent;
+    }
+
+    public void text(string textContent) {
+        this.setHeader("Content-Type", "text/plain; charset=utf-8");
+        this.body = textContent;
+    }
+
+    public void redirect(string url, int code) {
+        this.status(code);
+        this.setHeader("Location", url);
+        this.body = "";
+    }
+
+    public string serialize() {
+        string out = "";
+        out += "HTTP/1.1 " + to_string(this.statusCode) + " " + this.statusText + "\r\n";
+        out += "Content-Length: " + to_string((int)this.body.length()) + "\r\n";
+        out += "Connection: close\r\n";
+
+        int count = (int)this.headers->length();
+        for (int i = 0; i < count; i++) {
+            HttpHeader* h = this.headers->get(i);
+            out += h->key + ": " + h->val + "\r\n";
+        }
+        out += "\r\n";
+        out += this.body;
+        return out;
+    }
+}

@@ -1,0 +1,13 @@
+dist/
+.cex_boxes/
+*.log
+.DS_Store
+tmp/
+.cex_cache/
+bin/
+.git/
+
+# Cex Box dependencies & local box caches
+cex_boxes/
+**/cex_boxes/
+**/.cex_boxes/

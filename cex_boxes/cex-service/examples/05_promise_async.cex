@@ -1,0 +1,108 @@
+// PerfectCex Example 05: Asynchronous Promise-Based API Microservice
+// Demonstrates native Cex v8 Promise<T> integration with CexService
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "../src/types.cex";
+import "../src/request.cex";
+import "../src/response.cex";
+import "../src/middleware.cex";
+import "../src/router.cex";
+import "../src/ssr.cex";
+import "../src/autoscale.cex";
+import "../src/async_handler.cex";
+import "../src/app.cex";
+
+class AsyncInventoryService : AsyncRouteHandler {
+    public constructor() {
+        this.method = "GET";
+        this.pattern = "/api/v1/inventory/async";
+        this.description = "Async Inventory Query with Parallel Thread Worker";
+    }
+
+    public Promise<bool>* handle(PerfectRequest* req, PerfectResponse* res) {
+        // Dispatches heavy I/O or database read to native v8 worker pool
+        return Promise::parallel([req, res]() -> bool {
+            // Simulate 2ms async processing
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+
+            res->status(200);
+            res->json("{\"items\": [{\"id\": \"sku-100\", \"name\": \"Quantum Accelerator\", \"stock\": 850}], \"asyncWorker\": true}");
+            return true;
+        });
+    }
+}
+
+class AsyncTransactionCommitHandler : AsyncRouteHandler {
+    public constructor() {
+        this.method = "POST";
+        this.pattern = "/api/v1/transactions/commit";
+        this.description = "Async High-Throughput Transaction Committer";
+    }
+
+    public Promise<bool>* handle(PerfectRequest* req, PerfectResponse* res) {
+        return Promise::parallel([req, res]() -> bool {
+            res->status(201);
+            res->setHeader("X-Transaction-Status", "Committed");
+            res->json("{\"txId\": \"tx-global-8841\", \"committed\": true, \"engine\": \"CexService v8\"}");
+            return true;
+        });
+    }
+}
+
+int main() {
+    println("===============================================================");
+    println("   PerfectCex: Asynchronous Promise-Based API Microservice     ");
+    println("===============================================================");
+
+    // 1. Initialize CexService with AutoScale & Promise Engine
+    println("\n[1. Initializing CexService with Promise Asynchronous Dispatch]");
+    PerfectApp* app = new PerfectApp();
+    app->use(new TimingMiddleware());
+    app->use(new CorsMiddleware("*"));
+    app->use(new LoggerMiddleware());
+    app->enableAutoScale();
+
+    // 2. Register Native Async Promise Handlers
+    app->asyncApi(new AsyncInventoryService());
+    app->asyncApi(new AsyncTransactionCommitHandler());
+
+    app->router->displayRoutes();
+
+    // 3. Dispatch Async Requests via simulateRequestAsync and await
+    println("\n[2. Executing Asynchronous Requests with native await]");
+
+    println("\n>> Request 1: GET /api/v1/inventory/async");
+    Promise<PerfectResponse*>* p1 = app->simulateRequestAsync("GET", "/api/v1/inventory/async", "");
+    PerfectResponse* r1 = await p1;
+    print("Status: "); println(r1->statusCode);
+    print("Payload: "); println(r1->body);
+
+    println("\n>> Request 2: POST /api/v1/transactions/commit");
+    Promise<PerfectResponse*>* p2 = app->simulateRequestAsync("POST", "/api/v1/transactions/commit", "{\"amount\": 15000}");
+    PerfectResponse* r2 = await p2;
+    print("Status: "); println(r2->statusCode);
+    print("Tx Status Header: "); println(r2->getHeader("X-Transaction-Status"));
+    print("Payload: "); println(r2->body);
+
+    // 4. Test Concurrent Promise Execution
+    println("\n[3. Dispatching 3 Concurrent Async Requests]");
+    Promise<PerfectResponse*>* pa = app->simulateRequestAsync("GET", "/api/v1/inventory/async", "");
+    Promise<PerfectResponse*>* pb = app->simulateRequestAsync("GET", "/api/v1/inventory/async", "");
+    Promise<PerfectResponse*>* pc = app->simulateRequestAsync("POST", "/api/v1/transactions/commit", "{}");
+
+    PerfectResponse* ra = await pa;
+    PerfectResponse* rb = await pb;
+    PerfectResponse* rc = await pc;
+
+    print("Concurrent Batch Status: [");
+    print(ra->statusCode); print(", ");
+    print(rb->statusCode); print(", ");
+    print(rc->statusCode); println("] - All Succeeded!");
+
+    // 5. Display Performance & Telemetry Metrics
+    println("\n[4. Service Performance Metrics]");
+    app->displayMetrics();
+
+    println("\n=== Asynchronous Promise Demo Completed Successfully! ===");
+    return 0;
+}

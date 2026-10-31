@@ -1,0 +1,8 @@
+// CexTest Native CLI Dispatcher (scripts/cli.cex)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "../src/cli.cex";
+
+int main(int argc, char** argv) {
+    return CexTestCli::run(argc, argv);
+}

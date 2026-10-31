@@ -1,0 +1,128 @@
+// PerfectCex: Parametric & Dynamic Routing Engine (Next.js-style)
+import "./types.cex";
+import "./request.cex";
+
+class RouteEntry {
+    public string method;
+    public string pattern;
+    public string routeType;
+    public string description;
+
+    public constructor(string method, string pattern, string routeType, string description) {
+        this.method = method;
+        this.pattern = pattern;
+        this.routeType = routeType;
+        this.description = description;
+    }
+
+    public bool match(string reqMethod, string reqPath, PerfectRequest* req) {
+        if (this.method !== "*" && this.method !== reqMethod) {
+            return false;
+        }
+
+        // 1. Exact match
+        if (this.pattern === reqPath) {
+            return true;
+        }
+
+        // 2. Check if route is parametric (contains ':')
+        int hasColon = (int)this.pattern.find(":");
+        if (hasColon === -1) {
+            return false;
+        }
+
+        // Split pattern and reqPath into segments
+        Array<string>* patSegs = this.splitSegments(this.pattern);
+        Array<string>* reqSegs = this.splitSegments(reqPath);
+
+        int pCount = (int)patSegs->length();
+        int rCount = (int)reqSegs->length();
+
+        if (pCount !== rCount) {
+            return false;
+        }
+
+        // Compare segment by segment
+        for (int i = 0; i < pCount; i++) {
+            string pSeg = patSegs->get(i);
+            string rSeg = reqSegs->get(i);
+
+            if (pSeg.length() > 0 && pSeg.substr(0, 1) === ":") {
+                // Parameter captured! E.g. ":id" -> key "id", value rSeg
+                string paramKey = pSeg.substr(1, pSeg.length() - 1);
+                if (req != nullptr) {
+                    req->setParam(paramKey, rSeg);
+                }
+            } else {
+                if (pSeg !== rSeg) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private Array<string>* splitSegments(string path) {
+        Array<string>* list = new Array<string>();
+        string current = "";
+        int len = (int)path.length();
+        for (int i = 0; i < len; i++) {
+            string ch = path.substr(i, 1);
+            if (ch === "/") {
+                if (current.length() > 0) {
+                    list->push(current);
+                    current = "";
+                }
+            } else {
+                current += ch;
+            }
+        }
+        if (current.length() > 0) {
+            list->push(current);
+        }
+        return list;
+    }
+}
+
+class PerfectRouter {
+    public Array<RouteEntry*>* routes = new Array<RouteEntry*>();
+
+    public constructor() {}
+
+    public RouteEntry* addRoute(string method, string pattern, string routeType, string description) {
+        RouteEntry* entry = new RouteEntry(method, pattern, routeType, description);
+        this.routes->push(entry);
+        return entry;
+    }
+
+    public RouteEntry* findRoute(string method, string path, PerfectRequest* req) {
+        int count = (int)this.routes->length();
+        for (int i = 0; i < count; i++) {
+            RouteEntry* r = this.routes->get(i);
+            if (r->match(method, path, req)) {
+                return r;
+            }
+        }
+        return nullptr;
+    }
+
+    public void displayRoutes() {
+        println("╔═══════════════════════════════════════════════════════════════╗");
+        println("║               PerfectCex Route Registry (Next.js)             ║");
+        println("╚═══════════════════════════════════════════════════════════════╝");
+        int count = (int)this.routes->length();
+        for (int i = 0; i < count; i++) {
+            RouteEntry* r = this.routes->get(i);
+            print("  [");
+            print(r->method);
+            print("] ");
+            print(r->pattern);
+            print(" (type: ");
+            print(r->routeType);
+            print(") - ");
+            println(r->description);
+        }
+        println("─────────────────────────────────────────────────────────────────");
+    }
+}

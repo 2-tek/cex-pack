@@ -1,0 +1,48 @@
+// PerfectCex Example 03: Chained Middleware & Security Pipeline
+// Demonstrates authentication protection, CORS configuration, and timing interceptors
+
+import "../src/types.cex";
+import "../src/request.cex";
+import "../src/response.cex";
+import "../src/middleware.cex";
+import "../src/router.cex";
+import "../src/ssr.cex";
+import "../src/app.cex";
+
+int main() {
+    println("=== PerfectCex Example 03: Chained Middleware Pipeline ===");
+
+    PerfectApp* app = new PerfectApp();
+
+    // Attach Pipeline
+    app->use(new TimingMiddleware());
+    app->use(new CorsMiddleware("https://trusted-domain.com"));
+    app->use(new AuthMiddleware("secret-api-key-2026"));
+    app->use(new LoggerMiddleware());
+
+    // Protected Route
+    app->api("GET", "/api/secure/vault", "Secure Vault Access", "{\"secretVault\": \"ACCESS_GRANTED\", \"balance\": 5000000}");
+
+    // Test 1: Unauthorized Request (No Header)
+    println("\n[Test 1] Dispatching Request WITHOUT Auth Token:");
+    PerfectRequest* reqUnauthorized = new PerfectRequest("GET", "/api/secure/vault", "");
+    PerfectResponse* resUnauthorized = new PerfectResponse();
+    app->handle(reqUnauthorized, resUnauthorized);
+    print("Status: "); println(resUnauthorized->statusCode);
+    print("Body:   "); println(resUnauthorized->body);
+
+    // Test 2: Authorized Request (Valid Bearer Token)
+    println("\n[Test 2] Dispatching Request WITH Valid Bearer Token:");
+    PerfectRequest* reqAuthorized = new PerfectRequest("GET", "/api/secure/vault", "");
+    reqAuthorized->setHeader("Authorization", "Bearer secret-api-key-2026");
+    PerfectResponse* resAuthorized = new PerfectResponse();
+    app->handle(reqAuthorized, resAuthorized);
+    print("Status: "); println(resAuthorized->statusCode);
+    print("Body:   "); println(resAuthorized->body);
+    print("CORS Header: "); println(resAuthorized->getHeader("Access-Control-Allow-Origin"));
+    print("X-Response-Time: "); println(resAuthorized->getHeader("X-Response-Time"));
+
+    app->displayMetrics();
+    println("\n=== Chained Middleware Pipeline Demo Completed Successfully! ===");
+    return 0;
+}

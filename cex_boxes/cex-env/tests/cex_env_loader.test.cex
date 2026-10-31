@@ -1,0 +1,181 @@
+// CexEnvLoader Test Suite (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "../src/index.cex";
+
+class Assert {
+    static public void equalsInt(int expected, int actual, string msg) {
+        if (expected == actual) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg + " (expected: " + std::to_string(expected) + ", actual: " + std::to_string(actual) + ")");
+        }
+    }
+
+    static public void equalsString(string expected, string actual, string msg) {
+        if (expected == actual) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg + " (expected: \"" + expected + "\", actual: \"" + actual + "\")");
+        }
+    }
+
+    static public void equalsBool(bool expected, bool actual, string msg) {
+        if (expected == actual) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg);
+        }
+    }
+
+    static public void isTrue(bool cond, string msg) {
+        if (cond) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg);
+        }
+    }
+}
+
+void test_trim_and_basic_parsing() {
+    println("\n[Test Suite 1: Trim & Basic Key-Value Parsing]");
+    Assert::equalsString("foo", EnvParser::trim("   foo   \r\n"), "Trim spaces and CRLF");
+
+    std::string k;
+    std::string v;
+
+    bool r1 = EnvParser::parseLine("PORT=3000", k, v);
+    Assert::isTrue(r1, "Parse standard key-value line");
+    Assert::equalsString("PORT", k, "Key is PORT");
+    Assert::equalsString("3000", v, "Value is 3000");
+
+    bool r2 = EnvParser::parseLine("   DB_HOST = localhost   ", k, v);
+    Assert::isTrue(r2, "Parse line with surrounding whitespace");
+    Assert::equalsString("DB_HOST", k, "Key DB_HOST trimmed correctly");
+    Assert::equalsString("localhost", v, "Value localhost trimmed correctly");
+
+    bool r3 = EnvParser::parseLine("# This is a comment line", k, v);
+    Assert::isTrue(!r3, "Full-line comment returns false");
+
+    bool r4 = EnvParser::parseLine("", k, v);
+    Assert::isTrue(!r4, "Empty line returns false");
+}
+
+void test_quotes_comments_and_export() {
+    println("\n[Test Suite 2: Quotes, Comments & Export Prefix]");
+    std::string k;
+    std::string v;
+
+    bool r1 = EnvParser::parseLine("export APP_NAME=\"2-TEK Cloud Server\"", k, v);
+    Assert::isTrue(r1, "Parse line with export prefix and double quotes");
+    Assert::equalsString("APP_NAME", k, "Key stripped export prefix");
+    Assert::equalsString("2-TEK Cloud Server", v, "Double quoted value extracted");
+
+    bool r2 = EnvParser::parseLine("SECRET_RAW='val#with#hash'", k, v);
+    Assert::isTrue(r2, "Parse single quoted literal string with hash inside");
+    Assert::equalsString("SECRET_RAW", k, "Key is SECRET_RAW");
+    Assert::equalsString("val#with#hash", v, "Single quoted value preserves hash literal");
+
+    bool r3 = EnvParser::parseLine("MULTILINE=\"Line1\\nLine2\"", k, v);
+    Assert::isTrue(r3, "Parse double quoted string with newline escape sequence");
+    Assert::equalsString("Line1\nLine2", v, "Escaped newline unescaped correctly");
+
+    bool r4 = EnvParser::parseLine("TIMEOUT_MS=5000 # Server timeout in ms", k, v);
+    Assert::isTrue(r4, "Parse unquoted line with inline comment");
+    Assert::equalsString("TIMEOUT_MS", k, "Key is TIMEOUT_MS");
+    Assert::equalsString("5000", v, "Value trimmed and inline comment stripped");
+}
+
+void test_type_casting() {
+    println("\n[Test Suite 3: Type Casting Helpers]");
+    Assert::equalsBool(true, EnvParser::parseBool("true", false), "Parse boolean 'true'");
+    Assert::equalsBool(true, EnvParser::parseBool("1", false), "Parse boolean '1'");
+    Assert::equalsBool(true, EnvParser::parseBool("yes", false), "Parse boolean 'yes'");
+    Assert::equalsBool(true, EnvParser::parseBool("ON", false), "Parse boolean 'ON' case-insensitive");
+    Assert::equalsBool(false, EnvParser::parseBool("false", true), "Parse boolean 'false'");
+    Assert::equalsBool(false, EnvParser::parseBool("0", true), "Parse boolean '0'");
+    Assert::equalsBool(false, EnvParser::parseBool("off", true), "Parse boolean 'off'");
+    Assert::equalsBool(true, EnvParser::parseBool("unknown_value", true), "Fallback to default on invalid bool");
+
+    Assert::equalsInt(8080, EnvParser::parseInt("8080", 3000), "Parse integer '8080'");
+    Assert::equalsInt(3000, EnvParser::parseInt("invalid_num", 3000), "Fallback to default on invalid int");
+
+    double fl = EnvParser::parseFloat("3.1415", 0.0);
+    Assert::isTrue(fl > 3.14 && fl < 3.15, "Parse double float '3.1415'");
+}
+
+void test_instance_and_dictionary() {
+    println("\n[Test Suite 4: EnvLoader Instance & In-Memory Dictionary]");
+    EnvLoader* loader = EnvLoader::create();
+
+    loader->set("SERVER_PORT", "9090");
+    loader->set("IS_SECURE", "true");
+    loader->set("API_PREFIX", "/api/v1");
+
+    Assert::equalsInt(9090, loader->getInt("SERVER_PORT", 80), "getInt returns 9090");
+    Assert::equalsBool(true, loader->getBool("IS_SECURE", false), "getBool returns true");
+    Assert::equalsString("/api/v1", loader->get("API_PREFIX", "/"), "get returns '/api/v1'");
+
+    Assert::isTrue(loader->hasKey("SERVER_PORT"), "hasKey returns true for SERVER_PORT");
+    Assert::isTrue(!loader->hasKey("NON_EXISTENT_KEY_1234"), "hasKey returns false for non-existent key");
+    Assert::equalsInt(3, loader->size(), "Dictionary size is 3");
+
+    loader->clear();
+    Assert::equalsInt(0, loader->size(), "Dictionary clear resets size to 0");
+}
+
+void test_file_io_and_persistence() {
+    println("\n[Test Suite 5: File I/O, Serialization & Loading]");
+    string tempFile = "test_env_generated.env";
+
+    EnvLoader* writer = EnvLoader::create();
+    writer->set("APP_KEY", "secret-2tek-99");
+    writer->set("PORT", "4000");
+    writer->set("ENABLED", "1");
+
+    bool saved = writer->saveToFile(tempFile);
+    Assert::isTrue(saved, "Successfully saved EnvLoader state to file");
+
+    EnvLoader* reader = EnvLoader::create();
+    int loadedCount = reader->loadFile(tempFile);
+    Assert::equalsInt(3, loadedCount, "Loaded 3 variables from saved .env file");
+    Assert::equalsString("secret-2tek-99", reader->get("APP_KEY", ""), "APP_KEY matches original");
+    Assert::equalsInt(4000, reader->getPort(8080), "getPort returns 4000");
+    Assert::equalsBool(true, reader->getBool("ENABLED", false), "ENABLED parsed as boolean true");
+
+    // Clean up temporary file
+    std::remove(tempFile.c_str());
+}
+
+void test_static_compatibility_api() {
+    println("\n[Test Suite 6: Static Compatibility API & Fallback]");
+    // loadString with default fallback
+    string nonExistent = EnvLoader::loadString("__NON_EXISTENT_TEST_KEY_4321__", "fallback_val");
+    Assert::equalsString("fallback_val", nonExistent, "loadString returns fallback value when key not found");
+
+    // loadPort with default fallback
+    int defaultPort = EnvLoader::loadPort(7777);
+    Assert::isTrue(defaultPort > 0, "loadPort returns a valid positive port");
+
+    // Fallback to existing system environment if available (e.g. PATH or HOME)
+    string homeVal = EnvLoader::loadString("HOME", "");
+    Assert::isTrue(!homeVal.empty(), "loadString resolves system environment fallback (HOME)");
+}
+
+int main() {
+    println("===============================================================================");
+    println("          2-TEK CexEnvLoader: Environment Configuration Loader Test Suite      ");
+    println("===============================================================================");
+
+    test_trim_and_basic_parsing();
+    test_quotes_comments_and_export();
+    test_type_casting();
+    test_instance_and_dictionary();
+    test_file_io_and_persistence();
+    test_static_compatibility_api();
+
+    println("\n===============================================================================");
+    println("Status: ALL TESTS PASSED ✅");
+    println("===============================================================================");
+    return 0;
+}

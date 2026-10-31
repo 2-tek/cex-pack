@@ -1,0 +1,139 @@
+// CexPack Central Boxes Link and Update Automated Test Suite (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), RULE_NO_SYMLINK_BETWEEN_BOXES
+
+import "../src/types.cex";
+import "../src/cvm.cex";
+import "../src/parser.cex";
+import "../src/schema.cex";
+import "../src/reporter.cex";
+import "../src/validator.cex";
+import "../src/downloader.cex";
+import "../src/env.cex";
+import "../src/cli.cex";
+import fs from "fs";
+
+let totalAsserts: int = 0;
+let passedAsserts: int = 0;
+let failedAsserts: int = 0;
+
+void assertTrue(bool cond, string testName) {
+    totalAsserts = totalAsserts + 1;
+    if (cond) {
+        passedAsserts = passedAsserts + 1;
+        println("  -> PASSED: " + testName);
+    } else {
+        failedAsserts = failedAsserts + 1;
+        println("  -> FAILED: " + testName);
+    }
+}
+
+void testCentralBoxesDiscovery() {
+    println("[SUITE 1] Testing Central Boxes Dynamic Discovery...");
+
+    let central: string = DependencyDownloader::findCentralBoxesDirectory(".");
+    assertTrue(central.length() > 0, "findCentralBoxesDirectory finds non-empty directory");
+    assertTrue(fs.exists(central), "Discovered central directory exists on disk");
+    assertTrue(central.rfind("cex_boxes") != std::string::npos, "Discovered path ends with or contains cex_boxes");
+    println("    Found Central cex_boxes at: " + central);
+}
+
+void testDirectoryRecursiveCopy() {
+    println("[SUITE 2] Testing Recursive Directory Copy Without Symlinks...");
+
+    let testSrc: string = "tests/fixtures/copy_src_test";
+    let testDest: string = "tests/fixtures/copy_dest_test";
+
+    system(("rm -rf " + testSrc + " " + testDest).c_str());
+    DependencyDownloader::mkdirRecursive(testSrc + "/sub");
+    fs.writeFile(testSrc + "/file1.txt", "hello world");
+    fs.writeFile(testSrc + "/sub/file2.txt", "nested content");
+
+    let ok: bool = DependencyDownloader::copyDirectoryRecursive(testSrc, testDest);
+    assertTrue(ok, "copyDirectoryRecursive returns true");
+    assertTrue(fs.exists(testDest + "/file1.txt"), "Destination contains copied file1.txt");
+    assertTrue(fs.readFile(testDest + "/file1.txt") == "hello world", "Copied file1.txt content matches");
+    assertTrue(fs.exists(testDest + "/sub/file2.txt"), "Destination contains copied nested file2.txt");
+
+    // Verify zero symlinks
+    let checkSymlinksCmd: string = "test $(find " + testDest + " -type l | wc -l) -eq 0";
+    let symlinkCheck: int = system(checkSymlinksCmd.c_str());
+    assertTrue(symlinkCheck == 0, "Zero symlinks created in copied destination (RULE_NO_SYMLINK_BETWEEN_BOXES)");
+
+    system(("rm -rf " + testSrc + " " + testDest).c_str());
+}
+
+void testLinkManifestWithCentralBoxesRef() {
+    println("[SUITE 3] Testing cex-pack link with Central Boxes Download Reference...");
+
+    let fixtureDir: string = "tests/fixtures/link_central_test";
+    system(("rm -rf " + fixtureDir).c_str());
+    DependencyDownloader::mkdirRecursive(fixtureDir);
+
+    let manifest: string = "{\n    \"name\": \"@test/sample-project\",\n    \"version\": \"1.0.0\",\n    \"target\": \"runtime\",\n    \"dependencies\": {\n        \"cex-log\": \"1.0.0\"\n    }\n}\n";
+    fs.writeFile(fixtureDir + "/cex-pack.json", manifest);
+
+    let downloader: DependencyDownloader* = new DependencyDownloader();
+    let linked: bool = downloader->linkManifest(fixtureDir + "/cex-pack.json");
+    assertTrue(linked, "linkManifest succeeded");
+
+    let linkedPath: string = fixtureDir + "/cex-pack-linked.json";
+    assertTrue(fs.exists(linkedPath), "cex-pack-linked.json was created");
+
+    let linkedContent: string = fs.readFile(linkedPath);
+    assertTrue(linkedContent.find("\"cex-log\"") != std::string::npos, "Lockfile contains cex-log dependency");
+    assertTrue(linkedContent.find("\"ref\": \"cex_boxes\"") != std::string::npos || linkedContent.find("\"ref\":\"cex_boxes\"") != std::string::npos, "Lockfile contains ref: cex_boxes download reference");
+
+    system(("rm -rf " + fixtureDir).c_str());
+}
+
+void testDownloadFromCentralBoxes() {
+    println("[SUITE 4] Testing cex-pack downloads from Central cex_boxes...");
+
+    let fixtureDir: string = "tests/fixtures/download_central_test";
+    system(("rm -rf " + fixtureDir).c_str());
+    DependencyDownloader::mkdirRecursive(fixtureDir);
+
+    let manifest: string = "{\n    \"name\": \"@test/sample-download\",\n    \"version\": \"1.0.0\",\n    \"target\": \"runtime\",\n    \"dependencies\": {\n        \"cex-log\": \"1.0.0\"\n    }\n}\n";
+    fs.writeFile(fixtureDir + "/cex-pack.json", manifest);
+
+    let downloader: DependencyDownloader* = new DependencyDownloader();
+    let downloaded: bool = downloader->downloadAll(fixtureDir + "/cex-pack.json", fixtureDir + "/cex_boxes");
+    assertTrue(downloaded, "downloadAll returns true");
+
+    let targetBox: string = fixtureDir + "/cex_boxes/cex-log";
+    assertTrue(fs.exists(targetBox), "target cex_boxes/cex-log directory exists");
+    assertTrue(fs.exists(targetBox + "/cex-pack.json"), "target cex_boxes/cex-log contains cex-pack.json");
+
+    // RULE_NO_SYMLINK_BETWEEN_BOXES verification
+    let checkSymlinksCmd: string = "test $(find " + fixtureDir + "/cex_boxes -type l | wc -l) -eq 0";
+    let symlinkCheck: int = system(checkSymlinksCmd.c_str());
+    assertTrue(symlinkCheck == 0, "Zero symlinks created in project cex_boxes (RULE_NO_SYMLINK_BETWEEN_BOXES)");
+
+    let progressFile: string = fixtureDir + "/cex_boxes/PROGRESS.md";
+    assertTrue(fs.exists(progressFile), "PROGRESS.md was created in target box directory");
+
+    system(("rm -rf " + fixtureDir).c_str());
+}
+
+int main(int argc, char** argv) {
+    println("\x1b[1;36m=================================================================\x1b[0m");
+    println("\x1b[1;36m   CexPack Central Boxes Link & Update Test Suite                \x1b[0m");
+    println("\x1b[1;36m=================================================================\x1b[0m\n");
+
+    testCentralBoxesDiscovery();
+    testDirectoryRecursiveCopy();
+    testLinkManifestWithCentralBoxesRef();
+    testDownloadFromCentralBoxes();
+
+    println("\n=================================================================");
+    println("Test Summary: Total Asserts: " + std::to_string(totalAsserts) + " | Passed: " + std::to_string(passedAsserts) + " | Failed: " + std::to_string(failedAsserts));
+    println("=================================================================");
+
+    if (failedAsserts > 0) {
+        println("\x1b[1;31m[TEST SUITE FAILED]\x1b[0m");
+        return 1;
+    }
+
+    println("\x1b[1;32m[TEST SUITE PASSED] 100% Success\x1b[0m");
+    return 0;
+}

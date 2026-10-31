@@ -1,11 +1,11 @@
 // CexPack Types and Data Structures (C-ext)
 
 class ValidationError {
-    public string ruleId;
-    public string message;
-    public int line;
-    public int column;
-    public string severity;
+    public ruleId: string;
+    public message: string;
+    public line: int;
+    public column: int;
+    public severity: string;
 
     public constructor(string rId, string msg, int l, int col, string sev) {
         this.ruleId = rId;
@@ -17,11 +17,11 @@ class ValidationError {
 }
 
 class ValidationResult {
-    public bool isValid = true;
-    public Array<ValidationError*>* errors = new Array<ValidationError*>();
-    public Array<ValidationError*>* warnings = new Array<ValidationError*>();
-    public int errorCount = 0;
-    public int warningCount = 0;
+    public isValid: bool = true;
+    public errors: Array<ValidationError*>* = new Array<ValidationError*>();
+    public warnings: Array<ValidationError*>* = new Array<ValidationError*>();
+    public errorCount: int = 0;
+    public warningCount: int = 0;
 
     public constructor() {}
 
@@ -38,11 +38,11 @@ class ValidationResult {
 }
 
 class ThunderOutputPort {
-    public int containerPort;
-    public string containerPortStr;
-    public int outPort;
-    public string outPortStr;
-    public string name;
+    public containerPort: int;
+    public containerPortStr: string;
+    public outPort: int;
+    public outPortStr: string;
+    public name: string;
 
     public constructor(int cPort, string cPortStr, int oPort, string oPortStr, string name) {
         this.containerPort = cPort;
@@ -54,9 +54,9 @@ class ThunderOutputPort {
 }
 
 class ThunderConfig {
-    public bool isDefined = false;
-    public string env = "";
-    public Array<ThunderOutputPort*>* outputs = new Array<ThunderOutputPort*>();
+    public isDefined: bool = false;
+    public env: string = "";
+    public outputs: Array<ThunderOutputPort*>* = new Array<ThunderOutputPort*>();
 
     public constructor() {}
 
@@ -66,11 +66,11 @@ class ThunderConfig {
 }
 
 class EnvItem {
-    public string key;
-    public string rawValue;
-    public string resolvedValue;
-    public bool isDynamic;
-    public string sourceVarName;
+    public key: string;
+    public rawValue: string;
+    public resolvedValue: string;
+    public isDynamic: bool;
+    public sourceVarName: string;
 
     public constructor(string k, string rawVal, string resolvedVal, bool dynamic, string srcVar) {
         this.key = k;
@@ -82,8 +82,8 @@ class EnvItem {
 }
 
 class EnvMapping {
-    public string environment;
-    public string envPath;
+    public environment: string;
+    public envPath: string;
 
     public constructor(string env, string path) {
         this.environment = env;
@@ -92,8 +92,8 @@ class EnvMapping {
 }
 
 class EnvConfigOptions {
-    public Array<EnvMapping*>* envs = new Array<EnvMapping*>();
-    public string activeEnvironment = "";
+    public envs: Array<EnvMapping*>* = new Array<EnvMapping*>();
+    public activeEnvironment: string = "";
 
     public constructor() {}
 
@@ -102,9 +102,9 @@ class EnvConfigOptions {
     }
 
     public string getPathForEnv(string envName) {
-        int count = (int)this.envs->length();
-        for (int i = 0; i < count; i = i + 1) {
-            EnvMapping* m = this.envs->get(i);
+        let count: int = (int)this.envs->length();
+        for (let i: int = 0; i < count; i = i + 1) {
+            let m: EnvMapping* = this.envs->get(i);
             if (m->environment == envName) {
                 return m->envPath;
             }
@@ -113,9 +113,9 @@ class EnvConfigOptions {
     }
 
     public bool hasEnv(string envName) {
-        int count = (int)this.envs->length();
-        for (int i = 0; i < count; i = i + 1) {
-            EnvMapping* m = this.envs->get(i);
+        let count: int = (int)this.envs->length();
+        for (let i: int = 0; i < count; i = i + 1) {
+            let m: EnvMapping* = this.envs->get(i);
             if (m->environment == envName) {
                 return true;
             }
@@ -125,11 +125,11 @@ class EnvConfigOptions {
 }
 
 class CvmRepositoryConfig {
-    public bool isDefined = false;
-    public string type = "cvm";
-    public string url = "";
-    public string path = "cex-pack.json";
-    public string branch = "main";
+    public isDefined: bool = false;
+    public type: string = "cvm";
+    public url: string = "";
+    public path: string = "cex-pack.json";
+    public branch: string = "main";
 
     public constructor() {}
 
@@ -142,23 +142,23 @@ class CvmRepositoryConfig {
 }
 
 class PackManifest {
-    public string name = "";
-    public string version = "";
-    public string description = "";
-    public string main = "";
-    public string author = "";
-    public string license = "";
-    public string target = "";
-    public bool hasRequired = false;
-    public bool hasTarget = false;
-    public bool hasDependencies = false;
-    public ThunderConfig* thunder = new ThunderConfig();
-    public EnvConfigOptions* envConfig = new EnvConfigOptions();
-    public Array<EnvItem*>* processEnv = new Array<EnvItem*>();
-    public bool hasEnvs = false;
-    public bool hasProcessEnv = false;
-    public CvmRepositoryConfig* cvmRepository = new CvmRepositoryConfig();
-    public bool hasCvmRepository = false;
+    public name: string = "";
+    public version: string = "";
+    public description: string = "";
+    public main: string = "";
+    public author: string = "";
+    public license: string = "";
+    public target: string = "";
+    public hasRequired: bool = false;
+    public hasTarget: bool = false;
+    public hasDependencies: bool = false;
+    public thunder: ThunderConfig* = new ThunderConfig();
+    public envConfig: EnvConfigOptions* = new EnvConfigOptions();
+    public processEnv: Array<EnvItem*>* = new Array<EnvItem*>();
+    public hasEnvs: bool = false;
+    public hasProcessEnv: bool = false;
+    public cvmRepository: CvmRepositoryConfig* = new CvmRepositoryConfig();
+    public hasCvmRepository: bool = false;
 
     public constructor() {}
 

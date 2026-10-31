@@ -11,9 +11,9 @@ import "../src/downloader.cex";
 import "../src/env.cex";
 import "../src/cli.cex";
 
-int totalAsserts = 0;
-int passedAsserts = 0;
-int failedAsserts = 0;
+let totalAsserts: int = 0;
+let passedAsserts: int = 0;
+let failedAsserts: int = 0;
 
 void assertTrue(bool cond, string testName) {
     totalAsserts = totalAsserts + 1;
@@ -30,7 +30,7 @@ void testTypesModule() {
     println("[SUITE 1] Testing Types and Data Structures...");
 
     // 1. ValidationError
-    ValidationError* err = new ValidationError("RULE_01", "Test Error Message", 10, 5, "ERROR");
+    let err: ValidationError* = new ValidationError("RULE_01", "Test Error Message", 10, 5, "ERROR");
     assertTrue(err->ruleId == "RULE_01", "ValidationError ruleId matches");
     assertTrue(err->message == "Test Error Message", "ValidationError message matches");
     assertTrue(err->line == 10, "ValidationError line matches");
@@ -38,7 +38,7 @@ void testTypesModule() {
     assertTrue(err->severity == "ERROR", "ValidationError severity matches");
 
     // 2. ValidationResult constructor and additions
-    ValidationResult* res = new ValidationResult();
+    let res: ValidationResult* = new ValidationResult();
     assertTrue(res->isValid, "ValidationResult default isValid is true");
     assertTrue(res->errorCount == 0, "ValidationResult default errorCount is 0");
     assertTrue(res->warningCount == 0, "ValidationResult default warningCount is 0");
@@ -55,7 +55,7 @@ void testTypesModule() {
     assertTrue(res->warnings->length() == 1, "ValidationResult warnings array has 1 element");
 
     // 3. ThunderOutputPort
-    ThunderOutputPort* port = new ThunderOutputPort(8080, "8080", 80, "80", "web");
+    let port: ThunderOutputPort* = new ThunderOutputPort(8080, "8080", 80, "80", "web");
     assertTrue(port->containerPort == 8080, "ThunderOutputPort containerPort matches");
     assertTrue(port->containerPortStr == "8080", "ThunderOutputPort containerPortStr matches");
     assertTrue(port->outPort == 80, "ThunderOutputPort outPort matches");
@@ -63,7 +63,7 @@ void testTypesModule() {
     assertTrue(port->name == "web", "ThunderOutputPort name matches");
 
     // 4. ThunderConfig
-    ThunderConfig* thunCfg = new ThunderConfig();
+    let thunCfg: ThunderConfig* = new ThunderConfig();
     assertTrue(!thunCfg->isDefined, "ThunderConfig default isDefined is false");
     assertTrue(thunCfg->env == "", "ThunderConfig default env is empty");
     assertTrue(thunCfg->outputs->length() == 0, "ThunderConfig default outputs array is empty");
@@ -72,25 +72,25 @@ void testTypesModule() {
     assertTrue(thunCfg->outputs->length() == 1, "ThunderConfig addOutput increments outputs array");
 
     // 5. EnvItem, EnvMapping, and EnvConfigOptions
-    EnvItem* envIt = new EnvItem("PORT", "ENV::[PORT]", "3000", true, "PORT");
+    let envIt: EnvItem* = new EnvItem("PORT", "ENV::[PORT]", "3000", true, "PORT");
     assertTrue(envIt->key == "PORT", "EnvItem key matches");
     assertTrue(envIt->rawValue == "ENV::[PORT]", "EnvItem rawValue matches");
     assertTrue(envIt->resolvedValue == "3000", "EnvItem resolvedValue matches");
     assertTrue(envIt->isDynamic, "EnvItem isDynamic is true");
     assertTrue(envIt->sourceVarName == "PORT", "EnvItem sourceVarName matches");
 
-    EnvMapping* envMap = new EnvMapping("production", "./.env.prod");
+    let envMap: EnvMapping* = new EnvMapping("production", "./.env.prod");
     assertTrue(envMap->environment == "production", "EnvMapping environment matches");
     assertTrue(envMap->envPath == "./.env.prod", "EnvMapping envPath matches");
 
-    EnvConfigOptions* envOpts = new EnvConfigOptions();
+    let envOpts: EnvConfigOptions* = new EnvConfigOptions();
     assertTrue(!envOpts->hasEnv("development"), "EnvConfigOptions default hasEnv is false");
     envOpts->addEnv("development", "./.env");
     assertTrue(envOpts->hasEnv("development"), "EnvConfigOptions hasEnv is true after addEnv");
     assertTrue(envOpts->getPathForEnv("development") == "./.env", "EnvConfigOptions getPathForEnv matches");
 
     // 6. PackManifest
-    PackManifest* manifest = new PackManifest();
+    let manifest: PackManifest* = new PackManifest();
     assertTrue(manifest->name == "", "PackManifest default name is empty");
     assertTrue(manifest->version == "", "PackManifest default version is empty");
     assertTrue(manifest->description == "", "PackManifest default description is empty");
@@ -116,133 +116,133 @@ void testParserModule() {
     println("[SUITE 2] Testing JSON Syntax Parser & Tokenizer...");
 
     // Empty content
-    JsonParser* emptyParser = new JsonParser("");
-    ValidationResult* emptyRes = emptyParser->parseAndValidateSyntax();
+    let emptyParser: JsonParser* = new JsonParser("");
+    let emptyRes: ValidationResult* = emptyParser->parseAndValidateSyntax();
     assertTrue(!emptyRes->isValid, "Empty content triggers syntax error");
     assertTrue(emptyRes->errorCount > 0, "Empty content has error count > 0");
 
     // Unterminated string
-    JsonParser* unclosedStrParser = new JsonParser("{\n  \"name\": \"unclosed\n}\n");
-    ValidationResult* unclosedStrRes = unclosedStrParser->parseAndValidateSyntax();
+    let unclosedStrParser: JsonParser* = new JsonParser("{\n  \"name\": \"unclosed\n}\n");
+    let unclosedStrRes: ValidationResult* = unclosedStrParser->parseAndValidateSyntax();
     assertTrue(!unclosedStrRes->isValid, "Unterminated string literal triggers syntax error");
 
     // Escaped string characters
-    JsonParser* escapedParser = new JsonParser("{\n  \"message\": \"escaped \\\"quotes\\\" and \\\\ backslash\"\n}\n");
-    ValidationResult* escapedRes = escapedParser->parseAndValidateSyntax();
+    let escapedParser: JsonParser* = new JsonParser("{\n  \"message\": \"escaped \\\"quotes\\\" and \\\\ backslash\"\n}\n");
+    let escapedRes: ValidationResult* = escapedParser->parseAndValidateSyntax();
     assertTrue(escapedRes->isValid, "Escaped quotes and backslashes parse correctly");
 
     // Unmatched closing brace
-    JsonParser* braceParser = new JsonParser("}\n");
-    ValidationResult* braceRes = braceParser->parseAndValidateSyntax();
+    let braceParser: JsonParser* = new JsonParser("}\n");
+    let braceRes: ValidationResult* = braceParser->parseAndValidateSyntax();
     assertTrue(!braceRes->isValid, "Unexpected closing brace triggers error");
 
     // Unmatched closing bracket
-    JsonParser* bracketParser = new JsonParser("]\n");
-    ValidationResult* bracketRes = bracketParser->parseAndValidateSyntax();
+    let bracketParser: JsonParser* = new JsonParser("]\n");
+    let bracketRes: ValidationResult* = bracketParser->parseAndValidateSyntax();
     assertTrue(!bracketRes->isValid, "Unexpected closing bracket triggers error");
 
     // Unclosed object
-    JsonParser* unclosedObjParser = new JsonParser("{\n  \"name\": \"test\"\n");
-    ValidationResult* unclosedObjRes = unclosedObjParser->parseAndValidateSyntax();
+    let unclosedObjParser: JsonParser* = new JsonParser("{\n  \"name\": \"test\"\n");
+    let unclosedObjRes: ValidationResult* = unclosedObjParser->parseAndValidateSyntax();
     assertTrue(!unclosedObjRes->isValid, "Unclosed object triggers error");
 
     // Unclosed array
-    JsonParser* unclosedArrParser = new JsonParser("{\n  \"arr\": [1, 2\n}\n");
-    ValidationResult* unclosedArrRes = unclosedArrParser->parseAndValidateSyntax();
+    let unclosedArrParser: JsonParser* = new JsonParser("{\n  \"arr\": [1, 2\n}\n");
+    let unclosedArrRes: ValidationResult* = unclosedArrParser->parseAndValidateSyntax();
     assertTrue(!unclosedArrRes->isValid, "Unclosed array triggers error");
 
     // Valid complex JSON
-    JsonParser* validParser = new JsonParser("{\n  \"nested\": {\n    \"array\": [1, 2, 3]\n  }\n}\n");
-    ValidationResult* validRes = validParser->parseAndValidateSyntax();
+    let validParser: JsonParser* = new JsonParser("{\n  \"nested\": {\n    \"array\": [1, 2, 3]\n  }\n}\n");
+    let validRes: ValidationResult* = validParser->parseAndValidateSyntax();
     assertTrue(validRes->isValid && validRes->errorCount == 0, "Valid nested JSON passes syntax validation");
 }
 
 void testSchemaModule() {
     println("[SUITE 3] Testing Schema Validator & Rule Governance...");
 
-    SchemaValidator* schemaVal = new SchemaValidator();
+    let schemaVal: SchemaValidator* = new SchemaValidator();
 
     // Missing name
-    ValidationResult* res1 = new ValidationResult();
+    let res1: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\"\n}\n", res1);
     assertTrue(!res1->isValid, "Missing name property caught");
 
     // Missing version
-    ValidationResult* res2 = new ValidationResult();
+    let res2: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\"\n}\n", res2);
     assertTrue(!res2->isValid, "Missing version property caught");
 
     // Missing main
-    ValidationResult* res3 = new ValidationResult();
+    let res3: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"target\": \"runtime\"\n}\n", res3);
     assertTrue(!res3->isValid, "Missing main property caught");
 
     // Missing target (Rule 69)
-    ValidationResult* res4 = new ValidationResult();
+    let res4: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\"\n}\n", res4);
     assertTrue(!res4->isValid, "Missing target property caught under Rule 69");
 
     // Invalid target (Rule 69)
-    ValidationResult* res5 = new ValidationResult();
+    let res5: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"native-bin\"\n}\n", res5);
     assertTrue(!res5->isValid, "Invalid target property caught under Rule 69");
 
     // Valid target with space and compact
-    ValidationResult* res6 = new ValidationResult();
+    let res6: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"required\": { \"cexr\": \"^8\" }\n}\n", res6);
     assertTrue(res6->isValid && res6->errorCount == 0 && res6->warningCount == 0, "Valid target with space passes with 0 errors and 0 warnings");
 
-    ValidationResult* res7 = new ValidationResult();
+    let res7: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\"name\":\"@2tek/pkg\",\"version\":\"1.0.0\",\"main\":\"src/index.cex\",\"target\":\"runtime\",\"required\":{\"cexr\":\"^8\"}}\n", res7);
     assertTrue(res7->isValid && res7->errorCount == 0 && res7->warningCount == 0, "Valid compact target passes with 0 errors and 0 warnings");
 
     // Missing required warning
-    ValidationResult* res8 = new ValidationResult();
+    let res8: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\"\n}\n", res8);
     assertTrue(res8->warningCount > 0, "Missing required block triggers recommendation warning");
 
     // Unscoped name warning
-    ValidationResult* res9 = new ValidationResult();
+    let res9: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"unscoped-pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"required\": {}\n}\n", res9);
     assertTrue(res9->warningCount > 0, "Unscoped name triggers recommendation warning");
 
     // Parent traversal '..' in includeDirs (RULE_NO_EXTERNAL_INCLUDEDIRS)
-    ValidationResult* res10 = new ValidationResult();
+    let res10: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"includeDirs\": [\"./src\", \"../outside/src\"]\n}\n", res10);
     assertTrue(!res10->isValid, "Parent traversal '..' in includeDirs is rejected under RULE_NO_EXTERNAL_INCLUDEDIRS");
 
     // CexP/CexR reference in includeDirs (RULE_NO_EXTERNAL_INCLUDEDIRS)
-    ValidationResult* res11 = new ValidationResult();
+    let res11: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"includeDirs\": [\"./src\", \"../../packages/CexP/v1/src\"]\n}\n", res11);
     assertTrue(!res11->isValid, "CexP/CexR path in includeDirs is rejected under RULE_NO_EXTERNAL_INCLUDEDIRS");
 
     // Valid internal includeDirs passes
-    ValidationResult* res12 = new ValidationResult();
+    let res12: ValidationResult* = new ValidationResult();
     schemaVal->validateManifestSchema("{\n  \"name\": \"@2tek/pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"includeDirs\": [\"./src\"]\n}\n", res12);
     assertTrue(res12->isValid, "Internal includeDirs ['./src'] passes schema validation");
 
     // Invalid envs type (e.g., array instead of object)
-    ValidationResult* res13 = new ValidationResult();
+    let res13: ValidationResult* = new ValidationResult();
     schemaVal->validateEnvsRule("{\n  \"envs\": [\"./.env\"]\n}\n", res13);
     assertTrue(!res13->isValid, "Invalid envs type (array) triggers RULE_ENVS_INVALID_TYPE");
 
     // Valid envs object passes
-    ValidationResult* res14 = new ValidationResult();
+    let res14: ValidationResult* = new ValidationResult();
     schemaVal->validateEnvsRule("{\n  \"envs\": { \"development\": \"./.env\" }\n}\n", res14);
     assertTrue(res14->isValid, "Valid envs object passes validateEnvsRule");
 
     // Unclosed ENV::[ bracket
-    ValidationResult* res15 = new ValidationResult();
+    let res15: ValidationResult* = new ValidationResult();
     schemaVal->validateProcessEnvRule("{\n  \"process.env\": { \"PORT\": \"ENV::[PORT\" }\n}\n", res15);
     assertTrue(!res15->isValid, "Unclosed ENV::[ bracket triggers SCHEMA_UNCLOSED_ENV_BRACKET");
 
     // Empty ENV::[]
-    ValidationResult* res16 = new ValidationResult();
+    let res16: ValidationResult* = new ValidationResult();
     schemaVal->validateProcessEnvRule("{\n  \"process.env\": { \"PORT\": \"ENV::[]\" }\n}\n", res16);
     assertTrue(!res16->isValid, "Empty ENV::[] triggers SCHEMA_EMPTY_ENV_VAR_NAME");
 
     // Valid ENV::[PORT] passes
-    ValidationResult* res17 = new ValidationResult();
+    let res17: ValidationResult* = new ValidationResult();
     schemaVal->validateProcessEnvRule("{\n  \"process.env\": { \"PORT\": \"ENV::[PORT]\", \"HOST\": \"ENV::HOST\" }\n}\n", res17);
     assertTrue(res17->isValid, "Valid ENV::[variableName] passes validateProcessEnvRule");
 }
@@ -250,20 +250,20 @@ void testSchemaModule() {
 void testRule29EofModule() {
     println("[SUITE 4] Testing Rule 29 EOF Line Ending Validation...");
 
-    SchemaValidator* schemaVal = new SchemaValidator();
+    let schemaVal: SchemaValidator* = new SchemaValidator();
 
     // Empty content - returns cleanly
-    ValidationResult* res1 = new ValidationResult();
+    let res1: ValidationResult* = new ValidationResult();
     schemaVal->validateEofNewline("", res1);
     assertTrue(res1->isValid && res1->errorCount == 0, "Empty content does not trigger EOF error");
 
     // Valid trailing newline
-    ValidationResult* res2 = new ValidationResult();
+    let res2: ValidationResult* = new ValidationResult();
     schemaVal->validateEofNewline("{\n  \"name\": \"pkg\"\n}\n", res2);
     assertTrue(res2->isValid && res2->errorCount == 0, "Content with trailing newline passes Rule 29");
 
     // Missing trailing newline
-    ValidationResult* res3 = new ValidationResult();
+    let res3: ValidationResult* = new ValidationResult();
     schemaVal->validateEofNewline("{\n  \"name\": \"pkg\"\n}", res3);
     assertTrue(!res3->isValid && res3->errorCount > 0, "Missing trailing newline caught under Rule 29");
 }
@@ -271,45 +271,45 @@ void testRule29EofModule() {
 void testThunderModule() {
     println("[SUITE 5] Testing Thunder Zero-File Build & Rule Engine...");
 
-    SchemaValidator* schemaVal = new SchemaValidator();
+    let schemaVal: SchemaValidator* = new SchemaValidator();
 
     // No thunder block - returns cleanly
-    ValidationResult* res1 = new ValidationResult();
+    let res1: ValidationResult* = new ValidationResult();
     schemaVal->validateThunderRule("{\n  \"name\": \"@2tek/app\"\n}\n", res1);
     assertTrue(res1->isValid && res1->errorCount == 0, "No thunder block skips thunder checks cleanly");
 
     // Thunder with env missing colon
-    ValidationResult* res2 = new ValidationResult();
+    let res2: ValidationResult* = new ValidationResult();
     schemaVal->validateThunderRule("{\n  \"thunder\": {\n    \"env\" \"./.env\"\n  }\n}\n", res2);
     assertTrue(!res2->isValid && res2->errorCount > 0, "Thunder with env missing colon triggers error");
 
     // Thunder missing output mappings triggers warning
-    ValidationResult* res3 = new ValidationResult();
+    let res3: ValidationResult* = new ValidationResult();
     schemaVal->validateThunderRule("{\n  \"thunder\": {\n    \"env\": \"./.env\"\n  }\n}\n", res3);
     assertTrue(res3->warningCount > 0, "Thunder without output triggers warning");
 
     // Thunder output not an array triggers error
-    ValidationResult* res4 = new ValidationResult();
+    let res4: ValidationResult* = new ValidationResult();
     schemaVal->validateThunderRule("{\n  \"thunder\": {\n    \"output\": \"not_array\"\n  }\n}\n", res4);
     assertTrue(!res4->isValid && res4->errorCount > 0, "Thunder non-array output triggers error");
 
     // Thunder output missing container port
-    ValidationResult* res5 = new ValidationResult();
+    let res5: ValidationResult* = new ValidationResult();
     schemaVal->validateThunderRule("{\n  \"thunder\": {\n    \"output\": [{\"out\": 3000}]\n  }\n}\n", res5);
     assertTrue(!res5->isValid && res5->errorCount > 0, "Thunder output missing container port triggers error");
 
     // Thunder output missing out port
-    ValidationResult* res6 = new ValidationResult();
+    let res6: ValidationResult* = new ValidationResult();
     schemaVal->validateThunderRule("{\n  \"thunder\": {\n    \"output\": [{\"container\": 3000}]\n  }\n}\n", res6);
     assertTrue(!res6->isValid && res6->errorCount > 0, "Thunder output missing out host port triggers error");
 
     // Thunder output using shorthand 'ouput'
-    ValidationResult* res7 = new ValidationResult();
+    let res7: ValidationResult* = new ValidationResult();
     schemaVal->validateThunderRule("{\n  \"thunder\": {\n    \"ouput\": [{\"container\": 3000, \"out\": 3000}]\n  }\n}\n", res7);
     assertTrue(res7->isValid && res7->errorCount == 0, "Thunder shorthand 'ouput' passes validation");
 
     // Thunder Dockerfile synthesis with full configuration
-    string df1 = SchemaValidator::synthesizeThunderDockerfile("my-service", "src/main.cex", "./.env.production", 3050);
+    let df1: string = SchemaValidator::synthesizeThunderDockerfile("my-service", "src/main.cex", "./.env.production", 3050);
     assertTrue(df1.find("FROM @2tek/thunder:latest") != -1, "Synthesized Dockerfile contains base image");
     assertTrue(df1.find("cexp build src/main.cex") != -1, "Synthesized Dockerfile contains cexp build command");
     assertTrue(df1.find("DOTENV_CONFIG_PATH=./.env.production") != -1, "Synthesized Dockerfile contains env path");
@@ -317,7 +317,7 @@ void testThunderModule() {
     assertTrue(df1.find("CMD /app/bin/my-service") != -1, "Synthesized Dockerfile contains app start command");
 
     // Thunder Dockerfile synthesis with minimal configuration
-    string df2 = SchemaValidator::synthesizeThunderDockerfile("server", "", "", 0);
+    let df2: string = SchemaValidator::synthesizeThunderDockerfile("server", "", "", 0);
     assertTrue(df2.find("FROM @2tek/thunder:latest") != -1, "Minimal Dockerfile contains base image");
     assertTrue(df2.find("CMD /app/bin/server") != -1, "Minimal Dockerfile falls back to /app/bin/server");
 }
@@ -325,27 +325,27 @@ void testThunderModule() {
 void testReporterModule() {
     println("[SUITE 6] Testing Diagnostic Reporter...");
 
-    DiagnosticReporter* reporter = new DiagnosticReporter();
+    let reporter: DiagnosticReporter* = new DiagnosticReporter();
 
     // 1. Success result
-    ValidationResult* okRes = new ValidationResult();
+    let okRes: ValidationResult* = new ValidationResult();
     reporter->printResult("test-ok.json", okRes);
     assertTrue(okRes->isValid, "Reporter prints successful result cleanly");
 
     // 2. Error only result
-    ValidationResult* errRes = new ValidationResult();
+    let errRes: ValidationResult* = new ValidationResult();
     errRes->addError("ERR_CODE_1", "Syntax violation description", 5, 12);
     reporter->printResult("test-err.json", errRes);
     assertTrue(!errRes->isValid && errRes->errorCount == 1, "Reporter handles error output");
 
     // 3. Warning only result
-    ValidationResult* warnRes = new ValidationResult();
+    let warnRes: ValidationResult* = new ValidationResult();
     warnRes->addWarning("WARN_CODE_1", "Non-scoped identifier used", 1, 1);
     reporter->printResult("test-warn.json", warnRes);
     assertTrue(warnRes->isValid && warnRes->warningCount == 1, "Reporter handles warning output");
 
     // 4. Combined error and warning result
-    ValidationResult* comboRes = new ValidationResult();
+    let comboRes: ValidationResult* = new ValidationResult();
     comboRes->addError("ERR_COMBO", "Fatal error", 3, 2);
     comboRes->addWarning("WARN_COMBO", "Advisory warning", 8, 4);
     reporter->printResult("test-combo.json", comboRes);
@@ -355,58 +355,58 @@ void testReporterModule() {
 void testValidatorModule() {
     println("[SUITE 7] Testing Validator Engine & File Operations...");
 
-    PackValidator* validator = new PackValidator();
+    let validator: PackValidator* = new PackValidator();
 
     // Validate valid string content
-    string validContent = "{\n  \"name\": \"@2tek/valid-pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"required\": { \"cexr\": \"^8\" }\n}\n";
-    ValidationResult* resValid = validator->validateContent(validContent);
+    let validContent: string = "{\n  \"name\": \"@2tek/valid-pkg\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"required\": { \"cexr\": \"^8\" }\n}\n";
+    let resValid: ValidationResult* = validator->validateContent(validContent);
     assertTrue(resValid->isValid && resValid->errorCount == 0 && resValid->warningCount == 0, "Validator engine passes valid manifest content with 0 warnings");
 
     // Validate invalid string content
-    string invalidContent = "{\n  \"name\": \"@2tek/bad-target\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"unknown\"\n}\n";
-    ValidationResult* resInvalid = validator->validateContent(invalidContent);
+    let invalidContent: string = "{\n  \"name\": \"@2tek/bad-target\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"unknown\"\n}\n";
+    let resInvalid: ValidationResult* = validator->validateContent(invalidContent);
     assertTrue(!resInvalid->isValid && resInvalid->errorCount > 0, "Validator engine flags invalid manifest content");
 
     // Validate existing valid file
-    bool fileOk = validator->validateFile("cex-pack.json");
+    let fileOk: bool = validator->validateFile("cex-pack.json");
     assertTrue(fileOk, "Validator correctly validates existing 'cex-pack.json'");
 
     // Validate root cex-pack.json with 0 errors and 0 warnings
-    string rootContent = fs.readFile("cex-pack.json");
-    ValidationResult* rootRes = validator->validateContent(rootContent);
+    let rootContent: string = fs.readFile("cex-pack.json");
+    let rootRes: ValidationResult* = validator->validateContent(rootContent);
     assertTrue(rootRes->isValid && rootRes->errorCount == 0 && rootRes->warningCount == 0, "cex-pack.json validates with 100% success and 0 warnings");
 
     // Validate tests/fixtures/env-manifest.json with 0 errors and 0 warnings
-    string envContent = fs.readFile("tests/fixtures/env-manifest.json");
-    ValidationResult* envRes = validator->validateContent(envContent);
+    let envContent: string = fs.readFile("tests/fixtures/env-manifest.json");
+    let envRes: ValidationResult* = validator->validateContent(envContent);
     assertTrue(envRes->isValid && envRes->errorCount == 0 && envRes->warningCount == 0, "tests/fixtures/env-manifest.json validates with 100% success and 0 warnings");
 
     // Validate tests/fixtures/no-deps.json with 0 errors and 0 warnings
-    string noDepsContent = fs.readFile("tests/fixtures/no-deps.json");
-    ValidationResult* noDepsRes = validator->validateContent(noDepsContent);
+    let noDepsContent: string = fs.readFile("tests/fixtures/no-deps.json");
+    let noDepsRes: ValidationResult* = validator->validateContent(noDepsContent);
     assertTrue(noDepsRes->isValid && noDepsRes->errorCount == 0 && noDepsRes->warningCount == 0, "tests/fixtures/no-deps.json validates with 100% success and 0 warnings");
 
     // Validate tests/fixtures/all-branches.json with 0 errors and 0 warnings
-    string allBranchesContent = fs.readFile("tests/fixtures/all-branches.json");
-    ValidationResult* allBranchesRes = validator->validateContent(allBranchesContent);
+    let allBranchesContent: string = fs.readFile("tests/fixtures/all-branches.json");
+    let allBranchesRes: ValidationResult* = validator->validateContent(allBranchesContent);
     assertTrue(allBranchesRes->isValid && allBranchesRes->errorCount == 0 && allBranchesRes->warningCount == 0, "tests/fixtures/all-branches.json validates with 100% success and 0 warnings");
 
     // Validate existing invalid file fixture
-    bool fileBad = validator->validateFile("tests/fixtures/invalid.json");
+    let fileBad: bool = validator->validateFile("tests/fixtures/invalid.json");
     assertTrue(!fileBad, "Validator correctly rejects invalid file fixture");
 
     // Validate non-existent file
-    bool fileMissing = validator->validateFile("tests/fixtures/non_existent_file.json");
+    let fileMissing: bool = validator->validateFile("tests/fixtures/non_existent_file.json");
     assertTrue(!fileMissing, "Validator returns false on missing file");
 }
 
 void testDownloaderModule() {
     println("[SUITE 8] Testing Dependency Downloader & Progress Tracking...");
 
-    DependencyDownloader* downloader = new DependencyDownloader();
+    let downloader: DependencyDownloader* = new DependencyDownloader();
 
     // PackageDependency defaults
-    PackageDependency* dep = new PackageDependency("@2tek/cli", "1.0.0");
+    let dep: PackageDependency* = new PackageDependency("@2tek/cli", "1.0.0");
     assertTrue(dep->packageName == "@2tek/cli", "PackageDependency packageName initialized");
     assertTrue(dep->versionSpec == "1.0.0", "PackageDependency versionSpec initialized");
     assertTrue(dep->exactVersion == "1.0.0", "PackageDependency exactVersion initialized to 1.0.0");
@@ -424,17 +424,17 @@ void testDownloaderModule() {
     assertTrue(PackageDependency::cleanExactVersion("^8") == "8.0.0", "cleanExactVersion expands single major integer");
 
     // Locked version extraction tests
-    string mockLinked = "{\n  \"dependencies\": {\n    \"cex-cli\": {\n      \"version\": \"1.0.4\",\n      \"url\": \"cex-enc:abc\"\n    }\n  }\n}\n";
+    let mockLinked: string = "{\n  \"dependencies\": {\n    \"cex-cli\": {\n      \"version\": \"1.0.4\",\n      \"url\": \"cex-enc:abc\"\n    }\n  }\n}\n";
     assertTrue(DependencyDownloader::extractLockedVersion(mockLinked, "cex-cli") == "1.0.4", "extractLockedVersion extracts exact locked version");
     assertTrue(DependencyDownloader::extractLockedUrl(mockLinked, "cex-cli") == "cex-enc:abc", "extractLockedUrl extracts locked url");
 
     // Flat string format extraction test
-    string flatLinked = "{\n  \"name\": \"pkg\",\n  \"dependencies\": {\n    \"cex-cli\": \"2.5.0\",\n    \"cex-log\": \"1.0.0\"\n  }\n}\n";
+    let flatLinked: string = "{\n  \"name\": \"pkg\",\n  \"dependencies\": {\n    \"cex-cli\": \"2.5.0\",\n    \"cex-log\": \"1.0.0\"\n  }\n}\n";
     assertTrue(DependencyDownloader::extractLockedVersion(flatLinked, "cex-cli") == "2.5.0", "extractLockedVersion extracts version from flat string format");
     assertTrue(DependencyDownloader::extractLockedVersion(flatLinked, "cex-log") == "1.0.0", "extractLockedVersion extracts flat string second entry");
 
     // Root name collision protection test
-    string collisionLinked = "{\n  \"name\": \"cex-pack\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"other-pkg\": {\n      \"version\": \"3.3.3\"\n    }\n  }\n}\n";
+    let collisionLinked: string = "{\n  \"name\": \"cex-pack\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"other-pkg\": {\n      \"version\": \"3.3.3\"\n    }\n  }\n}\n";
     assertTrue(DependencyDownloader::extractLockedVersion(collisionLinked, "cex-pack") == "", "extractLockedVersion does not falsely extract root name as dependency");
 
     // Scoped package name alias stripping & matching
@@ -442,7 +442,7 @@ void testDownloaderModule() {
     assertTrue(DependencyDownloader::stripScopeAlias("@cex-log") == "cex-log", "stripScopeAlias strips @ scope");
     assertTrue(DependencyDownloader::stripScopeAlias("cex-cli") == "cex-cli", "stripScopeAlias preserves clean name");
 
-    string scopedLinked = "{\n  \"dependencies\": {\n    \"roe\": {\n      \"version\": \"1.2.0\",\n      \"url\": \"url-roe\"\n    }\n  }\n}\n";
+    let scopedLinked: string = "{\n  \"dependencies\": {\n    \"roe\": {\n      \"version\": \"1.2.0\",\n      \"url\": \"url-roe\"\n    }\n  }\n}\n";
     assertTrue(DependencyDownloader::extractLockedVersion(scopedLinked, "@2tek/roe") == "1.2.0", "extractLockedVersion matches @2tek/roe to roe");
     assertTrue(DependencyDownloader::extractLockedUrl(scopedLinked, "@2tek/roe") == "url-roe", "extractLockedUrl matches @2tek/roe to roe");
 
@@ -461,51 +461,51 @@ void testDownloaderModule() {
     assertTrue(!DependencyDownloader::isVersionMatch("1.0.1", "1.0.0"), "isVersionMatch exact 1.0.0 does not match 1.0.1");
 
     // Lockfile linking and synchronization test
-    string linkTestManifest = "tests/fixtures/all-branches.json";
-    bool linkOk = downloader->linkManifest(linkTestManifest);
+    let linkTestManifest: string = "tests/fixtures/all-branches.json";
+    let linkOk: bool = downloader->linkManifest(linkTestManifest);
     assertTrue(linkOk, "linkManifest succeeds on fixture manifest");
     assertTrue(fs.exists("tests/fixtures/cex-pack-linked.json"), "linkManifest generated cex-pack-linked.json");
-    string generatedLinked = fs.readFile("tests/fixtures/cex-pack-linked.json");
+    let generatedLinked: string = fs.readFile("tests/fixtures/cex-pack-linked.json");
     assertTrue(generatedLinked.find("\"cex-cli\"") != -1, "Generated linked file contains cex-cli");
     assertTrue(DependencyDownloader::extractLockedVersion(generatedLinked, "cex-cli") == "1.0.0", "Generated linked file matches cex-cli version to manifest");
-    bool validLinked = downloader->validateLinkedAgainstManifest(linkTestManifest);
+    let validLinked: bool = downloader->validateLinkedAgainstManifest(linkTestManifest);
     assertTrue(validLinked, "validateLinkedAgainstManifest returns true when linked matches manifest");
 
     // Parse dependencies from manifest with no dependencies
-    Array<PackageDependency*>* emptyDeps = downloader->parseDependenciesFromManifest("{\n  \"name\": \"pkg\"\n}\n");
+    let emptyDeps: Array<PackageDependency*>* = downloader->parseDependenciesFromManifest("{\n  \"name\": \"pkg\"\n}\n");
     assertTrue(emptyDeps->length() == 0, "No dependencies block returns 0 dependencies");
 
     // Parse dependencies from manifest with broken block
-    Array<PackageDependency*>* brokenDeps = downloader->parseDependenciesFromManifest("{\n  \"dependencies\": \"invalid\"\n}\n");
+    let brokenDeps: Array<PackageDependency*>* = downloader->parseDependenciesFromManifest("{\n  \"dependencies\": \"invalid\"\n}\n");
     assertTrue(brokenDeps->length() == 0, "Invalid dependencies block returns 0 dependencies");
 
     // Parse dependencies from manifest with multiple entries
-    string sampleManifest = "{\n  \"dependencies\": {\n    \"cex-cli\": \"1.0.0\",\n    \"cexr\": \"8.0.0\"\n  }\n}\n";
-    Array<PackageDependency*>* parsedDeps = downloader->parseDependenciesFromManifest(sampleManifest);
+    let sampleManifest: string = "{\n  \"dependencies\": {\n    \"cex-cli\": \"1.0.0\",\n    \"cexr\": \"8.0.0\"\n  }\n}\n";
+    let parsedDeps: Array<PackageDependency*>* = downloader->parseDependenciesFromManifest(sampleManifest);
     assertTrue(parsedDeps->length() == 2, "Parsed dependencies extracted expected count");
     assertTrue(parsedDeps->get(0)->packageName == "cex-cli", "First dependency packageName is cex-cli");
     assertTrue(parsedDeps->get(1)->packageName == "cexr", "Second dependency packageName is cexr");
 
     // Download dependencies with missing manifest
-    bool dlMissing = downloader->downloadDependencies("non_existent_manifest.json", "tests/.cex_boxes");
+    let dlMissing: bool = downloader->downloadDependencies("non_existent_manifest.json", "tests/.cex_boxes");
     assertTrue(!dlMissing, "Downloader returns false when manifest does not exist");
 
     // Download dependencies with 0 dependencies
-    bool dlZero = downloader->downloadDependencies("tests/fixtures/no-deps.json", "tests/.cex_boxes");
+    let dlZero: bool = downloader->downloadDependencies("tests/fixtures/no-deps.json", "tests/.cex_boxes");
     assertTrue(dlZero, "Downloader succeeds when manifest declares 0 dependencies");
 
     // Download dependencies covering all package size branches
-    bool dlAll = downloader->downloadDependencies("tests/fixtures/all-branches.json", "tests/.cex_boxes");
+    let dlAll: bool = downloader->downloadDependencies("tests/fixtures/all-branches.json", "tests/.cex_boxes");
     assertTrue(dlAll, "Downloader successfully resolves all package branches and generates PROGRESS.md");
     assertTrue(fs.exists("tests/.cex_boxes/cex-cli/cex-pack.json"), "Downloaded dependency box manifest exists");
-    string cliBoxManifest = fs.readFile("tests/.cex_boxes/cex-cli/cex-pack.json");
+    let cliBoxManifest: string = fs.readFile("tests/.cex_boxes/cex-cli/cex-pack.json");
     assertTrue(cliBoxManifest.find("\"version\": \"1.0.0\"") != -1, "Downloaded dependency has exact version in manifest");
 }
 
 void testCLIModule() {
     println("[SUITE 9] Testing CLI Router, Options & Commands...");
 
-    PackCLI* cli = new PackCLI();
+    let cli: PackCLI* = new PackCLI();
 
     // Basic information display
     cli->printHelp();
@@ -553,26 +553,26 @@ void testCLIModule() {
 void testExamplesIntegration() {
     println("[SUITE 10] Testing Examples Integration...");
 
-    PackValidator* validator = new PackValidator();
-    DependencyDownloader* downloader = new DependencyDownloader();
+    let validator: PackValidator* = new PackValidator();
+    let downloader: DependencyDownloader* = new DependencyDownloader();
 
     // 1. examples/pack-with-downloads
-    bool ex1Ok = validator->validateFile("examples/pack-with-downloads/cex-pack.json");
+    let ex1Ok: bool = validator->validateFile("examples/pack-with-downloads/cex-pack.json");
     assertTrue(ex1Ok, "examples/pack-with-downloads/cex-pack.json validates successfully");
 
-    string ex1Content = fs.readFile("examples/pack-with-downloads/cex-pack.json");
-    ValidationResult* ex1Res = validator->validateContent(ex1Content);
+    let ex1Content: string = fs.readFile("examples/pack-with-downloads/cex-pack.json");
+    let ex1Res: ValidationResult* = validator->validateContent(ex1Content);
     assertTrue(ex1Res->isValid && ex1Res->errorCount == 0 && ex1Res->warningCount == 0, "examples/pack-with-downloads validates with 0 warnings");
 
-    bool ex1Dl = downloader->downloadDependencies("examples/pack-with-downloads/cex-pack.json", "examples/pack-with-downloads/.cex_boxes");
+    let ex1Dl: bool = downloader->downloadDependencies("examples/pack-with-downloads/cex-pack.json", "examples/pack-with-downloads/.cex_boxes");
     assertTrue(ex1Dl, "examples/pack-with-downloads dependencies download successfully");
 
     // 2. examples/project-have-packages-insides
-    bool ex2Ok = validator->validateFile("examples/project-have-packages-insides/cex-pack.json");
+    let ex2Ok: bool = validator->validateFile("examples/project-have-packages-insides/cex-pack.json");
     assertTrue(ex2Ok, "examples/project-have-packages-insides/cex-pack.json validates successfully");
 
-    string ex2Content = fs.readFile("examples/project-have-packages-insides/cex-pack.json");
-    ValidationResult* ex2Res = validator->validateContent(ex2Content);
+    let ex2Content: string = fs.readFile("examples/project-have-packages-insides/cex-pack.json");
+    let ex2Res: ValidationResult* = validator->validateContent(ex2Content);
     assertTrue(ex2Res->isValid && ex2Res->errorCount == 0 && ex2Res->warningCount == 0, "examples/project-have-packages-insides validates with 0 warnings");
 }
 
@@ -583,20 +583,20 @@ void testEnvAndProcessEnvModule() {
     assertTrue(EnvParser::trim("  \t\nhello world\r\n ") == "hello world", "EnvParser trim removes surrounding whitespace");
 
     // 2. EnvParser parseLine
-    string k1 = "";
-    string v1 = "";
+    let k1: string = "";
+    let v1: string = "";
     assertTrue(EnvParser::parseLine("DATABASE_HOST=localhost", k1, v1) && k1 == "DATABASE_HOST" && v1 == "localhost", "EnvParser parseLine simple assignment");
 
-    string k2 = "";
-    string v2 = "";
+    let k2: string = "";
+    let v2: string = "";
     assertTrue(EnvParser::parseLine("export API_TOKEN=\"secret#token\\n\"", k2, v2) && k2 == "API_TOKEN" && v2 == "secret#token\n", "EnvParser parseLine with export and escaped quotes");
 
-    string k3 = "";
-    string v3 = "";
+    let k3: string = "";
+    let v3: string = "";
     assertTrue(EnvParser::parseLine("APP_PORT=3000 # default port", k3, v3) && k3 == "APP_PORT" && v3 == "3000", "EnvParser parseLine with trailing inline comment");
 
-    string k4 = "";
-    string v4 = "";
+    let k4: string = "";
+    let v4: string = "";
     assertTrue(!EnvParser::parseLine("# Comment line only", k4, v4), "EnvParser parseLine ignores comment lines");
     assertTrue(!EnvParser::parseLine("    ", k4, v4), "EnvParser parseLine ignores empty lines");
 
@@ -613,44 +613,44 @@ void testEnvAndProcessEnvModule() {
     assertTrue(!EnvParser::isDynamic("localhost:8080"), "isDynamic returns false for static value");
 
     // 5. EnvParser interpolateString
-    Array<EnvItem*>* dummyItems = new Array<EnvItem*>();
+    let dummyItems: Array<EnvItem*>* = new Array<EnvItem*>();
     dummyItems->push(new EnvItem("PORT", "3000", "3000", false, ""));
     dummyItems->push(new EnvItem("HOST", "127.0.0.1", "127.0.0.1", false, ""));
-    string interp = EnvParser::interpolateString("http://ENV::[HOST]:ENV::[PORT]/api", dummyItems);
+    let interp: string = EnvParser::interpolateString("http://ENV::[HOST]:ENV::[PORT]/api", dummyItems);
     assertTrue(interp == "http://127.0.0.1:3000/api", "interpolateString resolves embedded ENV::[var] expressions");
 
     // 6. EnvManager parseEnvsOptions
-    EnvConfigOptions* opts1 = EnvManager::parseEnvsOptions("{\n  \"options\": {\n    \"envs\": {\n      \"development\": \"./tests/fixtures/.env.dev\",\n      \"production\": \"./tests/fixtures/.env.prod\"\n    }\n  }\n}\n");
+    let opts1: EnvConfigOptions* = EnvManager::parseEnvsOptions("{\n  \"options\": {\n    \"envs\": {\n      \"development\": \"./tests/fixtures/.env.dev\",\n      \"production\": \"./tests/fixtures/.env.prod\"\n    }\n  }\n}\n");
     assertTrue(opts1->hasEnv("development"), "parseEnvsOptions parses development from options.envs");
     assertTrue(opts1->hasEnv("production"), "parseEnvsOptions parses production from options.envs");
     assertTrue(opts1->getPathForEnv("development") == "./tests/fixtures/.env.dev", "parseEnvsOptions resolves development path");
     assertTrue(opts1->getPathForEnv("production") == "./tests/fixtures/.env.prod", "parseEnvsOptions resolves production path");
 
-    EnvConfigOptions* opts2 = EnvManager::parseEnvsOptions("{\n  \"envs\": {\n    \"test\": \"./tests/fixtures/.env.test\"\n  }\n}\n");
+    let opts2: EnvConfigOptions* = EnvManager::parseEnvsOptions("{\n  \"envs\": {\n    \"test\": \"./tests/fixtures/.env.test\"\n  }\n}\n");
     assertTrue(opts2->hasEnv("test"), "parseEnvsOptions parses top-level envs");
     assertTrue(opts2->getPathForEnv("test") == "./tests/fixtures/.env.test", "parseEnvsOptions resolves top-level path");
 
     // 7. EnvManager parseProcessEnv
-    Array<EnvItem*>* pItems1 = EnvManager::parseProcessEnv("{\n  \"process.env\": {\n    \"PORT\": \"ENV::[PORT]\",\n    \"DB\": \"ENV::[DATABASE_NAME]\",\n    \"TITLE\": \"My App\"\n  }\n}\n");
+    let pItems1: Array<EnvItem*>* = EnvManager::parseProcessEnv("{\n  \"process.env\": {\n    \"PORT\": \"ENV::[PORT]\",\n    \"DB\": \"ENV::[DATABASE_NAME]\",\n    \"TITLE\": \"My App\"\n  }\n}\n");
     assertTrue(pItems1->length() == 3, "parseProcessEnv parses 3 items from process.env");
     assertTrue(pItems1->get(0)->key == "PORT" && pItems1->get(0)->isDynamic && pItems1->get(0)->sourceVarName == "PORT", "parseProcessEnv parses dynamic PORT item");
     assertTrue(pItems1->get(1)->key == "DB" && pItems1->get(1)->isDynamic && pItems1->get(1)->sourceVarName == "DATABASE_NAME", "parseProcessEnv parses dynamic DB item");
     assertTrue(pItems1->get(2)->key == "TITLE" && !pItems1->get(2)->isDynamic && pItems1->get(2)->rawValue == "My App", "parseProcessEnv parses static TITLE item");
 
-    Array<EnvItem*>* pItems2 = EnvManager::parseProcessEnv("{\n  \"process\": {\n    \"env\": {\n      \"PORT\": \"ENV::PORT\"\n    }\n  }\n}\n");
+    let pItems2: Array<EnvItem*>* = EnvManager::parseProcessEnv("{\n  \"process\": {\n    \"env\": {\n      \"PORT\": \"ENV::PORT\"\n    }\n  }\n}\n");
     assertTrue(pItems2->length() == 1, "parseProcessEnv parses item from process: { env: ... }");
     assertTrue(pItems2->get(0)->key == "PORT" && pItems2->get(0)->isDynamic, "parseProcessEnv dynamic item from process: { env: ... }");
 
-    Array<EnvItem*>* pItems3 = EnvManager::parseProcessEnv("{\n  \"env\": {\n    \"PORT\": \"ENV::[PORT]\"\n  }\n}\n");
+    let pItems3: Array<EnvItem*>* = EnvManager::parseProcessEnv("{\n  \"env\": {\n    \"PORT\": \"ENV::[PORT]\"\n  }\n}\n");
     assertTrue(pItems3->length() == 1, "parseProcessEnv parses item from top-level env: { ... }");
 
     // 8. EnvManager loadEnvFile
-    Array<EnvItem*>* devFileItems = EnvManager::loadEnvFile("tests/fixtures/.env.dev");
+    let devFileItems: Array<EnvItem*>* = EnvManager::loadEnvFile("tests/fixtures/.env.dev");
     assertTrue(devFileItems->length() == 4, "loadEnvFile loads 4 items from tests/fixtures/.env.dev");
 
     // 9. EnvManager autoLoad with tests/fixtures/env-manifest.json in development
     ProcessEnv::clear();
-    int devLoaded = EnvManager::autoLoad("tests/fixtures/env-manifest.json", "development");
+    let devLoaded: int = EnvManager::autoLoad("tests/fixtures/env-manifest.json", "development");
     assertTrue(devLoaded > 0, "autoLoad with development env loads variables");
     assertTrue(ProcessEnv::get("PORT", "") == "3000", "ProcessEnv::get PORT is 3000 in development");
     assertTrue(ProcessEnv::getInt("PORT", 0) == 3000, "ProcessEnv::getInt PORT is 3000 in development");
@@ -662,7 +662,7 @@ void testEnvAndProcessEnvModule() {
 
     // 10. EnvManager autoLoad with tests/fixtures/env-manifest.json in production
     ProcessEnv::clear();
-    int prodLoaded = EnvManager::autoLoad("tests/fixtures/env-manifest.json", "production");
+    let prodLoaded: int = EnvManager::autoLoad("tests/fixtures/env-manifest.json", "production");
     assertTrue(prodLoaded > 0, "autoLoad with production env loads variables");
     assertTrue(ProcessEnv::get("PORT", "") == "8080", "ProcessEnv::get PORT is 8080 in production");
     assertTrue(ProcessEnv::getInt("PORT", 0) == 8080, "ProcessEnv::getInt PORT is 8080 in production");
@@ -678,13 +678,13 @@ void testEnvAndProcessEnvModule() {
     assertTrue(process.env.get("CUSTOM_DYNAMIC_VAR", "") == "active_session", "process.env.get returns newly set var");
 
     // 12. EnvManager resolveManifest
-    string rawManifestStr = "{\n  \"serverPort\": \"ENV::[PORT]\",\n  \"database\": \"ENV::[DATABASE_NAME]\"\n}\n";
-    string resolvedJson = EnvManager::resolveManifest(rawManifestStr, "production", "tests/fixtures/env-manifest.json");
+    let rawManifestStr: string = "{\n  \"serverPort\": \"ENV::[PORT]\",\n  \"database\": \"ENV::[DATABASE_NAME]\"\n}\n";
+    let resolvedJson: string = EnvManager::resolveManifest(rawManifestStr, "production", "tests/fixtures/env-manifest.json");
     assertTrue(resolvedJson.find("\"serverPort\": \"8080\"") != -1, "resolveManifest replaces ENV::[PORT] with 8080 in production");
     assertTrue(resolvedJson.find("\"database\": \"mydb_prod\"") != -1, "resolveManifest replaces ENV::[DATABASE_NAME] with mydb_prod in production");
 
     // 13. CLI run env
-    PackCLI* cli = new PackCLI();
+    let cli: PackCLI* = new PackCLI();
     assertTrue(cli->run("env", "tests/fixtures/env-manifest.json") == 0, "CLI run env with manifest returns 0");
 }
 
@@ -692,7 +692,7 @@ void testCvmRepositoryModule() {
     println("[SUITE 12] Testing CVM Repository & Web-Pack.json Manifest Configuration...");
 
     // 1. CvmRepositoryConfig defaults
-    CvmRepositoryConfig* cvmCfg = new CvmRepositoryConfig();
+    let cvmCfg: CvmRepositoryConfig* = new CvmRepositoryConfig();
     assertTrue(!cvmCfg->isDefined, "CvmRepositoryConfig default isDefined is false");
     assertTrue(cvmCfg->type == "cvm", "CvmRepositoryConfig default type is cvm");
     assertTrue(cvmCfg->url == "", "CvmRepositoryConfig default url is empty");
@@ -700,67 +700,67 @@ void testCvmRepositoryModule() {
     assertTrue(cvmCfg->branch == "main", "CvmRepositoryConfig default branch is main");
 
     // 2. Custom constructor with web-pack.json
-    CvmRepositoryConfig* customCfg = new CvmRepositoryConfig("cvm://localhost:3110/repo/web", "web-pack.json", "release");
+    let customCfg: CvmRepositoryConfig* = new CvmRepositoryConfig("cvm://localhost:3110/repo/web", "web-pack.json", "release");
     assertTrue(customCfg->isDefined, "CvmRepositoryConfig custom isDefined is true");
     assertTrue(customCfg->url == "cvm://localhost:3110/repo/web", "CvmRepositoryConfig custom url matches");
     assertTrue(customCfg->path == "web-pack.json", "CvmRepositoryConfig custom path matches web-pack.json");
     assertTrue(customCfg->branch == "release", "CvmRepositoryConfig custom branch matches release");
 
     // 3. PackManifest setCvmRepository
-    PackManifest* manifest = new PackManifest();
+    let manifest: PackManifest* = new PackManifest();
     assertTrue(!manifest->hasCvmRepository, "PackManifest default hasCvmRepository is false");
     manifest->setCvmRepository("cvm://localhost:3110/repo/app", "web-pack.json", "main");
     assertTrue(manifest->hasCvmRepository, "PackManifest hasCvmRepository is true after setCvmRepository");
     assertTrue(manifest->cvmRepository->path == "web-pack.json", "PackManifest cvmRepository path is web-pack.json");
 
     // 4. Schema validation with string cvm_repository
-    SchemaValidator* schemaVal = new SchemaValidator();
-    string strCvmManifest = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": \"cvm://localhost:3110/repo/app\"\n}\n";
-    ValidationResult* res1 = new ValidationResult();
+    let schemaVal: SchemaValidator* = new SchemaValidator();
+    let strCvmManifest: string = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": \"cvm://localhost:3110/repo/app\"\n}\n";
+    let res1: ValidationResult* = new ValidationResult();
     schemaVal->validateCvmRepositoryRule(strCvmManifest, res1);
     assertTrue(res1->isValid && res1->errorCount == 0, "String cvm_repository passes validation");
 
     // 5. Schema validation with object cvm_repository pointing to web-pack.json
-    string objCvmManifest = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": {\n    \"type\": \"cvm\",\n    \"url\": \"cvm://localhost:3110/repo/app\",\n    \"path\": \"web-pack.json\",\n    \"branch\": \"main\"\n  }\n}\n";
-    ValidationResult* res2 = new ValidationResult();
+    let objCvmManifest: string = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": {\n    \"type\": \"cvm\",\n    \"url\": \"cvm://localhost:3110/repo/app\",\n    \"path\": \"web-pack.json\",\n    \"branch\": \"main\"\n  }\n}\n";
+    let res2: ValidationResult* = new ValidationResult();
     schemaVal->validateCvmRepositoryRule(objCvmManifest, res2);
     assertTrue(res2->isValid && res2->errorCount == 0, "Object cvm_repository with web-pack.json passes validation");
 
     // 6. Schema validation: empty path detection
-    string emptyPathManifest = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": {\n    \"type\": \"cvm\",\n    \"url\": \"cvm://localhost:3110/repo/app\",\n    \"path\": \"\",\n    \"branch\": \"main\"\n  }\n}\n";
-    ValidationResult* res3 = new ValidationResult();
+    let emptyPathManifest: string = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": {\n    \"type\": \"cvm\",\n    \"url\": \"cvm://localhost:3110/repo/app\",\n    \"path\": \"\",\n    \"branch\": \"main\"\n  }\n}\n";
+    let res3: ValidationResult* = new ValidationResult();
     schemaVal->validateCvmRepositoryRule(emptyPathManifest, res3);
     assertTrue(!res3->isValid, "Empty cvm_repository path triggers validation error");
 
     // 7. Schema validation: path traversal prohibition
-    string traversalManifest = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": {\n    \"type\": \"cvm\",\n    \"url\": \"cvm://localhost:3110/repo/app\",\n    \"path\": \"../web-pack.json\"\n  }\n}\n";
-    ValidationResult* res4 = new ValidationResult();
+    let traversalManifest: string = "{\n  \"name\": \"@2tek/app\",\n  \"version\": \"1.0.0\",\n  \"main\": \"src/index.cex\",\n  \"target\": \"runtime\",\n  \"cvm_repository\": {\n    \"type\": \"cvm\",\n    \"url\": \"cvm://localhost:3110/repo/app\",\n    \"path\": \"../web-pack.json\"\n  }\n}\n";
+    let res4: ValidationResult* = new ValidationResult();
     schemaVal->validateCvmRepositoryRule(traversalManifest, res4);
     assertTrue(!res4->isValid, "cvm_repository path traversal ('..') triggers validation error");
 
     // 8. Extraction helpers
-    string extractedPath = SchemaValidator::extractCvmRepositoryPath(objCvmManifest);
+    let extractedPath: string = SchemaValidator::extractCvmRepositoryPath(objCvmManifest);
     assertTrue(extractedPath == "web-pack.json", "extractCvmRepositoryPath correctly extracts web-pack.json");
 
-    string defaultPath = SchemaValidator::extractCvmRepositoryPath("{\n  \"name\": \"app\"\n}\n");
+    let defaultPath: string = SchemaValidator::extractCvmRepositoryPath("{\n  \"name\": \"app\"\n}\n");
     assertTrue(defaultPath == "cex-pack.json", "extractCvmRepositoryPath defaults to cex-pack.json");
 
-    string extractedUrl = SchemaValidator::extractCvmRepositoryUrl(objCvmManifest);
+    let extractedUrl: string = SchemaValidator::extractCvmRepositoryUrl(objCvmManifest);
     assertTrue(extractedUrl == "cvm://localhost:3110/repo/app", "extractCvmRepositoryUrl correctly extracts url from object");
 
-    string extractedStrUrl = SchemaValidator::extractCvmRepositoryUrl(strCvmManifest);
+    let extractedStrUrl: string = SchemaValidator::extractCvmRepositoryUrl(strCvmManifest);
     assertTrue(extractedStrUrl == "cvm://localhost:3110/repo/app", "extractCvmRepositoryUrl correctly extracts url from string");
 
     // 9. PackCLI CVM dispatching
-    PackCLI* cli = new PackCLI();
+    let cli: PackCLI* = new PackCLI();
     assertTrue(cli->runWithArg("check", "cex-pack.json", "") == 0, "CLI check on valid cex-pack.json returns 0");
 }
 
 void testCvmConfigAndCexBoxesModule() {
     println("[SUITE 13] Testing CVM Config (.cvm/config) & cex_boxes Target Resolution...");
 
-    string sampleIni = "[repository]\n    formatversion = 2\n    target = runtime\n    engine = CexR-v8\n    package = @2tek/pack\n    boxes = cex_boxes\n\n[cvm]\n    patchFormat = 2.0\n    compress = true\n    author = \"2-TEK Ecosystem <dev@2tek.local>\"\n\n[branch \"main\"]\n    remote = origin\n    merge = refs/heads/main\n";
-    CvmConfig* cfg = CvmConfig::parseCvmConfig(sampleIni, ".cvm/config");
+    let sampleIni: string = "[repository]\n    formatversion = 2\n    target = runtime\n    engine = CexR-v8\n    package = @2tek/pack\n    boxes = cex_boxes\n\n[cvm]\n    patchFormat = 2.0\n    compress = true\n    author = \"2-TEK Ecosystem <dev@2tek.local>\"\n\n[branch \"main\"]\n    remote = origin\n    merge = refs/heads/main\n";
+    let cfg: CvmConfig* = CvmConfig::parseCvmConfig(sampleIni, ".cvm/config");
 
     assertTrue(cfg->isDefined, "CvmConfig isDefined is true after parsing valid INI");
     assertTrue(cfg->formatVersion == 2, "CvmConfig formatVersion is 2");
@@ -775,14 +775,14 @@ void testCvmConfigAndCexBoxesModule() {
     assertTrue(cfg->merge == "refs/heads/main", "CvmConfig merge is refs/heads/main");
     assertTrue(cfg->branch == "main", "CvmConfig branch is main");
 
-    CvmConfig* loadedCfg = CvmConfig::load("cex-pack.json");
+    let loadedCfg: CvmConfig* = CvmConfig::load("cex-pack.json");
     assertTrue(loadedCfg->isDefined, "CvmConfig::load on cex-pack.json loads local .cvm/config");
     assertTrue(loadedCfg->boxesDir == "cex_boxes", "Loaded .cvm/config sets boxesDir to cex_boxes");
 
-    string boxDir = DependencyDownloader::resolveDefaultBoxDirectory("cex-pack.json", loadedCfg);
+    let boxDir: string = DependencyDownloader::resolveDefaultBoxDirectory("cex-pack.json", loadedCfg);
     assertTrue(boxDir == "cex_boxes", "resolveDefaultBoxDirectory resolves to cex_boxes when configured in .cvm");
 
-    PackCLI* cli = new PackCLI();
+    let cli: PackCLI* = new PackCLI();
     assertTrue(cli->runWithArg("cvm", "cex-pack.json", "config") == 0, "CLI cvm config returns 0");
 }
 

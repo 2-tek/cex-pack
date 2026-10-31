@@ -1,0 +1,34 @@
+// CexT Example 01: Unit Testing with Assert and TestSuite
+import "@/src/assert.cex";
+import "@/src/runner.cex";
+
+int main() {
+    println("=== CexT Example 01: Unit Testing Suite ===");
+
+    TestSuite* suite = new TestSuite("Arithmetic & String Unit Tests");
+
+    // Test 1: Addition & Multiplication
+    Assert::reset();
+    Assert::equalsInt(2 + 2, 4, "2 + 2 == 4");
+    Assert::equalsInt(7 * 6, 42, "7 * 6 == 42");
+    suite->addResult("test_arithmetic_ops", Assert::getFailures() == 0, "Arithmetic verification failed", 1);
+
+    // Test 2: String operations
+    Assert::reset();
+    string sample = "CexLanguage";
+    Assert::isTrue(sample.length() == 11, "String length should be 11");
+    Assert::equalsString(sample.substr(0, 3), "Cex", "Substring prefix is Cex");
+    suite->addResult("test_string_operations", Assert::getFailures() == 0, "String verification failed", 1);
+
+    // Test 3: Comparison constraints
+    Assert::reset();
+    Assert::greaterThan(1000, 500, "1000 > 500");
+    Assert::lessThan(10, 20, "10 < 20");
+    suite->addResult("test_comparisons", Assert::getFailures() == 0, "Comparison verification failed", 1);
+
+    // Print summary report
+    TestReporter::printSummary(suite);
+
+    println("=== Example 01 Finished ===");
+    return suite->failCount() == 0 ? 0 : 1;
+}

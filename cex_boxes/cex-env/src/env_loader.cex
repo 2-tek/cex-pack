@@ -1,0 +1,454 @@
+// CexEnvLoader: High-Performance Environment Configuration Loader (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "./parser.cex";
+import "./config.cex";
+
+class EnvLoader {
+    public EnvConfig* config = new EnvConfig();
+    public Array<string>* keysList = new Array<string>();
+    public Array<string>* valuesList = new Array<string>();
+    public bool isLoaded = false;
+
+    public constructor() {}
+
+    static public EnvLoader* create() {
+        return new EnvLoader();
+    }
+
+    private int findKeyIndex(string key) {
+        int len = (int)this.keysList->length();
+        for (int i = 0; i < len; i++) {
+            if (this.keysList->get(i) == key) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public void set(string key, string val) {
+        int idx = this.findKeyIndex(key);
+        if (idx >= 0) {
+            this.valuesList->set(idx, val);
+        } else {
+            this.keysList->push(key);
+            this.valuesList->push(val);
+        }
+    }
+
+    public string get(string key, string defaultVal) {
+        int idx = this.findKeyIndex(key);
+        if (idx >= 0) {
+            return this.valuesList->get(idx);
+        }
+        char* envV = (char*)std::getenv(key.c_str());
+        if (envV != nullptr) {
+            return std::string(envV);
+        }
+        return defaultVal;
+    }
+
+    public int getInt(string key, int defaultVal) {
+        string v = this.get(key, "");
+        if (!v.empty()) {
+            return EnvParser::parseInt(v, defaultVal);
+        }
+        return defaultVal;
+    }
+
+    public bool getBool(string key, bool defaultVal) {
+        string v = this.get(key, "");
+        if (!v.empty()) {
+            return EnvParser::parseBool(v, defaultVal);
+        }
+        return defaultVal;
+    }
+
+    public double getFloat(string key, double defaultVal) {
+        string v = this.get(key, "");
+        if (!v.empty()) {
+            return EnvParser::parseFloat(v, defaultVal);
+        }
+        return defaultVal;
+    }
+
+    public int getPort(int defaultPort) {
+        return this.getInt("PORT", defaultPort);
+    }
+
+    public bool hasKey(string key) {
+        int idx = this.findKeyIndex(key);
+        if (idx >= 0) return true;
+        char* envV = (char*)std::getenv(key.c_str());
+        return envV != nullptr;
+    }
+
+    public int size() {
+        return (int)this.keysList->length();
+    }
+
+    public void clear() {
+        this.keysList = new Array<string>();
+        this.valuesList = new Array<string>();
+        this.isLoaded = false;
+    }
+
+    public int loadFile(string path) {
+        std::ifstream file(path);
+        if (!file.is_open()) {
+            return 0;
+        }
+
+        int loadedCount = 0;
+        string line = "";
+        while (std::getline(file, line)) {
+            string k = "";
+            string v = "";
+            if (EnvParser::parseLine(line, k, v)) {
+                this.set(k, v);
+                loadedCount++;
+            }
+        }
+        this.isLoaded = true;
+        return loadedCount;
+    }
+
+    public int loadAll() {
+        int totalLoaded = 0;
+        Array<string>* paths = this.config->getPaths();
+        int count = (int)paths->length();
+        for (int i = 0; i < count; i++) {
+            string p = paths->get(i);
+            totalLoaded += this.loadFile(p);
+        }
+        this.isLoaded = true;
+        return totalLoaded;
+    }
+
+    public bool saveToFile(string path) {
+        std::ofstream file(path);
+        if (!file.is_open()) {
+            return false;
+        }
+
+        int count = (int)this.keysList->length();
+        for (int i = 0; i < count; i++) {
+            string k = this.keysList->get(i);
+            string v = this.valuesList->get(i);
+            file << k << "=" << v << "\n";
+        }
+        return true;
+    }
+
+    // Static Convenience API (100% Drop-In Compatible with all 2-TEK applications)
+
+    static public string loadString(string key, string defaultVal) {
+        Array<string>* envFiles = new Array<string>();
+        envFiles->push(".env");
+        envFiles->push("document/.env");
+        envFiles->push("documents/.env");
+        envFiles->push("config/.env");
+        envFiles->push("../.env");
+        envFiles->push("../../.env");
+        envFiles->push("../../../.env");
+        envFiles->push("../../../../.env");
+
+        int count = (int)envFiles->length();
+        for (int i = 0; i < count; i++) {
+            string p = envFiles->get(i);
+            std::ifstream file(p);
+            if (file.is_open()) {
+                string line = "";
+                while (std::getline(file, line)) {
+                    string k = "";
+                    string v = "";
+                    if (EnvParser::parseLine(line, k, v)) {
+                        if (k == key && !v.empty()) {
+                            return v;
+                        }
+                    }
+                }
+            }
+        }
+
+        char* envV = (char*)std::getenv(key.c_str());
+        if (envV != nullptr) {
+            return std::string(envV);
+        }
+
+        return defaultVal;
+    }
+
+    static public int loadInt(string key, int defaultVal) {
+        string valStr = EnvLoader::loadString(key, "");
+        if (!valStr.empty()) {
+            return EnvParser::parseInt(valStr, defaultVal);
+        }
+        return defaultVal;
+    }
+
+    static public bool loadBool(string key, bool defaultVal) {
+        string valStr = EnvLoader::loadString(key, "");
+        if (!valStr.empty()) {
+            return EnvParser::parseBool(valStr, defaultVal);
+        }
+        return defaultVal;
+    }
+
+    static public double loadFloat(string key, double defaultVal) {
+        string valStr = EnvLoader::loadString(key, "");
+        if (!valStr.empty()) {
+            return EnvParser::parseFloat(valStr, defaultVal);
+        }
+        return defaultVal;
+    }
+
+    static public int loadPort(int defaultPort) {
+        return EnvLoader::loadInt("PORT", defaultPort);
+    }
+
+    static public string load(string key, string defaultVal) {
+        return EnvLoader::loadString(key, defaultVal);
+    }
+
+    static public bool has(string key) {
+        string valStr = EnvLoader::loadString(key, "__CEX_NOT_SET__");
+        return valStr != "__CEX_NOT_SET__";
+    }
+
+    static public int getControlPort(int defaultPort) {
+        return EnvLoader::loadInt("CONTROL_PORT", defaultPort);
+    }
+
+    static public int getPublicPort(int defaultPort) {
+        return EnvLoader::loadInt("PUBLIC_PORT", defaultPort);
+    }
+
+    static public string getDbUrl(string defaultUrl) {
+        return EnvLoader::loadString("DB_URL", defaultUrl);
+    }
+
+    static public string getJwtSecret(string defaultSecret) {
+        return EnvLoader::loadString("JWT_SECRET", defaultSecret);
+    }
+
+    static public string getSsoUrl() {
+        return EnvLoader::loadString("SSO_URL", "http://localhost:3090");
+    }
+
+    static public string getSsoUrl(string defaultUrl) {
+        return EnvLoader::loadString("SSO_URL", defaultUrl);
+    }
+
+    static public string getSsoBaseDomain() {
+        string url = EnvLoader::getSsoUrl();
+        int protoIdx = (int)url.find("://");
+        string rest = protoIdx != -1 ? url.substr(protoIdx + 3) : url;
+        int slashIdx = (int)rest.find("/");
+        if (slashIdx != -1) rest = rest.substr(0, slashIdx);
+        int colonIdx = (int)rest.find(":");
+        if (colonIdx != -1) rest = rest.substr(0, colonIdx);
+        return rest;
+    }
+
+    static public void resolveIamHostAndPort(string ssoUrl, string& hostOut, int& portOut, bool& tlsOut) {
+        tlsOut = ssoUrl.find("https://") == 0;
+        string stripped = ssoUrl;
+        if (stripped.find("https://") == 0) stripped = stripped.substr(8);
+        else if (stripped.find("http://") == 0) stripped = stripped.substr(7);
+        int slashIdx = (int)stripped.find("/");
+        if (slashIdx != -1) stripped = stripped.substr(0, slashIdx);
+        int colonIdx = (int)stripped.find(":");
+        if (colonIdx != -1) {
+            hostOut = stripped.substr(0, colonIdx);
+            portOut = std::stoi(stripped.substr(colonIdx + 1));
+        } else {
+            hostOut = stripped;
+            portOut = 3090;
+        }
+    }
+
+    static public string getAppUrl() {
+        return "http://localhost:3054";
+    }
+
+    static public string getAppUrl(int port) {
+        return "http://localhost:" + std::to_string(port);
+    }
+
+    static public string getCexPath() {
+        string p = EnvLoader::loadString("CEX_PATH", "");
+        if (p.empty()) {
+            p = EnvLoader::loadString("CEX_URL_PATH", "");
+        }
+        return p;
+    }
+
+    static public string normalizeEnvKey(string name) {
+        string res = "";
+        for (size_t i = 0; i < name.length(); i++) {
+            char c = name[i];
+            if (c >= 'a' && c <= 'z') {
+                res.push_back((char)(c - 'a' + 'A'));
+            } else {
+                switch (c) {
+                    case '-':
+                    case '.':
+                    case ' ':
+                    res.push_back('_');
+                    break;
+                    default:
+                    res.push_back(c);
+                    break;
+                }
+            }
+        }
+        return res;
+    }
+
+    static public string urlEncode(string str) {
+        char* hexChars = "0123456789ABCDEF";
+        string res = "";
+        for (size_t i = 0; i < str.length(); i++) {
+            unsigned char c = (unsigned char)str[i];
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+                c == '-' || c == '_' || c == '.' || c == '~' || c == '/') {
+                res.push_back((char)c);
+            } else {
+                res.push_back('%');
+                res.push_back(hexChars[(c >> 4) & 0x0F]);
+                res.push_back(hexChars[c & 0x0F]);
+            }
+        }
+        return res;
+    }
+
+    static public string getAppTargetUrl(string appName, int defaultPort) {
+        string normName = EnvLoader::normalizeEnvKey(appName);
+
+        string targetUrl = EnvLoader::loadString("APP_URL_" + normName, "");
+        if (targetUrl.empty()) {
+            targetUrl = EnvLoader::loadString(normName + "_URL", "");
+        }
+
+        if (targetUrl.empty()) {
+            string appUrlTemplate = EnvLoader::loadString("APP_URL_TEMPLATE", "");
+            if (!appUrlTemplate.empty()) {
+                targetUrl = appUrlTemplate;
+            } else {
+                string baseAppUrl = EnvLoader::getAppUrl(defaultPort);
+                targetUrl = baseAppUrl + "/app/" + appName;
+            }
+        }
+
+        size_t namePos = targetUrl.find("{name}");
+        if (namePos != std::string::npos) {
+            targetUrl = targetUrl.substr(0, namePos) + appName + targetUrl.substr(namePos + 6);
+        }
+        size_t appNamePos = targetUrl.find("{appName}");
+        if (appNamePos != std::string::npos) {
+            targetUrl = targetUrl.substr(0, appNamePos) + appName + targetUrl.substr(appNamePos + 9);
+        }
+        size_t portPos = targetUrl.find("{port}");
+        if (portPos != std::string::npos) {
+            targetUrl = targetUrl.substr(0, portPos) + std::to_string(defaultPort) + targetUrl.substr(portPos + 6);
+        }
+
+        string cexPath = EnvLoader::loadString("CEX_PATH_" + normName, "");
+        if (cexPath.empty()) {
+            cexPath = EnvLoader::getCexPath();
+        }
+
+        size_t cexPlace1 = targetUrl.find("{cex-path}");
+        if (cexPlace1 != std::string::npos) {
+            return targetUrl.substr(0, cexPlace1) + EnvLoader::urlEncode(cexPath) + targetUrl.substr(cexPlace1 + 10);
+        }
+        size_t cexPlace2 = targetUrl.find("{cexPath}");
+        if (cexPlace2 != std::string::npos) {
+            return targetUrl.substr(0, cexPlace2) + EnvLoader::urlEncode(cexPath) + targetUrl.substr(cexPlace2 + 9);
+        }
+
+        if (!cexPath.empty() && targetUrl.find("cex-path=") == std::string::npos) {
+            string sep = (targetUrl.find('?') == std::string::npos) ? "?" : "&";
+            targetUrl = targetUrl + sep + "cex-path=" + EnvLoader::urlEncode(cexPath);
+        }
+
+        return targetUrl;
+    }
+
+    static public string getAppTargetUrl(string appName) {
+        return EnvLoader::getAppTargetUrl(appName, 3050);
+    }
+
+    static public EnvLoader* loadFromPath(string filePath) {
+        EnvLoader* loader = new EnvLoader();
+        loader->loadFile(filePath);
+        return loader;
+    }
+}
+
+class CexEnv {
+    static public string loadString(string key, string defaultVal) {
+        return EnvLoader::loadString(key, defaultVal);
+    }
+
+    static public int loadInt(string key, int defaultVal) {
+        return EnvLoader::loadInt(key, defaultVal);
+    }
+
+    static public bool loadBool(string key, bool defaultVal) {
+        return EnvLoader::loadBool(key, defaultVal);
+    }
+
+    static public double loadFloat(string key, double defaultVal) {
+        return EnvLoader::loadFloat(key, defaultVal);
+    }
+
+    static public int loadPort(int defaultPort) {
+        return EnvLoader::loadPort(defaultPort);
+    }
+
+    static public string load(string key, string defaultVal) {
+        return EnvLoader::load(key, defaultVal);
+    }
+
+    static public string get(string key, string defaultVal) {
+        return EnvLoader::load(key, defaultVal);
+    }
+
+    static public int getInt(string key, int defaultVal) {
+        return EnvLoader::loadInt(key, defaultVal);
+    }
+
+    static public bool getBool(string key, bool defaultVal) {
+        return EnvLoader::loadBool(key, defaultVal);
+    }
+
+    static public bool has(string key) {
+        return EnvLoader::has(key);
+    }
+
+    static public int getControlPort(int defaultPort) {
+        return EnvLoader::loadInt("CONTROL_PORT", defaultPort);
+    }
+
+    static public int getPublicPort(int defaultPort) {
+        return EnvLoader::loadInt("PUBLIC_PORT", defaultPort);
+    }
+
+    static public string getDbUrl(string defaultUrl) {
+        return EnvLoader::loadString("DB_URL", defaultUrl);
+    }
+
+    static public string getJwtSecret(string defaultSecret) {
+        return EnvLoader::loadString("JWT_SECRET", defaultSecret);
+    }
+
+    static public string getSsoUrl(string defaultUrl) {
+        return EnvLoader::loadString("SSO_URL", defaultUrl);
+    }
+
+    static public EnvLoader* create() {
+        return EnvLoader::create();
+    }
+}

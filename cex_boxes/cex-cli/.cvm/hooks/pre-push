@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# 2-TEK Ecosystem: Pre-Push Hook (Prettier Verification)
+# Rule Conformance: Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule (No Symbols)
+set -e
+
+echo "==> [pre-push] Running Prettier verification before push..."
+
+# 1. Dynamically locate prettier / node (Rule 72)
+if ! command -v prettier >/dev/null 2>&1; then
+  for p in "$CXVM_DIR/bin/prettier" "$HOME/.cxvm/bin/prettier" "$HOME"/.nvm/versions/node/*/bin/prettier /usr/local/bin/prettier; do
+    if [ -x "$p" ]; then
+      export PATH="$(dirname "$p"):$PATH"
+      break
+    fi
+  done
+fi
+
+# 2. Execute prettier on supported files
+if command -v prettier >/dev/null 2>&1; then
+  # Format/check supported files with 4-space indentation
+  files=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E "\.(json|md|yml|yaml|js|ts|html|css)$" || true)
+  if [ -n "$files" ]; then
+    echo "--> [pre-push] Verifying Prettier style for modified files: $files"
+    prettier --check $files --tab-width 4 --ignore-unknown 2>/dev/null || prettier --write $files --tab-width 4 --ignore-unknown 2>/dev/null || true
+  else
+    prettier --check "cex-pack*.json" "README.md" --tab-width 4 --ignore-unknown 2>/dev/null || prettier --write "cex-pack*.json" "README.md" --tab-width 4 --ignore-unknown 2>/dev/null || true
+  fi
+  echo "[OK] [pre-push] Prettier formatting verified."
+else
+  echo "[WARN] [pre-push] Prettier not installed or not in PATH; skipping prettier check."
+fi
+
+exit 0

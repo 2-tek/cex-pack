@@ -1,0 +1,31 @@
+// Cex-CLI Example 03: Governance & Doctor Diagnostics Inspector
+// Demonstrates running .agents rule audits, .cvm patch checks, and doctor system health checks
+
+import "../src/types.cex";
+import "../src/config.cex";
+import "../src/terminal.cex";
+import "../src/builder.cex";
+import "../src/cli.cex";
+
+int main() {
+    println("==================================================================");
+    println("   Cex-CLI Example 03: Governance & System Doctor Inspector      ");
+    println("==================================================================");
+
+    CexCLI* cli = new CexCLI();
+
+    // 1. Run Doctor Diagnostics
+    println("\n[1] Environment & Toolchain Doctor Diagnostics:");
+    cli->execute("doctor", "", "");
+
+    // 2. Inspect .agents Rule Compliance
+    println("\n[2] Agent Governance & Rule Specification Audit:");
+    cli->execute("agents", "status", "");
+
+    // 3. Inspect .cvm Patch & Repository Status
+    println("\n[3] CVM Change Record Repository Audit:");
+    cli->execute("cvm", "status", "");
+
+    println("\nGovernance & System Doctor Demonstration Completed Successfully!");
+    return 0;
+}

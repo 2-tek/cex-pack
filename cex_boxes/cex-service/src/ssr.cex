@@ -1,0 +1,53 @@
+// PerfectCex: Server-Side Rendering (SSR) & Page Document Engine
+// Next.js-style HTML document rendering with metadata and hydration state
+
+class SSRDocument {
+    public string title;
+    public string metaDescription = "High-Performance SSR Page powered by 2-TEK PerfectCex";
+    public string pageName;
+    public string contentHtml;
+    public string initialStateJson;
+
+    public constructor(string pageName, string title, string contentHtml, string initialStateJson) {
+        this.pageName = pageName;
+        this.title = title;
+        this.contentHtml = contentHtml;
+        this.initialStateJson = initialStateJson;
+    }
+
+    public string renderFullHtml() {
+        string htmlDoc = "";
+        htmlDoc += "<!DOCTYPE html>\n";
+        htmlDoc += "<html lang=\"en\">\n";
+        htmlDoc += "<head>\n";
+        htmlDoc += "  <meta charset=\"UTF-8\" />\n";
+        htmlDoc += "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n";
+        htmlDoc += "  <title>" + this.title + "</title>\n";
+        htmlDoc += "  <meta name=\"description\" content=\"" + this.metaDescription + "\" />\n";
+        htmlDoc += "  <style>\n";
+        htmlDoc += "    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 2rem; }\n";
+        htmlDoc += "    .container { max-width: 900px; margin: 0 auto; }\n";
+        htmlDoc += "    .hero { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }\n";
+        htmlDoc += "    .btn { background: #0284c7; color: white; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; display: inline-block; }\n";
+        htmlDoc += "  </style>\n";
+        htmlDoc += "</head>\n";
+        htmlDoc += "<body>\n";
+        htmlDoc += "  <div id=\"__perfect_root\" class=\"container\">\n";
+        htmlDoc += "    " + this.contentHtml + "\n";
+        htmlDoc += "  </div>\n";
+        htmlDoc += "  <script id=\"__PERFECT_DATA__\" type=\"application/json\">\n";
+        htmlDoc += "    " + this.initialStateJson + "\n";
+        htmlDoc += "  </script>\n";
+        htmlDoc += "</body>\n";
+        htmlDoc += "</html>\n";
+        return htmlDoc;
+    }
+
+    public void renderTerminalCard() {
+        println("+------------------------------------------------------------+");
+        print("|  [PerfectCex SSR Page] "); println(this.pageName);
+        print("|  Title: "); println(this.title);
+        print("|  Hydration State Payload: "); println(this.initialStateJson);
+        println("+------------------------------------------------------------+");
+    }
+}

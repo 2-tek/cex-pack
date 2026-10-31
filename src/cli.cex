@@ -10,8 +10,8 @@ import fs from "fs";
 import "c.cstdlib";
 
 class PackCLI {
-    private PackValidator* validator = new PackValidator();
-    private DependencyDownloader* downloader = new DependencyDownloader();
+    private validator: PackValidator* = new PackValidator();
+    private downloader: DependencyDownloader* = new DependencyDownloader();
 
     public constructor() {}
 
@@ -56,12 +56,12 @@ class PackCLI {
     }
 
     public int runCvmAction(string action, string manifestFile, string extraArg) {
-        string manifestPath = manifestFile;
+        let manifestPath: string = manifestFile;
         if (manifestPath.length() == 0) {
             manifestPath = "cex-pack.json";
         }
 
-        CvmConfig* cvmCfg = CvmConfig::load(manifestPath);
+        let cvmCfg: CvmConfig* = CvmConfig::load(manifestPath);
 
         println("\x1b[1;34m================================================------------------\x1b[0m");
         println("\x1b[1;36m   2-TEK CexPack CVM Integration & Manifest Synchronization       \x1b[0m");
@@ -76,10 +76,10 @@ class PackCLI {
             println("CVM Branch      : " + cvmCfg->branch + " (" + cvmCfg->remote + " -> " + cvmCfg->merge + ")");
         }
 
-        string cvmUrl = "";
-        string cvmPath = "";
+        let cvmUrl: string = "";
+        let cvmPath: string = "";
         if (fs.exists(manifestPath)) {
-            string content = fs.readFile(manifestPath);
+            let content: string = fs.readFile(manifestPath);
             cvmUrl = SchemaValidator::extractCvmRepositoryUrl(content);
             cvmPath = SchemaValidator::extractCvmRepositoryPath(content);
         }
@@ -98,11 +98,11 @@ class PackCLI {
 
         if (action == "push") {
             println("[CexPack CVM] Staging manifest and pushing changes to CVM repository...");
-            string pushCmd = "cvm push";
+            let pushCmd: string = "cvm push";
             if (cvmUrl.length() > 0) {
                 pushCmd = "cvm push " + cvmUrl;
             }
-            int code = system(pushCmd.c_str());
+            let code: int = system(pushCmd.c_str());
             if (code == 0) {
                 println("\x1b[1;32m[CexPack CVM] Push completed successfully.\x1b[0m");
                 return 0;
@@ -111,15 +111,15 @@ class PackCLI {
                 return 0;
             }
         } else if (action == "commit") {
-            string msg = extraArg;
+            let msg: string = extraArg;
             if (msg.length() == 0) {
                 msg = "chore: update manifest " + manifestPath;
             }
             println("[CexPack CVM] Committing changes with message: \"" + msg + "\"...");
-            string stageCmd = "cvm add " + manifestPath;
+            let stageCmd: string = "cvm add " + manifestPath;
             system(stageCmd.c_str());
-            string commitCmd = "cvm commit -m \"" + msg + "\"";
-            int code = system(commitCmd.c_str());
+            let commitCmd: string = "cvm commit -m \"" + msg + "\"";
+            let code: int = system(commitCmd.c_str());
             if (code == 0) {
                 println("\x1b[1;32m[CexPack CVM] Commit recorded successfully.\x1b[0m");
                 return 0;
@@ -145,8 +145,8 @@ class PackCLI {
     }
 
     public int runWithArg(string cmd, string targetFile, string extraArg) {
-        string fileToValidate = targetFile;
-        string boxTargetDir = "";
+        let fileToValidate: string = targetFile;
+        let boxTargetDir: string = "";
 
         if (fileToValidate.length() == 0) {
             fileToValidate = "cex-pack.json";
@@ -184,7 +184,7 @@ class PackCLI {
         }
 
         if (cmd == "cvm" || cmd == "--cvm") {
-            string act = "status";
+            let act: string = "status";
             if (extraArg.length() > 0) {
                 act = extraArg;
             } else if (targetFile != "cex-pack.json" && (targetFile == "config" || targetFile == "status" || targetFile == "push" || targetFile == "commit" || targetFile == "sync")) {
@@ -195,8 +195,8 @@ class PackCLI {
         }
 
         if (cmd == "downloads" || cmd == "download" || cmd == "--downloads" || cmd == "--download") {
-            string targetBox = boxTargetDir.length() > 0 ? boxTargetDir : "cex_boxes";
-            bool ok = this.downloader->downloadDependencies(fileToValidate, targetBox);
+            let targetBox: string = boxTargetDir.length() > 0 ? boxTargetDir : "cex_boxes";
+            let ok: bool = this.downloader->downloadDependencies(fileToValidate, targetBox);
             if (ok) {
                 return 0;
             }
@@ -204,7 +204,7 @@ class PackCLI {
         }
 
         if (cmd == "link" || cmd == "--link") {
-            bool ok = this.downloader->linkManifest(fileToValidate);
+            let ok: bool = this.downloader->linkManifest(fileToValidate);
             if (ok) {
                 return 0;
             }
@@ -212,13 +212,13 @@ class PackCLI {
         }
 
         if (cmd == "env" || cmd == "load-env" || cmd == "--env") {
-            int count = ProcessEnv::autoLoad(fileToValidate, "");
+            let count: int = ProcessEnv::autoLoad(fileToValidate, "");
             println("[CexPack] Auto-loaded " + std::to_string(count) + " environment variable(s) for process.env from " + fileToValidate);
             return 0;
         }
 
         if (cmd == "thunder" || cmd == "--thunder") {
-            bool valid = this.validator->validateFile(fileToValidate);
+            let valid: bool = this.validator->validateFile(fileToValidate);
             if (valid) {
                 println("[CexPack] Zero-file Thunder build configuration in " + fileToValidate + " is valid and ready for auto-load.");
                 return 0;
@@ -228,7 +228,7 @@ class PackCLI {
         }
 
         if (cmd == "check" || cmd == "lint" || cmd == "--check" || cmd.length() == 0 || cmd == fileToValidate) {
-            bool valid = this.validator->validateFile(fileToValidate);
+            let valid: bool = this.validator->validateFile(fileToValidate);
             this.downloader->validateLinkedAgainstManifest(fileToValidate);
             if (valid) {
                 return 0;
@@ -238,7 +238,7 @@ class PackCLI {
         }
 
         // Default attempt to validate specified file or path
-        bool ok = this.validator->validateFile(cmd);
+        let ok: bool = this.validator->validateFile(cmd);
         if (ok) {
             return 0;
         }

@@ -1,0 +1,66 @@
+// CexT Example 04: End-to-End Code Coverage Generation
+import "@/src/assert.cex";
+import "@/src/runner.cex";
+import "@/src/coverage.cex";
+import fs from "fs";
+
+int main() {
+    println("=== CexT Example 04: Code Coverage Generation ===");
+
+    CoverageCollector::reset();
+
+    // 1. Register Source File 1: Math Calculator
+    string mathSource = "// Math Calculator Module\nfn calcDiscount(price: int, discountPct: int): int {\n    let discount: int = (price * discountPct) / 100;\n    let finalPrice: int = price - discount;\n    return finalPrice;\n}\n\nfn isEligibleForPromo(age: int): bool {\n    if (age >= 18) {\n        return true;\n    }\n    return false;\n}\n";
+    CoverageCollector::registerFile("src/calc.cex", mathSource);
+
+    // 2. Register Source File 2: User Validation
+    string userSource = "// User Validation Module\nfn validateUsername(name: string): bool {\n    if (name.length() < 3) {\n        return false;\n    }\n    if (name.length() > 20) {\n        return false;\n    }\n    return true;\n}\n";
+    CoverageCollector::registerFile("src/validator.cex", userSource);
+
+    // 3. Simulate Test Run 1 (Hits for calcDiscount and isEligibleForPromo)
+    CoverageCollector::hit("src/calc.cex", 3); // discount
+    CoverageCollector::hit("src/calc.cex", 4); // finalPrice
+    CoverageCollector::hit("src/calc.cex", 5); // return
+    CoverageCollector::hit("src/calc.cex", 9); // if (age >= 18)
+    CoverageCollector::hit("src/calc.cex", 10); // return true
+
+    // 4. Simulate Test Run 2 (Hits for validateUsername)
+    CoverageCollector::hit("src/validator.cex", 3); // if (< 3)
+    CoverageCollector::hit("src/validator.cex", 4); // return false
+    CoverageCollector::hit("src/validator.cex", 6); // if (> 20)
+    CoverageCollector::hit("src/validator.cex", 9); // return true
+
+    // 5. Compute Aggregate Coverage Statistics
+    CoverageStats* stats = CoverageCollector::computeStats();
+
+    // 6. Print Formatted ASCII Terminal Report
+    println("\n[Terminal ASCII Coverage Report]");
+    string asciiReport = CoverageGenerator::generateAsciiReport(stats);
+    print(asciiReport);
+
+    // 7. Export LCOV, JSON, and HTML Reports
+    string outDir = "coverage_example";
+    println("\n[Exporting Reports to directory: " + outDir + "]");
+    bool ok = CoverageGenerator::exportReports(stats, outDir, "app_coverage");
+    if (ok) {
+        println("  ✓ lcov.info exported successfully");
+        println("  ✓ app_coverage.json exported successfully");
+        println("  ✓ index.html dashboard exported successfully");
+        println("  ✓ summary.txt exported successfully");
+    }
+
+    // 8. Enforce Coverage Threshold
+    int threshold = 70;
+    bool passed = CoverageGenerator::checkThreshold(stats, threshold);
+    if (passed) {
+        println("\n✅ Coverage threshold of " + std::to_string(threshold) + "% met successfully!");
+    } else {
+        println("\n❌ Coverage threshold of " + std::to_string(threshold) + "% FAILED.");
+    }
+
+    // Cleanup generated example folder
+    system(("rm -rf " + outDir).c_str());
+
+    println("=== Example 04 Finished ===");
+    return passed ? 0 : 1;
+}

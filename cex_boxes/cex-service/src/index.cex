@@ -1,0 +1,80 @@
+// PerfectCex Package Entry Point (C-ext Language)
+// High-Performance Next.js-inspired Backend & SSR Framework
+
+import "./types.cex";
+import "./request.cex";
+import "./response.cex";
+import "./middleware.cex";
+import "./router.cex";
+import "./ssr.cex";
+import "./autoscale.cex";
+import "./async_handler.cex";
+import "./app.cex";
+
+int main() {
+    println("===============================================================");
+    println("     2-TEK PerfectCex: High-Performance Next.js-style Backend  ");
+    println("===============================================================");
+
+    // 1. Initialize PerfectApp
+    println("\n[1. Initializing PerfectApp & Middleware Pipeline]");
+    PerfectApp* app = new PerfectApp();
+
+    // Add Middlewares (Next.js style)
+    app->use(new TimingMiddleware());
+    app->use(new CorsMiddleware("*"));
+    app->use(new LoggerMiddleware());
+    println("Configured 3 global middlewares: Timing, CORS, Logger.");
+
+    // 2. Register Server-Side Rendered (SSR) Pages
+    println("\n[2. Registering Next.js-style SSR Pages]");
+    string homeHtml = "<div class=\"hero\"><h1>Welcome to PerfectCex</h1><p>Next.js architecture compiled to C++20 native machine binaries.</p><a class=\"btn\" href=\"/dashboard\">Go to Dashboard</a></div>";
+    SSRDocument* homeDoc = new SSRDocument("HomePage", "PerfectCex - High Performance Backend", homeHtml, "{\"user\": null, \"theme\": \"dark\"}");
+    app->page("/", homeDoc);
+
+    string dashHtml = "<div class=\"hero\"><h1>System Dashboard</h1><p>Real-time high-throughput metrics & analytics.</p></div>";
+    SSRDocument* dashDoc = new SSRDocument("DashboardPage", "Analytics Dashboard - PerfectCex", dashHtml, "{\"activeUsers\": 1240, \"qps\": 85000}");
+    app->page("/dashboard", dashDoc);
+
+    // 3. Register Next.js-style API Routes
+    println("\n[3. Registering Next.js-style API Endpoints]");
+    app->api("GET", "/api/health", "System Health Check", "{\"status\": \"UP\", \"uptimeSeconds\": 3600, \"engine\": \"PerfectCex\"}");
+    app->api("GET", "/api/users/:id", "Get User by Dynamic ID", "{\"name\": \"Alice\", \"role\": \"Lead Engineer\"}");
+    app->api("POST", "/api/products", "Create Product Record", "{\"status\": \"created\", \"productId\": 99}");
+
+    // Display Router Registry
+    println("\n[4. Route Registry]");
+    app->router->displayRoutes();
+
+    // 4. Test Simulated Requests
+    println("\n[5. Dispatching Test HTTP Requests]");
+
+    println("\n--> Request 1: GET / (SSR Page)");
+    PerfectResponse* res1 = app->simulateRequest("GET", "/", "");
+    print("Response Status: "); println(res1->statusCode);
+    print("Content-Type:    "); println(res1->getHeader("Content-Type"));
+    print("X-Response-Time: "); println(res1->getHeader("X-Response-Time"));
+    homeDoc->renderTerminalCard();
+
+    println("\n--> Request 2: GET /api/health (API JSON)");
+    PerfectResponse* res2 = app->simulateRequest("GET", "/api/health", "");
+    print("Response Status: "); println(res2->statusCode);
+    print("JSON Body:       "); println(res2->body);
+
+    println("\n--> Request 3: GET /api/users/42 (Dynamic Parametric Route)");
+    PerfectResponse* res3 = app->simulateRequest("GET", "/api/users/42", "");
+    print("Response Status: "); println(res3->statusCode);
+    print("Extracted ID & Data: "); println(res3->body);
+
+    println("\n--> Request 4: GET /api/unknown (404 Fallback)");
+    PerfectResponse* res4 = app->simulateRequest("GET", "/api/unknown", "");
+    print("Response Status: "); println(res4->statusCode);
+    print("404 Body:        "); println(res4->body);
+
+    // 5. Performance Metrics
+    println("\n[6. Execution Metrics]");
+    app->displayMetrics();
+
+    println("\n=== PerfectCex Native Execution Completed Successfully! ===");
+    return 0;
+}

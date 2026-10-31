@@ -1,0 +1,137 @@
+// CexT: Code Coverage Source Instrumenter
+// Analyzes .cex source files, extracts executable statements, and injects hit probes
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "./coverage_types.cex";
+import "./coverage_collector.cex";
+import fs from "fs";
+
+class CoverageInstrumenter {
+    public static Array<int>* findExecutableLines(string sourceContent) {
+        Array<int>* lines = new Array<int>();
+        int len = (int)sourceContent.length();
+        int lineStart = 0;
+        int lineNum = 1;
+        bool inBlockComment = false;
+
+        for (int i = 0; i <= len; i++) {
+            if (i == len || sourceContent.substr(i, 1) === "\n") {
+                string lineStr = "";
+                if (i > lineStart) {
+                    lineStr = sourceContent.substr(lineStart, i - lineStart);
+                }
+                if (lineStr.length() > 0 && lineStr.substr(lineStr.length() - 1) === "\r") {
+                    lineStr = lineStr.substr(0, lineStr.length() - 1);
+                }
+
+                if (CoverageInstrumenter::isExecutable(lineStr, inBlockComment)) {
+                    lines->push(lineNum);
+                }
+
+                lineStart = i + 1;
+                lineNum++;
+            }
+        }
+        return lines;
+    }
+
+    public static string instrumentSource(string sourceContent, string filePath) {
+        string out = "";
+        int len = (int)sourceContent.length();
+        int lineStart = 0;
+        int lineNum = 1;
+        bool inBlockComment = false;
+
+        for (int i = 0; i <= len; i++) {
+            if (i == len || sourceContent.substr(i, 1) === "\n") {
+                string lineStr = "";
+                if (i > lineStart) {
+                    lineStr = sourceContent.substr(lineStart, i - lineStart);
+                }
+                if (lineStr.length() > 0 && lineStr.substr(lineStr.length() - 1) === "\r") {
+                    lineStr = lineStr.substr(0, lineStr.length() - 1);
+                }
+
+                if (CoverageInstrumenter::isExecutable(lineStr, inBlockComment)) {
+                    string indent = CoverageInstrumenter::getIndent(lineStr);
+                    out += indent + "CoverageCollector::hit(\"" + filePath + "\", " + to_string(lineNum) + ");\n";
+                }
+
+                out += lineStr + "\n";
+
+                lineStart = i + 1;
+                lineNum++;
+            }
+        }
+        return out;
+    }
+
+    public static bool instrumentFile(string inputPath, string outputPath) {
+        if (!fs.exists(inputPath)) {
+            return false;
+        }
+        string content = fs.readFile(inputPath);
+        string instrumented = CoverageInstrumenter::instrumentSource(content, inputPath);
+        return fs.writeFile(outputPath, instrumented);
+    }
+
+    public static bool isExecutable(string rawLine, bool inBlockComment) {
+        string trimmed = CoverageInstrumenter::trim(rawLine);
+        if (trimmed.length() == 0) return false;
+
+        if (inBlockComment) {
+            return false;
+        }
+
+        if (trimmed.rfind("/*", 0) == 0) return false;
+        if (trimmed.rfind("//", 0) == 0) return false;
+        if (trimmed.rfind("import ", 0) == 0) return false;
+        if (trimmed.rfind("package ", 0) == 0) return false;
+
+        if (trimmed === "{" || trimmed === "}" || trimmed === "};") return false;
+
+        if (trimmed.rfind("class ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("interface ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("namespace ", 0) == 0 && trimmed.find("{") != -1) return false;
+
+        if (trimmed.rfind("fn ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("public fn ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("private fn ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("public static fn ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("private static fn ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("public static ", 0) == 0 && trimmed.find("(") != -1 && trimmed.find("{") != -1) return false;
+        string ctorToken = "constructor";
+        if (trimmed.find(ctorToken) != -1 && trimmed.find("(") != -1 && trimmed.find("{") != -1) return false;
+        if ((trimmed.rfind("public:", 0) == 0 || trimmed.rfind("private:", 0) == 0) && trimmed.find("(") != -1 && trimmed.find("{") != -1) return false;
+
+        if ((trimmed.rfind("public ", 0) == 0 || trimmed.rfind("private ", 0) == 0) &&
+            trimmed.find(":") != -1 && trimmed.find(";") != -1 && trimmed.find("=") == -1 && trimmed.find("(") == -1) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static string getIndent(string line) {
+        int i = 0;
+        int len = (int)line.length();
+        while (i < len && (line.substr(i, 1) === " " || line.substr(i, 1) === "\t")) {
+            i++;
+        }
+        if (i > 0) return line.substr(0, i);
+        return "";
+    }
+
+    public static string trim(string s) {
+        int start = 0;
+        int end = (int)s.length() - 1;
+        while (start <= end && (s.substr(start, 1) === " " || s.substr(start, 1) === "\t" || s.substr(start, 1) === "\r" || s.substr(start, 1) === "\n")) {
+            start++;
+        }
+        while (end >= start && (s.substr(end, 1) === " " || s.substr(end, 1) === "\t" || s.substr(end, 1) === "\r" || s.substr(end, 1) === "\n")) {
+            end--;
+        }
+        if (start > end) return "";
+        return s.substr(start, end - start + 1);
+    }
+}

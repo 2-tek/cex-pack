@@ -1,0 +1,21 @@
+CVM_PATCH_HEADER_V2
+ID: patch_0001_init_cex_cli
+TITLE: Genesis initialization of @2tek/cli package and governance specs
+AUTHOR: 2-TEK Developer <dev@2tek.local>
+TIMESTAMP: 2026-10-09T09:55:00Z
+TARGET: @2tek/cli
+COMMIT: a1b2c3d4e5f678901234567890abcdef12345678
+
+FILE_DELTA: cex-pack.json
++ {
++   "name": "@2tek/cli",
++   "version": "1.0.0",
++   "description": "Cex-CLI: Terminal Build Command Runner, Task Automation & Terminal UI Engine in C-ext (Cex)",
++   "target": "runtime"
++ }
+
+FILE_DELTA: README.md
++ # @2tek/cli (Cex-CLI)
++ Terminal Build Command Runner, Task Automation & Terminal UI Engine written in C-ext (Cex)
+
+CVM_PATCH_END

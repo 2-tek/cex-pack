@@ -1,0 +1,380 @@
+// CexT: Test Runner and Suite Engine
+// Structured test organization, execution, and reporting powered by CexLog
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule (No Symbols)
+
+import "@cex-log/src/log.cex";
+import "./coverage_collector.cex";
+import "./pipeline_runner.cex";
+import "./async.cex";
+
+class TestCase {
+    public string name;
+    public bool passed;
+    public string errorMessage;
+    public double durationMs;
+    public string formattedDuration = "";
+
+    public constructor(string name, bool passed, string errorMessage, double durationMs) {
+        this.name = name;
+        this.passed = passed;
+        this.errorMessage = errorMessage;
+        this.durationMs = durationMs;
+    }
+
+    public constructor(string name, bool passed, string errorMessage, double durationMs, string formattedDuration) {
+        this.name = name;
+        this.passed = passed;
+        this.errorMessage = errorMessage;
+        this.durationMs = durationMs;
+        this.formattedDuration = formattedDuration;
+    }
+
+    public void display() {
+        string dur = this.formattedDuration.length() > 0 ? this.formattedDuration : Log::formatDelayMs(this.durationMs);
+        if (this.passed) {
+            print("  [PASS] ");
+            print(this.name);
+            print(" (");
+            print(dur);
+            println(")");
+        } else {
+            print("  [FAIL] ");
+            print(this.name);
+            print(" (");
+            print(dur);
+            print(") - ");
+            println(this.errorMessage);
+        }
+    }
+}
+
+class TestSuite {
+    public string name;
+    public Array<TestCase*>* cases = new Array<TestCase*>();
+    public Stopwatch* sw;
+    public Stopwatch* currentTestSw = nullptr;
+    public string currentTestName = "";
+    public PipelineTestRunner* pipelineRunner = nullptr;
+    public int timeoutMs = TestTimeout::getTimeoutMs();
+
+    public constructor(string name) {
+        this.name = name;
+        this.sw = Log::start(name);
+    }
+
+    public void setTimeout(int ms) {
+        this.timeoutMs = ms;
+        if (this.pipelineRunner != nullptr) {
+            this.pipelineRunner->setTimeout(ms);
+        }
+    }
+
+    public int getTimeout() {
+        return this.timeoutMs;
+    }
+
+    public int reloadTimeoutFromEnv() {
+        TestTimeout::invalidateCache();
+        this.timeoutMs = TestTimeout::getTimeoutMs();
+        if (this.pipelineRunner != nullptr) {
+            this.pipelineRunner->setTimeout(this.timeoutMs);
+        }
+        return this.timeoutMs;
+    }
+
+    public PipelineTestRunner* enablePipeline() {
+        if (this.pipelineRunner == nullptr) {
+            this.pipelineRunner = new PipelineTestRunner(this.name);
+            this.pipelineRunner->setTimeout(this.timeoutMs);
+        }
+        return this.pipelineRunner;
+    }
+
+    public PipelineTestRunner* getPipelineRunner() {
+        return this.pipelineRunner;
+    }
+
+    public RunnerMetrics* getPipelineMetrics() {
+        return this.pipelineRunner != nullptr ? this.pipelineRunner->getMetrics() : nullptr;
+    }
+
+    public void addResult(string name, bool passed, string errorMsg, double durationMs) {
+        bool finalPassed = passed;
+        string finalErr = errorMsg;
+        if (TestTimeout::isTimedOut(this.timeoutMs, durationMs)) {
+            finalPassed = false;
+            finalErr = TestTimeout::formatTimeoutError(this.timeoutMs, durationMs);
+        }
+        this.cases->push(new TestCase(name, finalPassed, finalErr, durationMs));
+        if (!finalPassed && finalErr.length() > 0) {
+            Log::error("Test failed: " + name + " - " + finalErr);
+        }
+        if (this.pipelineRunner != nullptr) {
+            string topic = finalPassed ? TestPipelineEvent::getTopicCasePass() : TestPipelineEvent::getTopicCaseFail();
+            this.pipelineRunner->dispatchEvent(topic, name, finalPassed, finalErr, durationMs);
+        }
+    }
+
+    public Stopwatch* startTest(string testName) {
+        this.currentTestName = testName;
+        this.currentTestSw = Log::start(testName);
+        if (this.pipelineRunner != nullptr) {
+            this.pipelineRunner->broker->publish(TestPipelineEvent::getTopicCaseStart(), testName, this.name);
+        }
+        return this.currentTestSw;
+    }
+
+    public void endTest(bool passed, string errorMsg) {
+        if (this.currentTestSw != nullptr) {
+            this.currentTestSw->stop();
+            double ms = this.currentTestSw->elapsedMs();
+            string formatted = this.currentTestSw->format();
+            bool finalPassed = passed;
+            string finalErr = errorMsg;
+            if (TestTimeout::isTimedOut(this.timeoutMs, ms)) {
+                finalPassed = false;
+                finalErr = TestTimeout::formatTimeoutError(this.timeoutMs, ms);
+            }
+            this.cases->push(new TestCase(this.currentTestName, finalPassed, finalErr, ms, formatted));
+            if (!finalPassed && finalErr.length() > 0) {
+                Log::error("Test failed: " + this.currentTestName + " - " + finalErr);
+            }
+            Log::delay(this.currentTestName, ms);
+            if (this.pipelineRunner != nullptr) {
+                string topic = finalPassed ? TestPipelineEvent::getTopicCasePass() : TestPipelineEvent::getTopicCaseFail();
+                this.pipelineRunner->dispatchEvent(topic, this.currentTestName, finalPassed, finalErr, ms);
+            }
+            this.currentTestSw = nullptr;
+            this.currentTestName = "";
+        } else {
+            this.addResult("unnamed_test", passed, errorMsg, 0.0);
+        }
+    }
+
+    public bool testAsync(string testName, AsyncTestAction fn) {
+        Stopwatch* sw = this.startTest(testName);
+        if (this.timeoutMs <= 0) {
+            string timeoutErr = TestTimeout::formatTimeoutError(this.timeoutMs, 0.0);
+            this.endTest(false, timeoutErr);
+            return false;
+        }
+        bool ok = false;
+        string err = "";
+        try {
+            Promise<bool>* p = fn();
+            if (p != nullptr) {
+                ok = await p;
+            } else {
+                ok = false;
+                err = "Async test returned null promise";
+            }
+        } catch (...) {
+            ok = false;
+            err = "Uncaught exception in async test";
+        }
+        double elapsedMs = sw != nullptr ? sw->elapsedMs() : 0.0;
+        if (TestTimeout::isTimedOut(this.timeoutMs, elapsedMs)) {
+            ok = false;
+            err = TestTimeout::formatTimeoutError(this.timeoutMs, elapsedMs);
+        }
+        this.endTest(ok, err);
+        return ok;
+    }
+
+    public Promise<bool>* runAsync(string testName, AsyncTestAction fn) {
+        return Promise::parallel([this, testName, fn]() -> bool {
+            return this.testAsync(testName, fn);
+        });
+    }
+
+    public int runAsyncBatch(Array<string>* names, Array<AsyncTestAction>* fns) {
+        int passed = 0;
+        int count = (int)names->length();
+        for (int i = 0; i < count; i++) {
+            string name = names->get(i);
+            AsyncTestAction fn = fns->get(i);
+            if (this.testAsync(name, fn)) {
+                passed++;
+            }
+        }
+        return passed;
+    }
+
+    public bool test(string testName, TestAction fn) {
+        Stopwatch* sw = this.startTest(testName);
+        if (this.timeoutMs <= 0) {
+            string timeoutErr = TestTimeout::formatTimeoutError(this.timeoutMs, 0.0);
+            this.endTest(false, timeoutErr);
+            return false;
+        }
+        bool ok = false;
+        string err = "";
+        try {
+            ok = fn();
+        } catch (...) {
+            ok = false;
+            err = "Uncaught exception in test lambda";
+        }
+        double elapsedMs = sw != nullptr ? sw->elapsedMs() : 0.0;
+        if (TestTimeout::isTimedOut(this.timeoutMs, elapsedMs)) {
+            ok = false;
+            err = TestTimeout::formatTimeoutError(this.timeoutMs, elapsedMs);
+        }
+        this.endTest(ok, err);
+        return ok;
+    }
+
+    public bool run(string testName, TestAction fn) {
+        return this.test(testName, fn);
+    }
+
+    public int runBatch(Array<string>* names, Array<TestAction>* fns) {
+        int passed = 0;
+        int count = (int)names->length();
+        this.enablePipeline();
+        for (int i = 0; i < count; i++) {
+            string name = names->get(i);
+            TestAction fn = fns->get(i);
+            this.startTest(name);
+            bool ok = false;
+            string err = "";
+            if (this.timeoutMs <= 0) {
+                ok = false;
+                err = TestTimeout::formatTimeoutError(this.timeoutMs, 0.0);
+            } else {
+                try {
+                    ok = fn();
+                } catch (...) {
+                    ok = false;
+                    err = "Exception in batch test lambda";
+                }
+            }
+            this.endTest(ok, err);
+            int lastIdx = (int)this.cases->length() - 1;
+            if (lastIdx >= 0 && this.cases->get(lastIdx)->passed) {
+                passed++;
+            }
+        }
+        return passed;
+    }
+
+    public Promise<int>* runAsyncBatchConcurrent(Array<string>* names, Array<AsyncTestAction>* fns) {
+        return Promise::parallel([this, names, fns]() -> int {
+            int count = (int)names->length();
+            Array<Promise<bool>*>* promises = new Array<Promise<bool>*>();
+            for (int i = 0; i < count; i++) {
+                string name = names->get(i);
+                AsyncTestAction fn = fns->get(i);
+                promises->push(this.runAsync(name, fn));
+            }
+            int pCount = (int)promises->length();
+            int passedCount = 0;
+            for (int j = 0; j < pCount; j++) {
+                Promise<bool>* p = promises->get(j);
+                bool ok = await p;
+                if (ok) {
+                    passedCount++;
+                }
+            }
+            return passedCount;
+        });
+    }
+
+    public void recordResult(string name, bool passed, string errorMsg, Stopwatch* sw) {
+        if (sw != nullptr) {
+            sw->stop();
+            double ms = sw->elapsedMs();
+            string formatted = sw->format();
+            bool finalPassed = passed;
+            string finalErr = errorMsg;
+            if (TestTimeout::isTimedOut(this.timeoutMs, ms)) {
+                finalPassed = false;
+                finalErr = TestTimeout::formatTimeoutError(this.timeoutMs, ms);
+            }
+            this.cases->push(new TestCase(name, finalPassed, finalErr, ms, formatted));
+            if (!finalPassed && finalErr.length() > 0) {
+                Log::error("Test failed: " + name + " - " + finalErr);
+            }
+            Log::delay(name, ms);
+        } else {
+            this.addResult(name, passed, errorMsg, 0.0);
+        }
+    }
+
+    public int totalCount() {
+        return (int)this.cases->length();
+    }
+
+    public int passCount() {
+        int count = 0;
+        int total = (int)this.cases->length();
+        for (int i = 0; i < total; i++) {
+            if (this.cases->get(i)->passed) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public int failCount() {
+        int count = 0;
+        int total = (int)this.cases->length();
+        for (int i = 0; i < total; i++) {
+            if (!this.cases->get(i)->passed) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public double elapsedMs() {
+        return this.sw != nullptr ? this.sw->elapsedMs() : 0.0;
+    }
+
+    public string formattedDuration() {
+        return this.sw != nullptr ? this.sw->format() : "0ms";
+    }
+
+    public Array<TestCase*>* getCases() {
+        return this.cases;
+    }
+}
+
+class TestReporter {
+    public static void printSummary(TestSuite* suite) {
+        if (suite->sw != nullptr) {
+            suite->sw->stop();
+        }
+        println("+---------------------------------------------------------------+");
+        print("| Test Suite Report: ");
+        print(suite->name);
+        println("");
+        println("+---------------------------------------------------------------+");
+
+        int total = suite->totalCount();
+        for (int i = 0; i < total; i++) {
+            suite->cases->get(i)->display();
+        }
+
+        println("-----------------------------------------------------------------");
+        print("  Total Tests: "); println(suite->totalCount());
+        print("  Passed:      "); println(suite->passCount());
+        print("  Failed:      "); println(suite->failCount());
+        if (suite->sw != nullptr) {
+            print("  Duration:    "); println(suite->sw->format());
+        }
+        if (suite->failCount() == 0) {
+            println("  Status:      ALL TESTS PASSED [OK]");
+        } else {
+            println("  Status:      TEST SUITE FAILED [FAIL]");
+        }
+        println("-----------------------------------------------------------------");
+        if (suite->sw != nullptr) {
+            Log::delay("Suite: " + suite->name, suite->sw->elapsedMs());
+        }
+        if (suite->pipelineRunner != nullptr) {
+            suite->pipelineRunner->displayReport();
+        }
+        CoverageCollector::autoDumpTrace();
+    }
+}

@@ -1,0 +1,124 @@
+// CexT: Micro-Benchmarking Engine
+// High-resolution performance and throughput benchmarking powered by CexLog
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule (No Symbols)
+
+import "@cex-log/src/log.cex";
+import "./pipeline_runner.cex";
+import "./async.cex";
+
+class BenchmarkResult {
+    public string name;
+    public int iterations;
+    public double elapsedMs;
+    public int64 opsPerSec;
+    public string formattedDuration;
+
+    public constructor(string name, int iters, double elapsed, int64 ops) {
+        this.name = name;
+        this.iterations = iters;
+        this.elapsedMs = elapsed;
+        this.opsPerSec = ops;
+        this.formattedDuration = Log::formatDelayMs(elapsed);
+    }
+
+    public constructor(string name, int iters, double elapsed, int64 ops, string formatted) {
+        this.name = name;
+        this.iterations = iters;
+        this.elapsedMs = elapsed;
+        this.opsPerSec = ops;
+        this.formattedDuration = formatted;
+    }
+
+    public void display() {
+        println("+---------------------------------------------------------------+");
+        print("| Benchmark: ");
+        print(this.name);
+        println("");
+        println("+---------------------------------------------------------------+");
+        print("  Iterations:  "); println(this.iterations);
+        print("  Elapsed:     "); println(this.formattedDuration);
+        print("  Throughput:  "); print(this.opsPerSec); println(" ops/sec");
+        println("-----------------------------------------------------------------");
+        Log::delay("Benchmark: " + this.name, this.elapsedMs);
+    }
+}
+
+class Benchmark {
+    public static BenchmarkResult* runWorkload(string name, int iterations) {
+        Stopwatch* sw = Log::start(name);
+        int accumulator = 0;
+        for (int i = 0; i < iterations; i++) {
+            accumulator += (i % 7);
+        }
+        sw->stop();
+        double elapsed = sw->elapsedMs();
+        if (elapsed <= 0.0) {
+            elapsed = 0.001;
+        }
+        int64 ops = (int64)((double)iterations * 1000.0 / elapsed);
+        return new BenchmarkResult(name, iterations, elapsed, ops, sw->format());
+    }
+
+    public static BenchmarkResult* runPipelineWorkload(string name, int iterations) {
+        PipelineTestRunner* runner = new PipelineTestRunner(name);
+        int accumulator = 0;
+        double ms = runner->runBenchmark(name, iterations, [&accumulator]() {
+            accumulator += 1;
+        });
+        if (ms <= 0.0) {
+            ms = 0.001;
+        }
+        int64 ops = (int64)((double)iterations * 1000.0 / ms);
+        return new BenchmarkResult(name, iterations, ms, ops);
+    }
+
+    public static BenchmarkResult* runAsyncWorkload(string name, int iterations, AsyncTestAction fn) {
+        Stopwatch* sw = Log::start(name);
+        for (int i = 0; i < iterations; i++) {
+            Promise<bool>* p = fn();
+            if (p != nullptr) {
+                bool ok = await p;
+            }
+        }
+        sw->stop();
+        double elapsed = sw->elapsedMs();
+        if (elapsed <= 0.0) {
+            elapsed = 0.001;
+        }
+        int64 ops = (int64)((double)iterations * 1000.0 / elapsed);
+        return new BenchmarkResult(name, iterations, elapsed, ops, sw->format());
+    }
+
+    public static BenchmarkResult* runPipelineThroughput(string name, int iterations) {
+        PipelineTestRunner* runner = new PipelineTestRunner(name);
+        EventPipeline* pipeline = runner->getPipeline();
+        Stopwatch* sw = Log::start(name);
+        for (int i = 0; i < iterations; i++) {
+            RunnerEvent* ev = new RunnerEvent("test/benchmark/event", name, "event_" + to_string(i));
+            pipeline->execute(ev);
+        }
+        sw->stop();
+        double elapsed = sw->elapsedMs();
+        if (elapsed <= 0.0) {
+            elapsed = 0.001;
+        }
+        int64 ops = (int64)((double)iterations * 1000.0 / elapsed);
+        return new BenchmarkResult(name, iterations, elapsed, ops, sw->format());
+    }
+
+    public static BenchmarkResult* runBrokerThroughput(string name, int iterations) {
+        PipelineTestRunner* runner = new PipelineTestRunner(name);
+        PubSubBroker* broker = runner->getBroker();
+        Stopwatch* sw = Log::start(name);
+        for (int i = 0; i < iterations; i++) {
+            broker->publish("test/case/pass", "test_item_" + to_string(i), name);
+        }
+        sw->stop();
+        double elapsed = sw->elapsedMs();
+        if (elapsed <= 0.0) {
+            elapsed = 0.001;
+        }
+        int64 ops = (int64)((double)iterations * 1000.0 / elapsed);
+        return new BenchmarkResult(name, iterations, elapsed, ops, sw->format());
+    }
+}

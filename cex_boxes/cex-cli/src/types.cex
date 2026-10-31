@@ -1,0 +1,39 @@
+// Cex-CLI Types & Data Structures (C-ext)
+
+class BuildOptions {
+    public string target = "development";
+    public string environment = "local";
+    public bool verbose = false;
+    public bool watchMode = false;
+    public bool failFast = true;
+
+    public constructor() {}
+}
+
+class BuildTask {
+    public string name;
+    public string command;
+    public string status = "PENDING";
+    public int durationMs = 0;
+
+    public constructor(string name, string command) {
+        this.name = name;
+        this.command = command;
+    }
+}
+
+class BuildResult {
+    public bool success;
+    public int tasksCompleted;
+    public int totalTasks;
+    public int durationMs;
+    public string message;
+
+    public constructor(bool success, int tasksCompleted, int totalTasks, int durationMs, string message) {
+        this.success = success;
+        this.tasksCompleted = tasksCompleted;
+        this.totalTasks = totalTasks;
+        this.durationMs = durationMs;
+        this.message = message;
+    }
+}

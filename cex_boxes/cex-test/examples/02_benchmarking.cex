@@ -1,0 +1,17 @@
+// CexT Example 02: Micro-Benchmarking Workloads
+import "@/src/benchmark.cex";
+
+int main() {
+    println("=== CexT Example 02: Micro-Benchmarking Suite ===");
+
+    println("Benchmarking Integer Math Workload (100,000 iterations)...");
+    BenchmarkResult* bench1 = Benchmark::runWorkload("100K Integer Loops", 100000);
+    bench1->display();
+
+    println("Benchmarking Heavy Compute Workload (1,000,000 iterations)...");
+    BenchmarkResult* bench2 = Benchmark::runWorkload("1M Heavy Math", 1000000);
+    bench2->display();
+
+    println("=== Example 02 Finished ===");
+    return 0;
+}

@@ -1,0 +1,114 @@
+// PerfectCex: Request Abstraction
+import "./types.cex";
+
+class PerfectRequest {
+    public string method;
+    public string path;
+    public string rawUrl;
+    public string queryString = "";
+    public string body;
+    public string clientIp = "127.0.0.1";
+    public Array<RouteParam*>* params = new Array<RouteParam*>();
+    public Array<HttpHeader*>* headers = new Array<HttpHeader*>();
+
+    public constructor(string method, string path, string body) {
+        this.method = method;
+        this.path = path;
+        this.rawUrl = path;
+        this.body = body;
+
+        // Parse query string if present
+        int qPos = (int)path.find("?");
+        if (qPos !== -1) {
+            this.queryString = path.substr(qPos + 1, path.length() - qPos - 1);
+            this.path = path.substr(0, qPos);
+        }
+    }
+
+    public constructor(string method, string path, string body, string clientIp) {
+        this.method = method;
+        this.path = path;
+        this.rawUrl = path;
+        this.body = body;
+        this.clientIp = clientIp;
+
+        // Parse query string if present
+        int qPos = (int)path.find("?");
+        if (qPos !== -1) {
+            this.queryString = path.substr(qPos + 1, path.length() - qPos - 1);
+            this.path = path.substr(0, qPos);
+        }
+    }
+
+    public void setParam(string key, string val) {
+        this.params->push(new RouteParam(key, val));
+    }
+
+    public string getParam(string key) {
+        int count = (int)this.params->length();
+        for (int i = 0; i < count; i++) {
+            RouteParam* p = this.params->get(i);
+            if (p->key === key) {
+                return p->val;
+            }
+        }
+        return "";
+    }
+
+    public void setHeader(string key, string val) {
+        this.headers->push(new HttpHeader(key, val));
+    }
+
+    public string getHeader(string key) {
+        int count = (int)this.headers->length();
+        for (int i = 0; i < count; i++) {
+            HttpHeader* h = this.headers->get(i);
+            if (h->key === key) {
+                return h->val;
+            }
+        }
+        return "";
+    }
+
+    public string getClientIp() {
+        string forwarded = this.getHeader("X-Forwarded-For");
+        if (forwarded !== "") {
+            int commaPos = (int)forwarded.find(",");
+            if (commaPos !== -1) {
+                return forwarded.substr(0, commaPos);
+            }
+            return forwarded;
+        }
+        string realIp = this.getHeader("X-Real-IP");
+        if (realIp !== "") {
+            return realIp;
+        }
+        if (this.clientIp !== "") {
+            return this.clientIp;
+        }
+        return "127.0.0.1";
+    }
+
+    public void setClientIp(string ip) {
+        this.clientIp = ip;
+    }
+
+    public void display() {
+        print("[Request] ");
+        print(this.method);
+        print(" ");
+        println(this.path);
+        int paramCount = (int)this.params->length();
+        if (paramCount > 0) {
+            print("  Params: ");
+            for (int i = 0; i < paramCount; i++) {
+                RouteParam* p = this.params->get(i);
+                print(p->key);
+                print("=");
+                print(p->val);
+                print(" ");
+            }
+            println("");
+        }
+    }
+}

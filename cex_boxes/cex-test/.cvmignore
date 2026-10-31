@@ -1,0 +1,13 @@
+.cex_cache
+.cex_boxes
+bin
+coverage
+dist
+node_modules
+tmp
+
+# Cex Box dependencies & local box caches
+cex_boxes/
+.cex_boxes/
+**/cex_boxes/
+**/.cex_boxes/

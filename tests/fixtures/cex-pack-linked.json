@@ -9,39 +9,48 @@
     "dependencies": {
         "cex-cli": {
             "version": "1.0.0",
-            "url": "https://github.com/2-tek/cex-cli.git"
+            "url": "https://github.com/2-tek/cex-cli.git",
+            "ref": "cex_boxes"
         },
         "cex-log": {
             "version": "1.0.0",
-            "url": "https://github.com/2-tek/cex-log.git"
+            "url": "https://github.com/2-tek/cex-log.git",
+            "ref": "cex_boxes"
         },
         "cexr": {
             "version": "1.0.0",
-            "url": "https://github.com/2-tek/cexr.git"
+            "url": "https://github.com/2-tek/cexr.git",
+            "ref": "cex_boxes"
         },
         "cex-service": {
             "version": "1.0.0",
-            "url": "https://github.com/2-tek/cex-service.git"
+            "url": "https://github.com/2-tek/cex-service.git",
+            "ref": "cex_boxes"
         },
         "cex-test": {
             "version": "1.0.0",
-            "url": "https://github.com/2-tek/cex-test.git"
+            "url": "https://github.com/2-tek/cex-test.git",
+            "ref": "cex_boxes"
         },
         "cex-lint": {
             "version": "1.0.0",
-            "url": "https://github.com/2-tek/cex-lint.git"
+            "url": "https://github.com/2-tek/cex-lint.git",
+            "ref": "cex_boxes"
         },
         "cex-pack": {
             "version": "1.0.0",
-            "url": "https://github.com/2-tek/cex-pack.git"
+            "url": "https://github.com/2-tek/cex-pack.git",
+            "ref": "cex_boxes"
         },
         "cexp": {
             "version": "1.0.0",
-            "url": "https://github.com/2-tek/cexp.git"
+            "url": "https://github.com/2-tek/cexp.git",
+            "ref": "dependencies"
         },
         "custom-pkg": {
             "version": "1.0.0",
-            "url": "https://github.com/2-tek/custom-pkg.git"
+            "url": "https://github.com/2-tek/custom-pkg.git",
+            "ref": "dependencies"
         }
     }
 }

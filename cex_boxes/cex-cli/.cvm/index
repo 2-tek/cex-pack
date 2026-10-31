@@ -1,0 +1,324 @@
+[
+  {
+    "path": ".agents/agents/coder.md",
+    "hash": "6877b44c2a15fb16abf88a308f81cb54d507fb1a",
+    "size": 274,
+    "mode": "100644",
+    "mtime": 1791527664505.2903
+  },
+  {
+    "path": ".agents/agents/git-checker.md",
+    "hash": "e6702977db38cd2de578f227928fd553a3a81b2c",
+    "size": 188,
+    "mode": "100644",
+    "mtime": 1791527664505.3372
+  },
+  {
+    "path": ".agents/agents/leader.md",
+    "hash": "a9331ff549b4fcd3482accabbbdf730b28fe15a0",
+    "size": 271,
+    "mode": "100644",
+    "mtime": 1791527664505.3372
+  },
+  {
+    "path": ".agents/agents/test-editor.md",
+    "hash": "137a75849aa77be589adc2f6aa1a2ddb8d1cc3c4",
+    "size": 196,
+    "mode": "100644",
+    "mtime": 1791527664505.3372
+  },
+  {
+    "path": ".agents/features/10-10-2026.md",
+    "hash": "86be4ad1300ce4ba75b511b0ec4836df0779619a",
+    "size": 353,
+    "mode": "100644",
+    "mtime": 1791617575121.079
+  },
+  {
+    "path": ".agents/PRODUCT_TARGET.md",
+    "hash": "d453dbedc6bd6b3258e7152a62a58ce92ed0fc84",
+    "size": 2302,
+    "mode": "100644",
+    "mtime": 1791883521197.9888
+  },
+  {
+    "path": ".agents/rules/RULE_29_EOF_INTEGRITY.md",
+    "hash": "1fe3c525c65759d5dc38c3c5a3880dee541ca64e",
+    "size": 347,
+    "mode": "100644",
+    "mtime": 1791527664505.3372
+  },
+  {
+    "path": ".agents/rules/RULE_69_KEEP_TARGET.md",
+    "hash": "c8c762b375ebccc0c18218d1db8ed58c205d121b",
+    "size": 350,
+    "mode": "100644",
+    "mtime": 1791527664505.4663
+  },
+  {
+    "path": ".agents/rules/RULE_72_DYNAMIC_PATHS.md",
+    "hash": "b29b0b3cc8bd14d599b168c3d5af49e31809233d",
+    "size": 436,
+    "mode": "100644",
+    "mtime": 1791527664505.4663
+  },
+  {
+    "path": ".agents/rules/RULE_CEX_LINT.md",
+    "hash": "e1ecc6cc4529996c09dd1c2c422440b11fd2148c",
+    "size": 2581,
+    "mode": "100644",
+    "mtime": 1791634527998.6138
+  },
+  {
+    "path": ".agents/rules/RULE_CLI_COMMANDS.md",
+    "hash": "4b377c4f364c0ab579ab8ba23db9701150d2babb",
+    "size": 671,
+    "mode": "100644",
+    "mtime": 1791527664505.4663
+  },
+  {
+    "path": ".agents/rules/RULE_CXVM_UPGRADE.md",
+    "hash": "6a4ae1cf7b351576f03e4cfca2d7ee6a6508a387",
+    "size": 1897,
+    "mode": "100644",
+    "mtime": 1791615449584.0664
+  },
+  {
+    "path": ".agents/rules/RULE_NO_HTML_PLUS_CONCAT.md",
+    "hash": "c2557ba28be9564352b12f14d3e2c86935913096",
+    "size": 2985,
+    "mode": "100644",
+    "mtime": 1791807347432.0571
+  },
+  {
+    "path": ".agents/rules/RULE_SCHEMA_FIRST.md",
+    "hash": "eb62a897518e33164a97b14e50ab9eca790e9aea",
+    "size": 5016,
+    "mode": "100644",
+    "mtime": 1791800975087.9805
+  },
+  {
+    "path": ".agents/rules/RULE_SEEDING_TEST_ONLY.md",
+    "hash": "9131f891a9b7d6e5ecca476771a1159f10b7d8f7",
+    "size": 2221,
+    "mode": "100644",
+    "mtime": 1791806926727.1157
+  },
+  {
+    "path": ".agents/standards/ARCHITECTURE.md",
+    "hash": "248eba9b41124733a192671647f832310bc285e5",
+    "size": 638,
+    "mode": "100644",
+    "mtime": 1791527664505.4663
+  },
+  {
+    "path": ".agents/standards/CLI_TERMINAL_SPEC.md",
+    "hash": "3ec9bda47e45862252e6b12c086c75396c0c0c80",
+    "size": 1055,
+    "mode": "100644",
+    "mtime": 1791527664505.5989
+  },
+  {
+    "path": ".cex_boxes/cex-pack.json",
+    "hash": "984cf2439d27fede00d997ac3699d4ef869fcc50",
+    "size": 291,
+    "mode": "100644",
+    "mtime": 1791883349929.9336
+  },
+  {
+    "path": ".cex_boxes/PROGRESS.md",
+    "hash": "de842e8bc74efbc3ef6da048cac5c702f9b07741",
+    "size": 263,
+    "mode": "100644",
+    "mtime": 1791533918391.0576
+  },
+  {
+    "path": ".cex_cache/cex_compiled_cex-cli_12565536489293931891.cex",
+    "hash": "874a09f367578d323e3d65d69cc844219cfd6b13",
+    "size": 46086,
+    "mode": "100644",
+    "mtime": 1791867975832.1277
+  },
+  {
+    "path": ".cex_cache/cex_compiled_cex-cli_2343652146389638870.cex",
+    "hash": "fa7df724dbf267c7c807a4349831cdbb3c742797",
+    "size": 45513,
+    "mode": "100644",
+    "mtime": 1791791579218.326
+  },
+  {
+    "path": ".cex_cache/cex_compiled_cex-cli_2343652146389638870.cpp",
+    "hash": "81822c1fb6d626eff141717e51fea0feb219e728",
+    "size": 45096,
+    "mode": "100644",
+    "mtime": 1791619025804.5627
+  },
+  {
+    "path": ".cex_cache/cex_compiled_cex-cli_4535658842798548012.cex",
+    "hash": "9a900cd17c3ba2009ee92300b67ba1b53c3ecbeb",
+    "size": 14406,
+    "mode": "100644",
+    "mtime": 1791620727708.549
+  },
+  {
+    "path": ".cex_cache/cex_compiled_cex-cli_6216986641206955012.cex",
+    "hash": "ed99203d4821b118d798d5aeca350eeb8db924b6",
+    "size": 68284,
+    "mode": "100644",
+    "mtime": 1791867841629.9094
+  },
+  {
+    "path": ".cex_cache/cex_compiled_cex-cli_723621362172958933.cex",
+    "hash": "6a62110ee41a4d4aea9c30c60a2b12f822c9cf46",
+    "size": 67705,
+    "mode": "100644",
+    "mtime": 1791635873249.8103
+  },
+  {
+    "path": ".cex_cache/cex_compiled_cex-cli_723621362172958933.cpp",
+    "hash": "344659f27eeb5e5e8d2f906877eb5b9fb44954a7",
+    "size": 35295,
+    "mode": "100644",
+    "mtime": 1791599435700.588
+  },
+  {
+    "path": ".github/dependabot.yml",
+    "hash": "5ace4600a1f26e6892982f3e2f069ebfab108d87",
+    "size": 118,
+    "mode": "100644",
+    "mtime": 1791527664505.9058
+  },
+  {
+    "path": ".github/ISSUE_TEMPLATE/bug_report.md",
+    "hash": "bd4e22787a3323cac0ecb9b0ac8df74b0ffaed3f",
+    "size": 530,
+    "mode": "100644",
+    "mtime": 1791527664505.8372
+  },
+  {
+    "path": ".github/ISSUE_TEMPLATE/feature_request.md",
+    "hash": "d8ebbd5f4f6aa9819a67a3711f27d970e257b2e0",
+    "size": 316,
+    "mode": "100644",
+    "mtime": 1791527664505.9058
+  },
+  {
+    "path": ".github/PULL_REQUEST_TEMPLATE.md",
+    "hash": "7bc57f256d50c9fc93d0cceee993a5ea66bf054b",
+    "size": 437,
+    "mode": "100644",
+    "mtime": 1791527664505.9058
+  },
+  {
+    "path": ".github/workflows/ci.yml",
+    "hash": "81a345deddd46c16fbf7c00dd5958681a7f62575",
+    "size": 749,
+    "mode": "100644",
+    "mtime": 1791527664505.9058
+  },
+  {
+    "path": ".github/workflows/release.yml",
+    "hash": "5fd5fc589a3109b89c6637b675e946dd2a97c5b4",
+    "size": 741,
+    "mode": "100644",
+    "mtime": 1791527664506.0503
+  },
+  {
+    "path": ".gitignore",
+    "hash": "189056cf2ec4497e683c0fa7ac00d81395a413a6",
+    "size": 119,
+    "mode": "100644",
+    "mtime": 1791528671476.6074
+  },
+  {
+    "path": "bin/cex-cli",
+    "hash": "c42b020e694afb7c993a147380370d2545c691c3",
+    "size": 130336,
+    "mode": "100755",
+    "mtime": 1791908792913.1213
+  },
+  {
+    "path": "cex-pack.json",
+    "hash": "20a42bb66c18d23054729022b5574d313bd688ad",
+    "size": 1621,
+    "mode": "100644",
+    "mtime": 1791908716003.665
+  },
+  {
+    "path": "examples/01_build_pipeline_runner.cex",
+    "hash": "152b23ccbceaecd9697801e95cb131a94c0de9c0",
+    "size": 1551,
+    "mode": "100644",
+    "mtime": 1791527664506.0503
+  },
+  {
+    "path": "examples/02_terminal_ui_rendering.cex",
+    "hash": "04e29cf6e0c8880d8f00acfbc396d493245c863b",
+    "size": 1389,
+    "mode": "100644",
+    "mtime": 1791527664506.2397
+  },
+  {
+    "path": "examples/03_agents_and_cvm_governance.cex",
+    "hash": "fab24d41bcfee78a6a2d5b5fa47c323032a98d24",
+    "size": 1140,
+    "mode": "100644",
+    "mtime": 1791527664506.2397
+  },
+  {
+    "path": "README.md",
+    "hash": "c5713ab64b0fc415508dece3ee9c851711d3f6b8",
+    "size": 4728,
+    "mode": "100644",
+    "mtime": 1791647737691.794
+  },
+  {
+    "path": "src/builder.cex",
+    "hash": "df2b20773230901b79254991886eb5bb8d901fa6",
+    "size": 25009,
+    "mode": "100644",
+    "mtime": 1791908488609.9448
+  },
+  {
+    "path": "src/cli.cex",
+    "hash": "180624fe18c7ac1cb0c4bd3488cef5acf69a9843",
+    "size": 10605,
+    "mode": "100644",
+    "mtime": 1791908525123.9736
+  },
+  {
+    "path": "src/config.cex",
+    "hash": "c9baad21720db5de19016e5013d2039130d30814",
+    "size": 681,
+    "mode": "100644",
+    "mtime": 1791908419990.2224
+  },
+  {
+    "path": "src/index.cex",
+    "hash": "80b4b90d2e5f720f10f18c5e72b94cffe371b92e",
+    "size": 518,
+    "mode": "100644",
+    "mtime": 1791527973812.4124
+  },
+  {
+    "path": "src/terminal.cex",
+    "hash": "317bfcd6e4c770189c78767384922540cf18923f",
+    "size": 2009,
+    "mode": "100644",
+    "mtime": 1791568648627.3052
+  },
+  {
+    "path": "src/types.cex",
+    "hash": "e1913dc257ae26aa9c109f52685e4d053c4143f4",
+    "size": 1232,
+    "mode": "100644",
+    "mtime": 1791527664506.3606
+  },
+  {
+    "path": "tests/cli.test.cex",
+    "hash": "7e28eab91e7ac89b8c10b63744c73304f8e86d84",
+    "size": 24761,
+    "mode": "100644",
+    "mtime": 1791908743730.9788
+  }
+]

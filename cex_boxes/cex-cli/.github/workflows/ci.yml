@@ -1,0 +1,32 @@
+name: Cex-CLI Continuous Integration
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    name: Build & Test Cex-CLI
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Cex Runtime Engine
+        run: |
+          echo "Setting up CexR v8 and CexP v8 toolchain..."
+          ./bin/cex doctor
+
+      - name: Build Cex-CLI Package
+        run: |
+          ./bin/cex run packages/cex-cli/src/index.cex -- build
+
+      - name: Run Cex-CLI Automated Test Suite
+        run: |
+          ./bin/cex run packages/cex-cli/tests/cli.test.cex

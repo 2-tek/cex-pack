@@ -1,0 +1,733 @@
+// 2-TEK CexTest: CLI Frontend
+// Target: use C-ex for native test runner, assertions, benchmarks, and test coverage generation (LCOV, JSON, summary report)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule (No Multiple If-Else)
+
+import "./assert.cex";
+import "./runner.cex";
+import "./debug.cex";
+import "./benchmark.cex";
+import "./coverage.cex";
+import "./pipeline_runner.cex";
+import "@cex-env/src/env_loader.cex";
+import "@cex-cstdlib/src/cstdlib.cex";
+import "@cex-unistd/src/unistd.cex";
+import "@cex-filesystem/src/filesystem.cex";
+import fs from "fs";
+
+class CexTestCli {
+    public static void printBanner() {
+        println("===============================================================");
+        println("      2-TEK CexT: Native Test & Coverage Engine CLI            ");
+        println("      Target: @cext / cex-test powered by cexr-factory         ");
+        println("              (LCOV, JSON, summary report, pipeline)           ");
+        println("===============================================================");
+    }
+
+    public static void printUsage() {
+        println("Usage: cext <command> [arguments] [options]  (alias: cex-test)\n");
+        println("Commands:");
+        println("  run <test_file.cex> [options]       Execute test file via cexr-factory");
+        println("  pipeline <test_file.cex> [options]  Execute test file via reactive pipeline runner");
+        println("  coverage <test_file.cex> [options]  Run test and generate coverage report");
+        println("  build <file.cex> [-o <out>]         Compile standalone native binary via cexp-v8");
+        println("  compile <file.cex> [-o <out>]       Compile standalone native binary via cexp-v8");
+        println("  version                             Display version & target");
+        println("  help                                Show this help message\n");
+        println("Pipeline & Timeout Options:");
+        println("  --pipeline                          Enable reactive pipeline runner with metrics");
+        println("  --filter <keyword>                  Filter tests by keyword at wire speed");
+        println("  --timeout <ms>                      Override default timeout from .env (in ms)\n");
+        println("Coverage Options:");
+        println("  --lcov <path>                       Export standard LCOV file (lcov.info)");
+        println("  --json <path>                       Export structured JSON coverage report");
+        println("  --html <path>                       Export interactive HTML coverage dashboard");
+        println("  --out-dir <dir>                     Export all coverage reports to directory");
+        println("  --min <percentage>                  Enforce minimum coverage threshold (e.g. 80)");
+    }
+
+    public static string scanVersionInBase(string baseDir, string toolName, string expectedVer) {
+        if (!fs.exists(baseDir) || !fs.isDir(baseDir)) return "";
+        Array<string>* entries = fs.readDir(baseDir);
+        int count = (int)entries->length();
+        for (int i = 0; i < count; i++) {
+            string entry = entries->get(i);
+            if (entry == "." || entry == ".." || entry == "bin") continue;
+            string fullEntry = baseDir + "/" + entry;
+            bool isMatch = (entry == toolName);
+
+            int toolMatchCode = (toolName == "cexp-v8" || toolName == "cexp") ? 1 : ((toolName.find("cexr") != -1) ? 2 : ((toolName.find("cex-test") != -1 || toolName == "cext") ? 3 : 0));
+            switch (toolMatchCode) {
+                case 1:
+                if (entry == "cexp-v8" || entry == "cexp") isMatch = true;
+                break;
+                case 2:
+                if (entry == "cexr-bean" || entry == "cexr-factory" || entry == "cexr" || entry == "cexr-delivery" || entry == "cexr-drawer") isMatch = true;
+                break;
+                case 3:
+                if (entry == "cex-test-v1" || entry == "cex-test" || entry == "cext") isMatch = true;
+                break;
+                default:
+                break;
+            }
+
+            if (isMatch && fs.isDir(fullEntry)) {
+                Array<string>* vEntries = fs.readDir(fullEntry);
+                int vCount = (int)vEntries->length();
+                for (int v = 0; v < vCount; v++) {
+                    string vItem = vEntries->get(v);
+                    if (vItem == "." || vItem == ".." || vItem == "bin") continue;
+                    string vBin = fullEntry + "/" + vItem + "/bin";
+                    if (fs.exists(vBin) || (fs.isDir(fullEntry + "/" + vItem) && vItem.find(".") != -1)) {
+                        if (expectedVer.length() > 0) {
+                            if (vItem.find(expectedVer) == 0 || vItem == expectedVer) return vItem;
+                        } else {
+                            return vItem;
+                        }
+                    }
+                }
+            }
+            if (fs.exists(fullEntry + "/bin") || (fs.isDir(fullEntry) && entry.find(".") != -1)) {
+                if (toolName.find("cex-test") != -1 || toolName == "cext" || toolName == "cex") {
+                    if (expectedVer.length() > 0) {
+                        if (entry.find(expectedVer) == 0 || entry == expectedVer) return entry;
+                    } else {
+                        return entry;
+                    }
+                }
+            }
+        }
+        return "";
+    }
+
+    public static string resolveExactVersion(string toolName, string defaultVer) {
+        string envVer = "";
+        int toolCode = (toolName == "cexp-v8" || toolName == "cexp") ? 1 : ((toolName.find("cexr") != -1) ? 2 : ((toolName.find("cex-test") != -1 || toolName == "cext") ? 3 : 0));
+        switch (toolCode) {
+            case 1:
+            envVer = CexEnv::loadString("CEXP_VERSION", "");
+            if (envVer.length() == 0) {
+                envVer = CexEnv::loadString("CEXP_V8_VERSION", "");
+            }
+            break;
+            case 2:
+            envVer = CexEnv::loadString("CEXR_VERSION", "");
+            break;
+            case 3:
+            envVer = CexEnv::loadString("CEX_TEST_VERSION", "");
+            if (envVer.length() == 0) {
+                envVer = CexEnv::loadString("CEXT_VERSION", "");
+            }
+            break;
+            default:
+            break;
+        }
+
+        if (envVer.length() > 0) {
+            return envVer;
+        }
+        string envCexVer = CexEnv::loadString("CEX_VERSION", "");
+        if (envCexVer.length() > 0) {
+            return envCexVer;
+        }
+        string envCurVer = CexEnv::loadString("CURRENT_VERSION", "");
+        if (envCurVer.length() > 0) {
+            return envCurVer;
+        }
+
+        string manifestVer = "";
+        if (fs.exists("cex-pack.json")) {
+            string manifest = fs.readFile("cex-pack.json");
+            if (toolName.find("cex-test") != -1 || toolName == "cext") {
+                int vPos = (int)manifest.find("\"version\"");
+                if (vPos != -1) {
+                    int cPos = (int)manifest.find(":", vPos);
+                    if (cPos != -1) {
+                        int q1 = (int)manifest.find("\"", cPos);
+                        if (q1 != -1) {
+                            int q2 = (int)manifest.find("\"", q1 + 1);
+                            if (q2 != -1) {
+                                manifestVer = manifest.substr(q1 + 1, q2 - q1 - 1);
+                            }
+                        }
+                    }
+                }
+            }
+            if (manifestVer.length() == 0) {
+                int reqPos = (int)manifest.find("\"" + toolName + "\"");
+                if (reqPos != -1) {
+                    int colonPos = (int)manifest.find(":", reqPos);
+                    if (colonPos != -1) {
+                        int q1 = (int)manifest.find("\"", colonPos);
+                        if (q1 != -1) {
+                            int q2 = (int)manifest.find("\"", q1 + 1);
+                            if (q2 != -1) {
+                                manifestVer = manifest.substr(q1 + 1, q2 - q1 - 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        while (manifestVer.length() > 0 && (manifestVer.substr(0, 1) == "^" || manifestVer.substr(0, 1) == "~" || manifestVer.substr(0, 1) == "v" || manifestVer.substr(0, 1) == ">" || manifestVer.substr(0, 1) == "=")) {
+            manifestVer = manifestVer.substr(1);
+        }
+
+        string foundVer = "";
+        // 1. Dynamic discovery from {rootBuildPath}/$name-$type/$version/bin
+        string rootBuildPath = CexEnv::loadString("ROOT_BUILD_PATH", "");
+        if (rootBuildPath.length() > 0) {
+            foundVer = CexTestCli::scanVersionInBase(rootBuildPath, toolName, manifestVer);
+            if (foundVer.length() > 0) return foundVer;
+        }
+
+        // 2. Dynamic discovery from CEX_DIR/$name-$type/$version/bin
+        string envCexDir = CexEnv::loadString("CEX_DIR", "");
+        if (envCexDir.length() > 0) {
+            foundVer = CexTestCli::scanVersionInBase(envCexDir, toolName, manifestVer);
+            if (foundVer.length() > 0) return foundVer;
+        }
+
+        // 3. Dynamic discovery from CXVM_DIR
+        string cxvmDirEnv = CexEnv::loadString("CXVM_DIR", "");
+        if (cxvmDirEnv.length() > 0) {
+            foundVer = CexTestCli::scanVersionInBase(cxvmDirEnv, toolName, manifestVer);
+            if (foundVer.length() > 0) return foundVer;
+        }
+
+        // 4. Dynamic discovery from user runtime directories (~/.cxvm and ~/.cex)
+        string homeDir = CexEnv::loadString("HOME", "");
+        if (homeDir.length() > 0) {
+            foundVer = CexTestCli::scanVersionInBase(homeDir + "/.cxvm", toolName, manifestVer);
+            if (foundVer.length() > 0) return foundVer;
+            foundVer = CexTestCli::scanVersionInBase(homeDir + "/.cex", toolName, manifestVer);
+            if (foundVer.length() > 0) return foundVer;
+        }
+
+        // 5. If manifest gave full semver (X.Y.Z), use it directly
+        if (manifestVer.length() > 0) {
+            int firstDot = (int)manifestVer.find(".");
+            if (firstDot != -1) {
+                int secondDot = (int)manifestVer.find(".", firstDot + 1);
+                if (secondDot != -1) {
+                    return manifestVer;
+                }
+            }
+        }
+
+        return defaultVer;
+    }
+
+    public static string resolveReservePath(string name, string typeName, string version) {
+        string cexDir = CexEnv::loadString("CEX_DIR", "");
+        if (cexDir.length() == 0) {
+            string envCxvm = CexEnv::loadString("CXVM_DIR", "");
+            if (envCxvm.length() > 0) {
+                cexDir = envCxvm;
+            } else {
+                string envHome = CexEnv::loadString("HOME", "");
+                if (envHome.length() > 0) {
+                    cexDir = envHome + "/.cxvm";
+                }
+            }
+        }
+        while (cexDir.length() > 1 && cexDir.substr(cexDir.length() - 1) == "/") {
+            cexDir = cexDir.substr(0, cexDir.length() - 1);
+        }
+        return cexDir + "/" + name + "-" + typeName + "/" + version + "/bin";
+    }
+
+    public static string resolveCexpV8() {
+        string envCexpV8 = CexEnv::loadString("CEXP_V8", "");
+        if (envCexpV8.length() > 0) {
+            return envCexpV8;
+        }
+        string envCompilerTarget = CexEnv::loadString("CEX_COMPILER_TARGET", "");
+        if (envCompilerTarget.length() > 0) {
+            return envCompilerTarget;
+        }
+        string compVer = CexTestCli::resolveExactVersion("cexp-v8", "8.0.0");
+        string reservePath = CexTestCli::resolveReservePath("cexp", "v8", compVer);
+        if (fs.exists(reservePath)) {
+            return reservePath;
+        }
+
+        if (fs.exists("./.bin")) return "./.bin";
+
+        string envCexDir = CexEnv::loadString("CEX_DIR", "");
+        if (envCexDir.length() > 0) {
+            string cd = envCexDir;
+            while (cd.length() > 1 && cd.substr(cd.length() - 1) == "/") {
+                cd = cd.substr(0, cd.length() - 1);
+            }
+            if (fs.exists(cd + "/cexp-v8/" + compVer + "/bin")) return cd + "/cexp-v8/" + compVer + "/bin";
+            if (fs.exists(cd + "/cexp-v8/" + compVer + "/cexp-v8")) return cd + "/cexp-v8/" + compVer + "/cexp-v8";
+            if (fs.exists(cd + "/" + compVer + "/cexp-v8")) return cd + "/" + compVer + "/cexp-v8";
+            if (fs.exists(cd + "/cexp-v8")) return cd + "/cexp-v8";
+        }
+
+        string cxvmDir = CexEnv::loadString("CXVM_DIR", "");
+        if (cxvmDir.length() > 0) {
+            while (cxvmDir.length() > 1 && cxvmDir.substr(cxvmDir.length() - 1) == "/") {
+                cxvmDir = cxvmDir.substr(0, cxvmDir.length() - 1);
+            }
+            if (fs.exists(cxvmDir + "/cexp-v8/" + compVer + "/bin")) return cxvmDir + "/cexp-v8/" + compVer + "/bin";
+            if (fs.exists(cxvmDir + "/bin/" + compVer + "/cexp-v8")) return cxvmDir + "/bin/" + compVer + "/cexp-v8";
+            if (fs.exists(cxvmDir + "/versions/v" + compVer + "/bin/cexp-v8")) return cxvmDir + "/versions/v" + compVer + "/bin/cexp-v8";
+            if (fs.exists(cxvmDir + "/current/bin/cexp-v8")) return cxvmDir + "/current/bin/cexp-v8";
+            if (fs.exists(cxvmDir + "/bin/cexp-v8")) return cxvmDir + "/bin/cexp-v8";
+        }
+
+        string homeDir = CexEnv::loadString("HOME", "");
+        if (homeDir.length() > 0) {
+            string hcxvm = homeDir + "/.cxvm";
+            if (fs.exists(hcxvm + "/cexp-v8/" + compVer + "/bin")) return hcxvm + "/cexp-v8/" + compVer + "/bin";
+            if (fs.exists(hcxvm + "/bin/" + compVer + "/cexp-v8")) return hcxvm + "/bin/" + compVer + "/cexp-v8";
+            if (fs.exists(hcxvm + "/current/bin/cexp-v8")) return hcxvm + "/current/bin/cexp-v8";
+            if (fs.exists(hcxvm + "/bin/cexp-v8")) return hcxvm + "/bin/cexp-v8";
+
+            string hcr = homeDir + "/.cex";
+            if (fs.exists(hcr + "/cexp-v8/" + compVer + "/bin")) return hcr + "/cexp-v8/" + compVer + "/bin";
+            if (fs.exists(hcr + "/bin/cexp-v8/" + compVer + "/bin")) return hcr + "/bin/cexp-v8/" + compVer + "/bin";
+            if (fs.exists(hcr + "/bin/" + compVer + "/cexp-v8")) return hcr + "/bin/" + compVer + "/cexp-v8";
+            if (fs.exists(hcr + "/bin/" + compVer + "/cexp")) return hcr + "/bin/" + compVer + "/cexp";
+            if (fs.exists(homeDir + "/.local/bin/cexp-v8")) return homeDir + "/.local/bin/cexp-v8";
+        }
+
+        string rootDir = CexEnv::loadString("CEX_ROOT", "");
+        if (rootDir.length() > 0) {
+            string cr = rootDir;
+            while (cr.length() > 1 && cr.substr(cr.length() - 1) == "/") {
+                cr = cr.substr(0, cr.length() - 1);
+            }
+            if (fs.exists(cr + "/cexp-v8/" + compVer + "/bin")) return cr + "/cexp-v8/" + compVer + "/bin";
+            if (fs.exists(cr + "/bin/cexp-v8/" + compVer + "/bin")) return cr + "/bin/cexp-v8/" + compVer + "/bin";
+            if (fs.exists(cr + "/bin/" + compVer + "/cexp-v8")) return cr + "/bin/" + compVer + "/cexp-v8";
+            if (fs.exists(cr + "/bin/cexp-v8")) return cr + "/bin/cexp-v8";
+            if (fs.exists(cr + "/bin/" + compVer + "/cexp")) return cr + "/bin/" + compVer + "/cexp";
+            if (fs.exists(cr + "/bin/cexp")) return cr + "/bin/cexp";
+        }
+
+        if (fs.exists("CEX_DIR/cexp-v8/$version/bin")) {
+            return "CEX_DIR/cexp-v8/$version/bin";
+        }
+        if (fs.exists("runtimes/.bin")) {
+            return "runtimes/.bin";
+        }
+        if (fs.exists("runtimes/cexr-factory/.bin")) {
+            return "runtimes/cexr-factory/.bin";
+        }
+        return "cexp-v8";
+    }
+
+    public static string resolveRunner() {
+        string envRunner = CexEnv::loadString("CEX_RUNNER", "");
+        if (envRunner.length() > 0) {
+            return envRunner;
+        }
+        string runVer = CexTestCli::resolveExactVersion("cexr-factory", "");
+        if (runVer.length() == 0) {
+            runVer = CexTestCli::resolveExactVersion("cexr", "");
+        }
+        string homeDir = CexEnv::loadString("HOME", "");
+
+        // 1. Prioritized local machine binary in runtimes/.bin
+        if (fs.exists("runtimes/.bin")) return "runtimes/.bin";
+        if (fs.exists("runtimes/cexr-factory/.bin")) return "runtimes/cexr-factory/.bin";
+
+        // 2. Exact version reserve paths: CEX_DIR/cexr-factory/$version/bin
+        string factoryReserve = CexTestCli::resolveReservePath("cexr", "factory", runVer);
+        if (fs.exists(factoryReserve)) return factoryReserve;
+
+        // 3. Direct cxvm edition binaries (CXVM_DIR or reserve paths)
+        string cxvmDir = CexEnv::loadString("CXVM_DIR", homeDir.length() > 0 ? (homeDir + "/.cxvm") : "");
+        while (cxvmDir.length() > 1 && cxvmDir.substr(cxvmDir.length() - 1) == "/") {
+            cxvmDir = cxvmDir.substr(0, cxvmDir.length() - 1);
+        }
+        if (cxvmDir.length() > 0) {
+            if (fs.exists(cxvmDir + "/cexr-factory/" + runVer + "/bin")) return cxvmDir + "/cexr-factory/" + runVer + "/bin";
+            if (fs.exists(cxvmDir + "/current/bin/cexr-factory")) return cxvmDir + "/current/bin/cexr-factory";
+            if (fs.exists(cxvmDir + "/bin/cexr-factory")) return cxvmDir + "/bin/cexr-factory";
+        }
+
+        // 4. User home directories (~/.cex and ~/.cxvm)
+        if (homeDir.length() > 0) {
+            string hFactory = homeDir + "/.cxvm/cexr-factory/" + runVer + "/bin";
+            if (fs.exists(hFactory)) return hFactory;
+            string hcrFactory = homeDir + "/.cex/cexr-factory/" + runVer + "/bin";
+            if (fs.exists(hcrFactory)) return hcrFactory;
+            if (fs.exists(homeDir + "/.cxvm/bin/cexr-factory")) return homeDir + "/.cxvm/bin/cexr-factory";
+            if (fs.exists(homeDir + "/.cex/bin/cexr-factory")) return homeDir + "/.cex/bin/cexr-factory";
+            if (fs.exists(homeDir + "/.local/bin/cexr-factory")) return homeDir + "/.local/bin/cexr-factory";
+        }
+
+        // 5. Root / system paths
+        string rootDir = CexEnv::loadString("CEX_ROOT", "");
+        if (rootDir.length() > 0) {
+            string cr = rootDir;
+            while (cr.length() > 1 && cr.substr(cr.length() - 1) == "/") {
+                cr = cr.substr(0, cr.length() - 1);
+            }
+            if (fs.exists(cr + "/cexr-factory/" + runVer + "/bin")) return cr + "/cexr-factory/" + runVer + "/bin";
+            if (fs.exists(cr + "/bin/" + runVer + "/cexr-factory")) return cr + "/bin/" + runVer + "/cexr-factory";
+            if (fs.exists(cr + "/bin/cexr-factory")) return cr + "/bin/cexr-factory";
+        }
+
+        if (fs.exists("CEX_DIR/cexr-factory/$version/bin")) {
+            return "CEX_DIR/cexr-factory/$version/bin";
+        }
+        // 6. Secondary fallback to bean / delivery / drawer / unified cexr
+
+        string beanReserve = CexTestCli::resolveReservePath("cexr", "bean", runVer);
+        if (fs.exists(beanReserve)) return beanReserve;
+        string deliveryReserve = CexTestCli::resolveReservePath("cexr", "delivery", runVer);
+        if (fs.exists(deliveryReserve)) return deliveryReserve;
+        string drawerReserve = CexTestCli::resolveReservePath("cexr", "drawer", runVer);
+        if (fs.exists(drawerReserve)) return drawerReserve;
+        string unifiedReserve = CexTestCli::resolveReservePath("cexr", "cexr", runVer);
+        if (fs.exists(unifiedReserve)) return unifiedReserve;
+
+        if (cxvmDir.length() > 0) {
+            if (fs.exists(cxvmDir + "/cexr-bean/" + runVer + "/bin")) return cxvmDir + "/cexr-bean/" + runVer + "/bin";
+            if (fs.exists(cxvmDir + "/cexr-delivery/" + runVer + "/bin")) return cxvmDir + "/cexr-delivery/" + runVer + "/bin";
+            if (fs.exists(cxvmDir + "/cexr-drawer/" + runVer + "/bin")) return cxvmDir + "/cexr-drawer/" + runVer + "/bin";
+            if (fs.exists(cxvmDir + "/cexr/" + runVer + "/bin")) return cxvmDir + "/cexr/" + runVer + "/bin";
+            if (fs.exists(cxvmDir + "/current/bin/cexr-bean")) return cxvmDir + "/current/bin/cexr-bean";
+            if (fs.exists(cxvmDir + "/current/bin/cexr")) return cxvmDir + "/current/bin/cexr";
+            if (fs.exists(cxvmDir + "/bin/cexr")) return cxvmDir + "/bin/cexr";
+        }
+
+        if (homeDir.length() > 0) {
+            string hBean = homeDir + "/.cxvm/cexr-bean/" + runVer + "/bin";
+            if (fs.exists(hBean)) return hBean;
+            string hDelivery = homeDir + "/.cxvm/cexr-delivery/" + runVer + "/bin";
+            if (fs.exists(hDelivery)) return hDelivery;
+            string hDrawer = homeDir + "/.cxvm/cexr-drawer/" + runVer + "/bin";
+            if (fs.exists(hDrawer)) return hDrawer;
+
+            string hcrBean = homeDir + "/.cex/cexr-bean/" + runVer + "/bin";
+            if (fs.exists(hcrBean)) return hcrBean;
+            string hcrVer = homeDir + "/.cex/bin/" + runVer + "/cexr";
+            if (fs.exists(hcrVer)) return hcrVer;
+            string hcr = homeDir + "/.cex/bin/cexr";
+            if (fs.exists(hcr)) return hcr;
+
+            string compVer = CexTestCli::resolveExactVersion("cexp-v8", "");
+            string compReserve = CexTestCli::resolveReservePath("cexp", "v8", compVer);
+            if (fs.exists(compReserve)) return compReserve + " run";
+            if (fs.exists("./.bin")) return "./.bin run";
+            if (fs.exists(homeDir + "/.cex/bin/" + compVer + "/cexp-v8")) {
+                return homeDir + "/.cex/bin/" + compVer + "/cexp-v8 run";
+            }
+            if (fs.exists(homeDir + "/.local/bin/cexr")) {
+                return homeDir + "/.local/bin/cexr";
+            }
+        }
+
+        if (rootDir.length() > 0) {
+            string cr = rootDir;
+            while (cr.length() > 1 && cr.substr(cr.length() - 1) == "/") {
+                cr = cr.substr(0, cr.length() - 1);
+            }
+            if (fs.exists(cr + "/cexr-bean/" + runVer + "/bin")) return cr + "/cexr-bean/" + runVer + "/bin";
+            if (fs.exists(cr + "/cexr/" + runVer + "/bin")) return cr + "/cexr/" + runVer + "/bin";
+            if (fs.exists(cr + "/bin/" + runVer + "/cexr")) return cr + "/bin/" + runVer + "/cexr";
+            if (fs.exists(cr + "/bin/cexr")) return cr + "/bin/cexr";
+        }
+
+        if (fs.exists("CEX_DIR/cexr-bean/$version/bin")) {
+            return "CEX_DIR/cexr-bean/$version/bin";
+        }
+        if (fs.exists("CEX_DIR/cexr/$version/bin")) {
+            return "CEX_DIR/cexr/$version/bin";
+        }
+        if (fs.exists("runtimes/.bin")) {
+            return "runtimes/.bin";
+        }
+        if (fs.exists("runtimes/cexr-factory/.bin")) {
+            return "runtimes/cexr-factory/.bin";
+        }
+        return "cexr-factory";
+    }
+
+    public static int runSingleInNewProcess(string testFile) {
+        int timeoutMs = TestTimeout::getTimeoutMs();
+        if (timeoutMs <= 0) {
+            println("[FAIL] [cex-test] Isolated test process failed: " + testFile + " - " + TestTimeout::formatTimeoutError(timeoutMs, 0.0));
+            return 1;
+        }
+        string runner = CexTestCli::resolveRunner();
+        println("==> [cex-test] Spawning isolated new test process (timeout: " + to_string(timeoutMs) + "ms): " + runner + " " + testFile);
+        Stopwatch* sw = Log::start(testFile);
+        string runCmd = runner + " \"" + testFile + "\"";
+        int res = CexCstdlib::system(runCmd);
+        sw->stop();
+        double elapsedMs = sw->elapsedMs();
+        if (TestTimeout::isTimedOut(timeoutMs, elapsedMs)) {
+            println("[FAIL] [cex-test] Isolated test process failed: " + testFile + " - " + TestTimeout::formatTimeoutError(timeoutMs, elapsedMs));
+            return 1;
+        }
+        if (res == 0) {
+            println("[OK] [cex-test] Isolated test process passed: " + testFile);
+        } else {
+            println("[FAIL] [cex-test] Isolated test process failed: " + testFile + " (status: " + to_string(res) + ")");
+        }
+        return res;
+    }
+
+    public static int run(int argc, char** argv) {
+        if (argc < 2) {
+            CexTestCli::printBanner();
+            CexTestCli::printUsage();
+            return 0;
+        }
+
+        string cmd = string(argv[1]);
+        int cmdCode = (cmd == "--version" || cmd == "version" || cmd == "-v") ? 1 : ((cmd == "--help" || cmd == "help" || cmd == "-h") ? 2 : ((cmd == "build" || cmd == "compile") ? 3 : ((cmd == "run" || cmd == "pipeline") ? 4 : ((cmd == "coverage") ? 5 : 0))));
+
+        switch (cmdCode) {
+            case 1:
+            CexTestCli::printBanner();
+            println("Target: use C-ex for native test runner, assertions, benchmarks, and test coverage generation (LCOV, JSON, summary report)");
+            println("Compiler: cexp-v8 (" + CexTestCli::resolveCexpV8() + ")");
+            println("CexTest Native Testing & Coverage Subsystem Ready.");
+            return 0;
+
+            case 2:
+            CexTestCli::printBanner();
+            CexTestCli::printUsage();
+            return 0;
+
+            case 3: {
+                string srcFile = (argc >= 3) ? string(argv[2]) : "scripts/cli.cex";
+                string outBin = ".bin";
+                if (fs.exists("cex-pack.json")) {
+                    string manifest = fs.readFile("cex-pack.json");
+                    int binPos = (int)manifest.find("\"bin\"");
+                    if (binPos != -1) {
+                        int colonPos = (int)manifest.find(":", binPos);
+                        if (colonPos != -1) {
+                            int q1 = (int)manifest.find("\"", colonPos);
+                            if (q1 != -1) {
+                                int q2 = (int)manifest.find("\"", q1 + 1);
+                                if (q2 != -1) {
+                                    string binVal = manifest.substr(q1 + 1, q2 - q1 - 1);
+                                    while (binVal.length() > 2 && binVal.substr(0, 2) == "./") {
+                                        binVal = binVal.substr(2);
+                                    }
+                                    if (binVal.length() > 0) {
+                                        outBin = binVal;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                for (int i = 3; i < argc; i++) {
+                    string arg = string(argv[i]);
+                    if ((arg == "-o" || arg == "--out") && i + 1 < argc) {
+                        outBin = string(argv[i + 1]);
+                        i++;
+                    }
+                }
+                int slashPos = (int)outBin.rfind("/");
+                if (slashPos != -1) {
+                    string parentDir = outBin.substr(0, slashPos);
+                    if (parentDir.length() > 0 && !fs.exists(parentDir)) {
+                        CexFilesystem::createDirectories(parentDir);
+                    }
+                }
+                string compiler = CexTestCli::resolveCexpV8();
+                println("==> [cex-test] Compiling native binary using cexp-v8: " + compiler + " build " + srcFile + " -o " + outBin);
+                string buildCmd = compiler + " build \"" + srcFile + "\" -o \"" + outBin + "\"";
+                int res = CexCstdlib::system(buildCmd);
+                if (res == 0) {
+                    println("[OK] [cex-test] Native binary built successfully: " + outBin);
+                } else {
+                    println("[FAIL] [cex-test] Compilation failed with status: " + to_string(res));
+                }
+                return res;
+            }
+
+            case 4: {
+                string testFile = (argc >= 3) ? string(argv[2]) : "";
+                bool usePipeline = (cmd == "pipeline");
+                string filterKeyword = "";
+                for (int i = 3; i < argc; i++) {
+                    string arg = string(argv[i]);
+                    int optCode = (arg == "--pipeline") ? 1 : ((arg == "--filter" && i + 1 < argc) ? 2 : ((arg == "--timeout" && i + 1 < argc) ? 3 : 0));
+                    switch (optCode) {
+                        case 1:
+                        usePipeline = true;
+                        break;
+                        case 2:
+                        filterKeyword = string(argv[i + 1]);
+                        i++;
+                        break;
+                        case 3:
+                        TestTimeout::setOverrideTimeoutMs(EnvParser::parseInt(string(argv[i + 1]), 0));
+                        i++;
+                        break;
+                        default:
+                        break;
+                    }
+                }
+
+                int timeoutMs = TestTimeout::getTimeoutMs();
+                if (timeoutMs <= 0) {
+                    println("[FAIL] [cex-test] Task failed: " + TestTimeout::formatTimeoutError(timeoutMs, 0.0));
+                    return 1;
+                }
+
+                if (testFile.length() == 0 || testFile == "." || testFile == "all") {
+                    string runner = CexTestCli::resolveRunner();
+                    println("==> [cex-test] Auto-discovering test suites (spawning each in a new process via " + runner + ", timeout: " + to_string(timeoutMs) + "ms)...");
+                    string discoverCmd = "sh -c 'found=0; for f in test/*.test.cex tests/*.test.cex; do if [ -f \"$f\" ]; then found=1; echo \"==> [cex-test] Spawning isolated new test process: " + runner + " $f\"; \"" + runner + "\" \"$f\" || exit 1; echo \"[OK] [cex-test] Isolated test process passed: $f\"; fi; done; if [ \"$found\" -eq 0 ]; then echo \"[CexTest Error]: No test files found in test/ or tests/\"; exit 1; fi'";
+                    return CexCstdlib::system(discoverCmd);
+                }
+                if (!fs.exists(testFile)) {
+                    println("[CexTest Error]: Test file not found: " + testFile);
+                    return 1;
+                }
+
+                if (usePipeline) {
+                    CexTestCli::printBanner();
+                    println("--> Running test under reactive event pipeline: " + testFile);
+                    PipelineTestRunner* pRunner = new PipelineTestRunner("CliTestPipeline");
+                    if (filterKeyword.length() > 0) {
+                        pRunner->setFilter(filterKeyword);
+                        println("--> Active test filter: '" + filterKeyword + "'");
+                    }
+                    int res = CexTestCli::runSingleInNewProcess(testFile);
+                    pRunner->displayReport();
+                    return res;
+                }
+
+                return CexTestCli::runSingleInNewProcess(testFile);
+            }
+
+            case 5: {
+                if (argc < 3) {
+                    println("[CexTest Error]: Missing target for 'coverage'");
+                    return 1;
+                }
+                string target = string(argv[2]);
+                string lcovPath = "";
+                string jsonPath = "";
+                string htmlPath = "";
+                string outDir = "";
+                int minThreshold = 0;
+
+                for (int i = 3; i < argc; i++) {
+                    string arg = string(argv[i]);
+                    int covOpt = (arg == "--lcov" && i + 1 < argc) ? 1 : ((arg == "--json" && i + 1 < argc) ? 2 : ((arg == "--html" && i + 1 < argc) ? 3 : ((arg == "--out-dir" && i + 1 < argc) ? 4 : ((arg == "--min" && i + 1 < argc) ? 5 : ((arg == "--timeout" && i + 1 < argc) ? 6 : 0)))));
+                    switch (covOpt) {
+                        case 1:
+                        lcovPath = string(argv[i + 1]);
+                        i++;
+                        break;
+                        case 2:
+                        jsonPath = string(argv[i + 1]);
+                        i++;
+                        break;
+                        case 3:
+                        htmlPath = string(argv[i + 1]);
+                        i++;
+                        break;
+                        case 4:
+                        outDir = string(argv[i + 1]);
+                        i++;
+                        break;
+                        case 5:
+                        minThreshold = EnvParser::parseInt(string(argv[i + 1]), 0);
+                        i++;
+                        break;
+                        case 6:
+                        TestTimeout::setOverrideTimeoutMs(EnvParser::parseInt(string(argv[i + 1]), 0));
+                        i++;
+                        break;
+                        default:
+                        break;
+                    }
+                }
+
+                int timeoutMs = TestTimeout::getTimeoutMs();
+                if (timeoutMs <= 0) {
+                    println("[FAIL] [cex-test] Task failed: " + TestTimeout::formatTimeoutError(timeoutMs, 0.0));
+                    return 1;
+                }
+
+                string traceFile = CexEnv::loadString("CEX_COVERAGE_TRACE", ".cex_cache/cex_cov_trace.txt");
+                if (!fs.exists(".cex_cache")) {
+                    CexFilesystem::createDirectories(".cex_cache");
+                }
+                if (fs.exists(traceFile)) {
+                    CexUnistd::unlink(traceFile);
+                }
+
+                CexTestCli::printBanner();
+                println("--> Executing test target under coverage monitoring: " + target);
+
+                string runner = CexTestCli::resolveRunner();
+                Stopwatch* sw = Log::start(target);
+                string runCmd = "CEX_COVERAGE_TRACE=" + traceFile + " \"" + runner + "\" \"" + target + "\"";
+                int testRes = CexCstdlib::system(runCmd);
+                sw->stop();
+                double elapsedMs = sw->elapsedMs();
+                if (TestTimeout::isTimedOut(timeoutMs, elapsedMs)) {
+                    println("[FAIL] [cex-test] Coverage target failed: " + target + " - " + TestTimeout::formatTimeoutError(timeoutMs, elapsedMs));
+                    return 1;
+                }
+
+                // Load trace if generated
+                if (fs.exists(traceFile)) {
+                    string traceContent = fs.readFile(traceFile);
+                    CoverageCollector::loadTrace(traceContent);
+                }
+
+                CoverageStats* stats = CoverageCollector::computeStats();
+                if (stats->totalFiles == 0 && fs.exists(target)) {
+                    string content = fs.readFile(target);
+                    CoverageCollector::registerFile(target, content);
+                    stats = CoverageCollector::computeStats();
+                }
+
+                string asciiReport = CoverageGenerator::generateAsciiReport(stats);
+                print(asciiReport);
+
+                if (outDir.length() > 0) {
+                    CoverageGenerator::exportReports(stats, outDir, "coverage");
+                    println("[CexTest Coverage] Reports exported to: " + outDir);
+                }
+                if (lcovPath.length() > 0) {
+                    string lcovContent = CoverageGenerator::generateLcov(stats, "CexTest");
+                    fs.writeFile(lcovPath, lcovContent);
+                    println("[CexTest Coverage] LCOV report written to: " + lcovPath);
+                }
+                if (jsonPath.length() > 0) {
+                    string jsonContent = CoverageGenerator::generateJson(stats);
+                    fs.writeFile(jsonPath, jsonContent);
+                    println("[CexTest Coverage] JSON report written to: " + jsonPath);
+                }
+                if (htmlPath.length() > 0) {
+                    string htmlContent = CoverageGenerator::generateHtml(stats, "CexTest Coverage Report");
+                    fs.writeFile(htmlPath, htmlContent);
+                    println("[CexTest Coverage] HTML report written to: " + htmlPath);
+                }
+
+                if (minThreshold > 0) {
+                    if (!CoverageGenerator::checkThreshold(stats, minThreshold)) {
+                        println("[CexTest FAILED]: Coverage " + to_string(stats->overallPctInt) +
+                                "% is below required threshold of " + to_string(minThreshold) + "%");
+                        return 1;
+                    }
+                    println("[CexTest PASSED]: Coverage threshold of " + to_string(minThreshold) + "% met.");
+                }
+
+                return testRes;
+            }
+
+            default:
+            return CexTestCli::runSingleInNewProcess(cmd);
+        }
+    }
+}

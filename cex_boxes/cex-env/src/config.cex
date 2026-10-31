@@ -1,0 +1,50 @@
+// CexEnvLoader: Configuration & Search Paths (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+class EnvConfig {
+    public Array<string>* searchPaths = new Array<string>();
+    public bool systemEnvPriority = false;
+    public bool enableCache = true;
+
+    public constructor() {
+        this.resetDefaultPaths();
+    }
+
+    static public EnvConfig* createDefault() {
+        return new EnvConfig();
+    }
+
+    public void resetDefaultPaths() {
+        this.searchPaths = new Array<string>();
+        this.searchPaths->push(".env");
+        this.searchPaths->push("document/.env");
+        this.searchPaths->push("documents/.env");
+        this.searchPaths->push("config/.env");
+        this.searchPaths->push("../.env");
+        this.searchPaths->push("../../.env");
+        this.searchPaths->push("../../../.env");
+        this.searchPaths->push("../../../../.env");
+    }
+
+    public void addPath(string path) {
+        this.searchPaths->push(path);
+    }
+
+    public void prependPath(string path) {
+        Array<string>* newPaths = new Array<string>();
+        newPaths->push(path);
+        int count = (int)this.searchPaths->length();
+        for (int i = 0; i < count; i++) {
+            newPaths->push(this.searchPaths->get(i));
+        }
+        this.searchPaths = newPaths;
+    }
+
+    public void clearPaths() {
+        this.searchPaths = new Array<string>();
+    }
+
+    public Array<string>* getPaths() {
+        return this.searchPaths;
+    }
+}

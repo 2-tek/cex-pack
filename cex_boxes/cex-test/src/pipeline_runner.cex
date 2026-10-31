@@ -1,0 +1,310 @@
+// CexTest: High-Performance Pipeline Test Runner
+// Event-driven test execution, fast filtering, streaming telemetry and microsecond metrics
+// Powered by @cex-runners and @cex-pipeline (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule (No Symbols)
+
+import "@cex-runners/src/runner.cex";
+import "@cex-runners/src/pipeline.cex";
+import "@cex-runners/src/types.cex";
+import "@cex-pipeline/src/broker.cex";
+import "@cex-pipeline/src/types.cex";
+import "@cex-log/src/log.cex";
+import "@cex-cstdlib/src/cstdlib.cex";
+import "@cex-unistd/src/unistd.cex";
+import "./async.cex";
+
+using TestAction = std::function<bool()>;
+using BenchmarkAction = std::function<void()>;
+
+class TestPipelineEvent {
+    public static string getTopicSuiteStart() {
+        return "test/suite/start";
+    }
+
+    public static string getTopicSuiteEnd() {
+        return "test/suite/end";
+    }
+
+    public static string getTopicCaseStart() {
+        return "test/case/start";
+    }
+
+    public static string getTopicCasePass() {
+        return "test/case/pass";
+    }
+
+    public static string getTopicCaseFail() {
+        return "test/case/fail";
+    }
+
+    public static string getTopicBenchmark() {
+        return "test/benchmark";
+    }
+}
+
+class TestTelemetryStage : public RunnerStage {
+    public int totalPass = 0;
+    public int totalFail = 0;
+
+    public constructor(string id, string name) {
+        super(id, name);
+    }
+
+    public override RunnerEvent* process(RunnerEvent* event) {
+        if (event == nullptr) return nullptr;
+        int topicCode = (event->name === TestPipelineEvent::getTopicCasePass()) ? 1 : ((event->name === TestPipelineEvent::getTopicCaseFail()) ? 2 : 0);
+        switch (topicCode) {
+            case 1:
+            this.totalPass++;
+            break;
+            case 2:
+            this.totalFail++;
+            break;
+            default:
+            break;
+        }
+        return event;
+    }
+
+    public int getProcessedCount() {
+        return this.totalPass + this.totalFail;
+    }
+}
+
+class PipelineTestRunner {
+    public string name;
+    public PubSubBroker* broker;
+    public CexRunners* runners = new CexRunners();
+    public EventPipeline* pipeline;
+    public TestTelemetryStage* telemetryStage = new TestTelemetryStage("stage_telemetry", "TelemetryObserver");
+    public RunnerMetrics* metrics;
+    public Subscriber* subscriber;
+    public string filterKeyword = "";
+    public int passedCount = 0;
+    public int failedCount = 0;
+    public double totalDurationMs = 0.0;
+    public int timeoutMs = TestTimeout::getTimeoutMs();
+
+    public constructor(string runnerName) {
+        this.name = runnerName;
+        this.broker = new PubSubBroker(runnerName + "-Broker");
+        this.metrics = this.runners->getMetrics();
+
+        // Subscribe to all test topics: test/**
+        this.subscriber = this.broker->subscribe("test/**", runnerName + "-Subscriber");
+
+        // Construct high-speed event pipeline with telemetry stage
+        this.pipeline = new EventPipeline(runnerName + "-Pipeline");
+        this.pipeline->addStage(this.telemetryStage);
+        this.pipeline->tap([this](RunnerEvent* ev) {
+            // Metrics automatically updated by pipeline
+        });
+
+        // Bind multi-events for test execution lifecycle
+        this.runners->bindMultiEvents(runnerName, "test/case/pass, test/case/fail, test/benchmark", this.pipeline);
+    }
+
+    public void setTimeout(int ms) {
+        this.timeoutMs = ms;
+    }
+
+    public int getTimeout() {
+        return this.timeoutMs;
+    }
+
+    public PubSubBroker* getBroker() {
+        return this.broker;
+    }
+
+    public CexRunners* getRunners() {
+        return this.runners;
+    }
+
+    public EventPipeline* getPipeline() {
+        return this.pipeline;
+    }
+
+    public TestTelemetryStage* getTelemetryStage() {
+        return this.telemetryStage;
+    }
+
+    public RunnerMetrics* getMetrics() {
+        return this.metrics;
+    }
+
+    public void setFilter(string keyword) {
+        this.filterKeyword = keyword;
+    }
+
+    public bool shouldRun(string testName) {
+        if (this.filterKeyword.length() === 0) {
+            return true;
+        }
+        return (int)testName.find(this.filterKeyword) !== -1;
+    }
+
+    public void dispatchEvent(string topic, string testName, bool passed, string errorMsg, double durationMs) {
+        this.totalDurationMs += durationMs;
+        if (passed) {
+            this.passedCount++;
+        } else {
+            this.failedCount++;
+        }
+
+        // Publish to PubSubBroker for decoupled subscribers
+        string payload = testName + "|" + (passed ? "PASS" : "FAIL") + "|" + to_string(durationMs) + "|" + errorMsg;
+        this.broker->publish(topic, payload, this.name);
+
+        // Dispatch through CexRunners event engine
+        this.runners->dispatch(topic, payload);
+
+        // Execute through EventPipeline
+        RunnerEvent* ev = new RunnerEvent(topic, this.name, payload);
+        this.pipeline->execute(ev);
+    }
+
+    public bool runTest(string testName, TestAction fn) {
+        if (!this.shouldRun(testName)) {
+            this.metrics->recordFilter();
+            return true;
+        }
+
+        this.broker->publish(TestPipelineEvent::getTopicCaseStart(), testName, this.name);
+
+        if (this.timeoutMs <= 0) {
+            string timeoutErr = TestTimeout::formatTimeoutError(this.timeoutMs, 0.0);
+            this.dispatchEvent(TestPipelineEvent::getTopicCaseFail(), testName, false, timeoutErr, 0.0);
+            return false;
+        }
+
+        Stopwatch* sw = Log::start(testName);
+        bool ok = false;
+        string err = "";
+
+        try {
+            ok = fn();
+        } catch (...) {
+            ok = false;
+            err = "Uncaught exception in test lambda";
+        }
+
+        sw->stop();
+        double ms = sw->elapsedMs();
+        if (TestTimeout::isTimedOut(this.timeoutMs, ms)) {
+            ok = false;
+            err = TestTimeout::formatTimeoutError(this.timeoutMs, ms);
+        }
+        string topic = ok ? TestPipelineEvent::getTopicCasePass() : TestPipelineEvent::getTopicCaseFail();
+        this.dispatchEvent(topic, testName, ok, err, ms);
+
+        return ok;
+    }
+
+    public bool runAsyncTest(string testName, AsyncTestAction fn) {
+        if (!this.shouldRun(testName)) {
+            this.metrics->recordFilter();
+            return true;
+        }
+
+        this.broker->publish(TestPipelineEvent::getTopicCaseStart(), testName, this.name);
+
+        if (this.timeoutMs <= 0) {
+            string timeoutErr = TestTimeout::formatTimeoutError(this.timeoutMs, 0.0);
+            this.dispatchEvent(TestPipelineEvent::getTopicCaseFail(), testName, false, timeoutErr, 0.0);
+            return false;
+        }
+
+        Stopwatch* sw = Log::start(testName);
+        bool ok = false;
+        string err = "";
+
+        try {
+            Promise<bool>* p = fn();
+            if (p != nullptr) {
+                ok = await p;
+            } else {
+                ok = false;
+                err = "Async test lambda returned null promise";
+            }
+        } catch (...) {
+            ok = false;
+            err = "Uncaught exception in async test lambda";
+        }
+
+        sw->stop();
+        double ms = sw->elapsedMs();
+        if (TestTimeout::isTimedOut(this.timeoutMs, ms)) {
+            ok = false;
+            err = TestTimeout::formatTimeoutError(this.timeoutMs, ms);
+        }
+        string topic = ok ? TestPipelineEvent::getTopicCasePass() : TestPipelineEvent::getTopicCaseFail();
+        this.dispatchEvent(topic, testName, ok, err, ms);
+
+        return ok;
+    }
+
+    public double runBenchmark(string benchName, int iterations, BenchmarkAction fn) {
+        if (!this.shouldRun(benchName)) {
+            this.metrics->recordFilter();
+            return 0.0;
+        }
+
+        Stopwatch* sw = Log::start(benchName);
+        for (int i = 0; i < iterations; i++) {
+            fn();
+        }
+        sw->stop();
+        double ms = sw->elapsedMs();
+        if (ms <= 0.0) {
+            ms = 0.001;
+        }
+        this.totalDurationMs += ms;
+
+        int64 ops = (int64)((double)iterations * 1000.0 / ms);
+        string payload = benchName + "|OPS:" + to_string(ops) + "|MS:" + to_string(ms);
+        this.broker->publish(TestPipelineEvent::getTopicBenchmark(), payload, this.name);
+        this.runners->dispatch(TestPipelineEvent::getTopicBenchmark(), payload);
+
+        return ms;
+    }
+
+    public int runBatch(Array<string>* names, Array<TestAction>* fns) {
+        int passed = 0;
+        int count = (int)names->length();
+        for (int i = 0; i < count; i++) {
+            string name = names->get(i);
+            TestAction fn = fns->get(i);
+            if (this.runTest(name, fn)) {
+                passed++;
+            }
+        }
+        return passed;
+    }
+
+    public int64 getThroughputOpsPerSec() {
+        if (this.totalDurationMs <= 0.0) {
+            return (int64)this.metrics->totalEvents;
+        }
+        return (int64)((double)this.metrics->totalEvents * 1000.0 / this.totalDurationMs);
+    }
+
+    public void displayReport() {
+        println("+---------------------------------------------------------------+");
+        print("| Pipeline Test Runner: ");
+        print(this.name);
+        println("");
+        println("+---------------------------------------------------------------+");
+        print("  Total Events Dispatched: "); println(this.metrics->totalEvents);
+        print("  Dispatched Pipelines:    "); println(this.metrics->dispatchedEvents);
+        print("  Filtered Events:         "); println(this.metrics->filteredEvents);
+        print("  Completed Pipelines:     "); println(this.metrics->completedPipelines);
+        print("  Average Event Latency:   ");
+        print(to_string(this.metrics->getAverageLatencyMs())); println(" ms");
+        print("  Pipeline Throughput:     ");
+        print(to_string(this.getThroughputOpsPerSec())); println(" ops/sec");
+        print("  Broker Topic Messages:   "); println(this.broker->getHistoryCount());
+        print("  Event Pipeline Stages:   "); println(this.pipeline->getStageCount());
+        print("  Telemetry Events Observed: "); println(this.telemetryStage->getProcessedCount());
+        println("-----------------------------------------------------------------");
+    }
+}

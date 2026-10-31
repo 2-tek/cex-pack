@@ -1,0 +1,42 @@
+{
+    "name": "cex-service",
+    "version": "2.0.0",
+    "description": "High-Performance Next.js-inspired Backend & Service Framework (CexService) in C-ext with CexSocket, CexPubSub, and CexSQL integration",
+    "main": "src/index.cex",
+    "author": "2-TEK Ecosystem",
+    "license": "MIT",
+    "scripts": {
+        "test": "cext tests/service_core.test.cex",
+        "lint": "cxvm lint ."
+    },
+    "dependencies": {
+        "cex-env": "2.0.0",
+        "cex-logger": "2.0.0",
+        "cex-std": "2.0.0",
+        "cex-socket": "2.0.0",
+        "cex-pub-sub": "2.0.0",
+        "cex-sql": "2.0.0",
+        "cex-racer": "2.0.0",
+        "cex-pipeline": "2.0.0",
+        "cex-test": "2.0.0"
+    },
+    "cFlags": [
+        "-O3",
+        "-std=c++20",
+        "-lpthread"
+    ],
+    "includeDirs": [
+        "./src"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/2-tek/cex-service.git"
+    },
+    "runtime": "cexr-factory",
+    "target": "runtime",
+    "required": {
+        "cexr-factory": "^8",
+        "cexp-v8": "^8",
+        "cexp-v8-stable": "^8"
+    }
+}

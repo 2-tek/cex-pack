@@ -1,0 +1,42 @@
+// PerfectCex: Asynchronous Route Handling & Promise Primitives (Cex v8 Promise)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "./types.cex";
+import "./request.cex";
+import "./response.cex";
+
+class AsyncRouteHandler {
+    public string method = "GET";
+    public string pattern = "/";
+    public string description = "Async Route";
+
+    public constructor() {}
+
+    public constructor(string method, string pattern, string description) {
+        this.method = method;
+        this.pattern = pattern;
+        this.description = description;
+    }
+
+    public virtual Promise<bool>* handle(PerfectRequest* req, PerfectResponse* res) {
+        return Promise::resolve(true);
+    }
+}
+
+class AsyncPromiseUtils {
+    static public Promise<bool>* sleep(int ms) {
+        return Promise::parallel([ms]() -> bool {
+            if (ms > 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+            }
+            return true;
+        });
+    }
+
+    static public Promise<bool>* yield() {
+        return Promise::parallel([]() -> bool {
+            std::this_thread::yield();
+            return true;
+        });
+    }
+}

@@ -1,0 +1,184 @@
+// CexT: Code Coverage Types & Data Models
+// Target: Data structures for file, line, and aggregate coverage statistics
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+class CoverageLineInfo {
+    public int lineNumber;
+    public int hitCount = 0;
+    public bool isExecutable;
+    public string sourceLine;
+
+    public constructor(int lineNum, bool isExec, string src) {
+        this.lineNumber = lineNum;
+        this.isExecutable = isExec;
+        this.sourceLine = src;
+    }
+
+    public void hit(int count) {
+        this.hitCount += count;
+    }
+}
+
+class FileCoverage {
+    public string filePath;
+    public Array<CoverageLineInfo*>* lines = new Array<CoverageLineInfo*>();
+    public int totalLines = 0;
+    public int executableLines = 0;
+    public int hitLines = 0;
+    public int missedLines = 0;
+
+    public constructor(string filePath) {
+        this.filePath = filePath;
+    }
+
+    public void addLine(int lineNum, bool isExec, string src) {
+        CoverageLineInfo* info = new CoverageLineInfo(lineNum, isExec, src);
+        this.lines->push(info);
+        this.totalLines = (int)this.lines->length();
+        if (isExec) {
+            this.executableLines++;
+            this.missedLines++;
+        }
+    }
+
+    public void recordHit(int lineNum, int count) {
+        int total = (int)this.lines->length();
+        for (int i = 0; i < total; i++) {
+            CoverageLineInfo* item = this.lines->get(i);
+            if (item->lineNumber == lineNum) {
+                if (item->isExecutable) {
+                    if (item->hitCount == 0 && count > 0) {
+                        this.hitLines++;
+                        this.missedLines--;
+                    }
+                    item->hit(count);
+                }
+                return;
+            }
+        }
+        // If line not yet registered, add it as executable and hit
+        CoverageLineInfo* info = new CoverageLineInfo(lineNum, true, "");
+        info->hit(count);
+        this.lines->push(info);
+        this.totalLines = (int)this.lines->length();
+        this.executableLines++;
+        this.hitLines++;
+    }
+
+    public void recalculate() {
+        this.executableLines = 0;
+        this.hitLines = 0;
+        this.missedLines = 0;
+        int total = (int)this.lines->length();
+        for (int i = 0; i < total; i++) {
+            CoverageLineInfo* item = this.lines->get(i);
+            if (item->isExecutable) {
+                this.executableLines++;
+                if (item->hitCount > 0) {
+                    this.hitLines++;
+                } else {
+                    this.missedLines++;
+                }
+            }
+        }
+    }
+
+    public double getCoveragePercentage() {
+        if (this.executableLines == 0) return 100.0;
+        return ((double)this.hitLines / (double)this.executableLines) * 100.0;
+    }
+
+    public int getCoveragePctInt() {
+        if (this.executableLines == 0) return 100;
+        return (int)(((double)this.hitLines / (double)this.executableLines) * 100.0);
+    }
+
+    public Array<int>* getMissingLines() {
+        Array<int>* result = new Array<int>();
+        int total = (int)this.lines->length();
+        for (int i = 0; i < total; i++) {
+            CoverageLineInfo* item = this.lines->get(i);
+            if (item->isExecutable && item->hitCount == 0) {
+                result->push(item->lineNumber);
+            }
+        }
+        return result;
+    }
+
+    public string getMissingLinesSummary() {
+        Array<int>* missing = this.getMissingLines();
+        int count = (int)missing->length();
+        if (count == 0) return "";
+
+        string summary = "";
+        int rangeStart = missing->get(0);
+        int prev = rangeStart;
+
+        for (int i = 1; i < count; i++) {
+            int curr = missing->get(i);
+            if (curr == prev + 1) {
+                prev = curr;
+            } else {
+                if (summary.length() > 0) summary += ", ";
+                if (rangeStart == prev) {
+                    summary += to_string(rangeStart);
+                } else {
+                    summary += to_string(rangeStart) + "-" + to_string(prev);
+                }
+                rangeStart = curr;
+                prev = curr;
+            }
+        }
+
+        if (summary.length() > 0) summary += ", ";
+        if (rangeStart == prev) {
+            summary += to_string(rangeStart);
+        } else {
+            summary += to_string(rangeStart) + "-" + to_string(prev);
+        }
+
+        return summary;
+    }
+}
+
+class CoverageStats {
+    public int totalFiles = 0;
+    public int totalLines = 0;
+    public int totalExecutable = 0;
+    public int totalHit = 0;
+    public int totalMissed = 0;
+    public double overallPercentage = 100.0;
+    public int overallPctInt = 100;
+    public Array<FileCoverage*>* files = new Array<FileCoverage*>();
+
+    public constructor() {}
+
+    public void addFile(FileCoverage* fc) {
+        this.files->push(fc);
+        this.compute();
+    }
+
+    public void compute() {
+        this.totalFiles = (int)this.files->length();
+        this.totalLines = 0;
+        this.totalExecutable = 0;
+        this.totalHit = 0;
+        this.totalMissed = 0;
+
+        for (int i = 0; i < this.totalFiles; i++) {
+            FileCoverage* fc = this.files->get(i);
+            this.totalLines += fc->totalLines;
+            this.totalExecutable += fc->executableLines;
+            this.totalHit += fc->hitLines;
+            this.totalMissed += fc->missedLines;
+        }
+
+        if (this.totalExecutable == 0) {
+            this.overallPercentage = 100.0;
+            this.overallPctInt = 100;
+        } else {
+            this.overallPercentage = ((double)this.totalHit / (double)this.totalExecutable) * 100.0;
+            this.overallPctInt = (int)this.overallPercentage;
+        }
+    }
+}

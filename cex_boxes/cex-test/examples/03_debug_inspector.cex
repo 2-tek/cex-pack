@@ -1,0 +1,18 @@
+// CexT Example 03: Debugger Inspection and Hex Dumps
+import "@/src/debug.cex";
+
+int main() {
+    println("=== CexT Example 03: Debugger Inspection ===");
+
+    Debugger::log("KERNEL", "Initializing diagnostic trace");
+    Debugger::checkpoint("INITIAL_STAGE");
+
+    string payload = "2-TEK Cex High-Performance Engine";
+    Debugger::dumpHex("Payload Buffer", payload);
+
+    Debugger::checkpoint("VERIFIED_PAYLOAD");
+    Debugger::inspectMemory("Static Buffer Pointer", payload.c_str(), (int)payload.length());
+
+    println("=== Example 03 Finished ===");
+    return 0;
+}

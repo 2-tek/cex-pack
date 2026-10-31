@@ -1,0 +1,120 @@
+// Cex Test Subsystem Entry Point
+// Native Test Runner, Assertions, Debugger, Benchmark Suite, and Coverage Generator for Cex powered by CexLog
+
+import "@cex-log/src/log.cex";
+import "./assert.cex";
+import "./runner.cex";
+import "./debug.cex";
+import "./benchmark.cex";
+import "./coverage.cex";
+import "./cli.cex";
+import "./pipeline_runner.cex";
+import "./async.cex";
+
+int runCexTestDemo() {
+    println("===============================================================");
+    println("      2-TEK CexTest: Test Engine & Coverage Generator Verification");
+    println("===============================================================");
+
+    Log::info("Starting CexTest verification harness");
+
+    // 1. Run Assertions
+    println("\n[1. Testing Native Assertions Engine]");
+    Assert::reset();
+    Assert::isTrue(10 > 5, "10 must be strictly greater than 5");
+    Assert::isFalse(2 == 3, "2 must not equal 3");
+    Assert::equalsInt(42, 42, "Integer 42 matches expected 42");
+    Assert::equalsString("Cex", "Cex", "String literals match");
+    Assert::greaterThan(100, 50, "100 is greater than 50");
+    Assert::lessThan(25, 50, "25 is less than 50");
+    Assert::greaterOrEqual(50, 50, "50 is greater than or equal to 50");
+    Assert::lessOrEqual(25, 50, "25 is less than or equal to 50");
+    Assert::containsString("CexLanguageServer", "Language", "String contains substring");
+
+    // 2. Structured Test Suite & Reporter with Pipeline
+    println("\n[2. Executing Structured Test Suite with Pipeline Engine]");
+    TestSuite* suite = new TestSuite("Core Engine Tests");
+    suite->enablePipeline();
+    suite->startTest("test_math_operations");
+    bool mathOk = (2 + 2 == 4);
+    suite->endTest(mathOk, "");
+
+    suite->startTest("test_string_parsing");
+    string s = "hello";
+    bool strOk = (s.length() == 5);
+    suite->endTest(strOk, "");
+
+    suite->startTest("test_memory_allocation");
+    Array<int>* arr = new Array<int>();
+    arr->push(10);
+    suite->endTest(arr->length() == 1, "");
+
+    TestReporter::printSummary(suite);
+
+    // 3. Debugger Inspection & Checkpoints
+    println("\n[3. Inspecting Debugger Subsystem]");
+    Debugger::checkpoint("INITIAL_BOOT");
+    Debugger::log("KERNEL", "Low-level diagnostic signal received");
+    string testBuffer = "CexDebug";
+    Debugger::dumpHex("Memory Buffer Preview", testBuffer);
+    Debugger::checkpoint("PIPELINE_COMPLETE");
+
+    // 4. Micro-Benchmarking Harness
+    println("\n[4. Running Micro-Benchmarking Engine]");
+    BenchmarkResult* bench = Benchmark::runWorkload("Integer Math Workload", 100000);
+    bench->display();
+
+    BenchmarkResult* pipeBench = Benchmark::runPipelineWorkload("Event Pipeline Workload", 50000);
+    pipeBench->display();
+
+    // 5. Code Coverage Collection & Generation Engine
+    println("\n[5. Running Code Coverage Generator]");
+    CoverageCollector::reset();
+
+    // Register a simulated source file with statements
+    string sampleSource = "// Math Operations Module\nfn add(a: int, b: int): int {\n    let sum: int = a + b;\n    return sum;\n}\n\nfn max(a: int, b: int): int {\n    if (a > b) {\n        return a;\n    }\n    return b;\n}\n";
+    FileCoverage* fcMath = CoverageCollector::registerFile("packages/CexTest/src/math.cex", sampleSource);
+
+    // Simulate test execution hits: add is fully hit, max(10, 5) hits true branch
+    CoverageCollector::hit("packages/CexTest/src/math.cex", 3); // let sum = a + b
+    CoverageCollector::hit("packages/CexTest/src/math.cex", 4); // return sum
+    CoverageCollector::hit("packages/CexTest/src/math.cex", 8); // if (a > b)
+    CoverageCollector::hit("packages/CexTest/src/math.cex", 9); // return a
+    // Line 11 (return b) is intentionally not hit to simulate missing branch coverage
+
+    CoverageStats* stats = CoverageCollector::computeStats();
+
+    // Generate ASCII Summary Report
+    string asciiReport = CoverageGenerator::generateAsciiReport(stats);
+    print(asciiReport);
+
+    // Generate Standard LCOV
+    string lcovReport = CoverageGenerator::generateLcov(stats, "CexUnitTestSuite");
+    println("--- Sample LCOV Output Preview ---");
+    print(lcovReport);
+
+    // Verify coverage threshold
+    bool thresholdOk = CoverageGenerator::checkThreshold(stats, 75);
+    Assert::isTrue(thresholdOk, "Coverage must meet minimum 75% threshold");
+
+    // 6. Asynchronous Test & Promise Execution
+    println("\n[6. Executing Async/Await Promise Tests]");
+    bool asyncOk = suite->testAsync("async_promise_demo", []() -> Promise<bool>* {
+        return AsyncTest::sleep(1);
+    });
+    Assert::isTrue(asyncOk, "Async test promise resolved successfully");
+    BenchmarkResult* pBench = Benchmark::runAsyncWorkload("Async Micro-Benchmark", 10, []() -> Promise<bool>* {
+        return AsyncTest::resolveBool(true);
+    });
+    pBench->display();
+
+    println("\n=== CexTest Native Engine & Coverage Generator Executed Successfully! ===");
+    return 0;
+}
+
+int main(int argc, char** argv) {
+    if (argc > 1) {
+        return CexTestCli::run(argc, argv);
+    }
+    return runCexTestDemo();
+}

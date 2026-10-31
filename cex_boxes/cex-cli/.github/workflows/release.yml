@@ -1,0 +1,31 @@
+name: Cex-CLI Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build & Package Release Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Cex-CLI Distribution Box
+        run: |
+          ./bin/cex run packages/cex-cli/src/index.cex -- build --target production
+
+      - name: Create Release Package
+        run: |
+          mkdir -p dist
+          tar -czvf dist/cex-cli-linux-x86_64.tar.gz packages/cex-cli/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/cex-cli-linux-x86_64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

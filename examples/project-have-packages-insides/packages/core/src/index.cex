@@ -1,8 +1,8 @@
 // Example Internal Core Package (C-ext)
 
 class CoreService {
-    private string serviceName;
-    private bool initialized = true;
+    private serviceName: string;
+    private initialized: bool = true;
 
     public constructor(string name) {
         this.serviceName = name;

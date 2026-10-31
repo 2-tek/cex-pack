@@ -1,7 +1,7 @@
 // Example Internal UI Package (C-ext)
 
 class UIComponent {
-    private string title;
+    private title: string;
 
     public constructor(string title) {
         this.title = title;

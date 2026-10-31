@@ -1,0 +1,29 @@
+// Cex-CLI Example 02: Terminal UI Window System & ANSI Color Renderer
+// Demonstrates rendering ASCII framed headers, progress bars, and status banners
+
+import "../src/types.cex";
+import "../src/terminal.cex";
+
+int main() {
+    println("==================================================================");
+    println("   Cex-CLI Example 02: Terminal UI Window System & Renderer      ");
+    println("==================================================================");
+
+    // 1. Render ASCII Framed Window Header
+    TerminalUI::renderHeader("2-TEK Build Dashboard", "Interactive Terminal Automation Engine v1.0.0");
+
+    // 2. Render Process Task Progress Indicators
+    println("  Running Task Sequence:");
+    TerminalUI::renderTaskStatus("1. Tokenizing C-ext Source Files", "PASSED", 12);
+    TerminalUI::renderTaskStatus("2. Resolving Dependency Aliases (@2tek/cli)", "PASSED", 19);
+    TerminalUI::renderTaskStatus("3. Validating Rule 69 & Rule 29 Compliance", "PASSED", 8);
+    TerminalUI::renderTaskStatus("4. Emitting Direct Machine Code Binary", "PASSED", 34);
+
+    // 3. Banners
+    println("");
+    TerminalUI::renderSuccessBanner("All 4 build pipeline steps completed in 73ms.");
+    TerminalUI::renderErrorBanner("Warning: 0 deprecations, 0 syntax warnings found.");
+
+    println("\nTerminal UI Window System Demonstration Completed Successfully!");
+    return 0;
+}

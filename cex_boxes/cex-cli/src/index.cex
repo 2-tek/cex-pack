@@ -1,0 +1,26 @@
+// @2tek/cli Main Package Entrypoint (C-ext)
+
+import "./types.cex";
+import "./config.cex";
+import "./terminal.cex";
+import "./builder.cex";
+import "./cli.cex";
+
+int main(int argc, char** argv) {
+    CexCLI* cli = new CexCLI();
+    string cmd = "build";
+    string arg1 = "";
+    string arg2 = "";
+
+    if (argc > 1) {
+        cmd = argv[1];
+    }
+    if (argc > 2) {
+        arg1 = argv[2];
+    }
+    if (argc > 3) {
+        arg2 = argv[3];
+    }
+
+    return cli->execute(cmd, arg1, arg2);
+}

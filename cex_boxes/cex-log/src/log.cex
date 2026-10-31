@@ -1,0 +1,549 @@
+// CexLog: High-Resolution Logging, Timing Profiler and Delay Measurement (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+class Stopwatch {
+    public string label;
+    public int64 startTimeNs = Stopwatch::getNowNs();
+    public int64 endTimeNs = 0;
+    public bool isRunning = true;
+
+    static public int64 getNowNs() {
+        auto now = std::chrono::high_resolution_clock::now().time_since_epoch();
+        return (int64)std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+    }
+
+    static public double getNowMs() {
+        return (double)Stopwatch::getNowNs() / 1000000.0;
+    }
+
+    public constructor(string label) {
+        this.label = label;
+    }
+
+    public double stop() {
+        if (this.isRunning) {
+            this.endTimeNs = Stopwatch::getNowNs();
+            this.isRunning = false;
+        }
+        return this.elapsedMs();
+    }
+
+    public int64 elapsedNs() {
+        int64 end = this.isRunning ? Stopwatch::getNowNs() : this.endTimeNs;
+        return end - this.startTimeNs;
+    }
+
+    public double elapsedUs() {
+        return (double)this.elapsedNs() / 1000.0;
+    }
+
+    public double elapsedMs() {
+        return (double)this.elapsedNs() / 1000000.0;
+    }
+
+    public double elapsedSeconds() {
+        return (double)this.elapsedNs() / 1000000000.0;
+    }
+
+    public string format() {
+        double ms = this.elapsedMs();
+        if (ms < 0.001) {
+            return std::to_string(this.elapsedNs()) + "ns";
+        } else if (ms < 1.0) {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "%.2fµs", this.elapsedUs());
+            return std::string(buf);
+        } else if (ms < 1000.0) {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "%.2fms", ms);
+            return std::string(buf);
+        } else {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "%.3fs", this.elapsedSeconds());
+            return std::string(buf);
+        }
+    }
+
+    public string formatMs() {
+        char buf[64];
+        double ms = this.elapsedMs();
+        if (ms < 0.01) {
+            snprintf(buf, sizeof(buf), "%.4fms", ms);
+        } else if (ms < 1.0) {
+            snprintf(buf, sizeof(buf), "%.3fms", ms);
+        } else if (ms < 1000.0) {
+            snprintf(buf, sizeof(buf), "%.2fms", ms);
+        } else {
+            snprintf(buf, sizeof(buf), "%.3fs", ms / 1000.0);
+        }
+        return std::string(buf);
+    }
+}
+
+class Log {
+    static public int64 lastLogTimeNs;
+    static public bool isTimerInit;
+    static public bool colorEnabled;
+    static public bool colorChecked;
+
+    static public string formatDelay(double ms) {
+        if (ms < 0.001) {
+            int64 ns = (int64)(ms * 1000000.0);
+            return std::to_string(ns) + "ns";
+        } else if (ms < 1.0) {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "%.2fµs", ms * 1000.0);
+            return std::string(buf);
+        } else if (ms < 1000.0) {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "%.2fms", ms);
+            return std::string(buf);
+        } else {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "%.3fs", ms / 1000.0);
+            return std::string(buf);
+        }
+    }
+
+    static public string formatDelayMs(double ms) {
+        char buf[64];
+        if (ms <= 0.00001) {
+            snprintf(buf, sizeof(buf), "0.00ms");
+        } else if (ms < 0.01) {
+            snprintf(buf, sizeof(buf), "%.4fms", ms);
+        } else if (ms < 1.0) {
+            snprintf(buf, sizeof(buf), "%.3fms", ms);
+        } else if (ms < 1000.0) {
+            snprintf(buf, sizeof(buf), "%.2fms", ms);
+        } else {
+            snprintf(buf, sizeof(buf), "%.3fs", ms / 1000.0);
+        }
+        return std::string(buf);
+    }
+
+    static public string getCurrentTime() {
+        std::time_t t = std::time(nullptr);
+        std::tm tm;
+        localtime_r(&t, &tm);
+        char buf[64];
+        std::strftime(buf, sizeof(buf), "%H:%M:%S", &tm);
+        return std::string(buf);
+    }
+
+    static public double computeDeltaDelayMs() {
+        int64 now = Stopwatch::getNowNs();
+        if (!Log::isTimerInit || Log::lastLogTimeNs <= 0) {
+            Log::isTimerInit = true;
+            Log::lastLogTimeNs = now;
+            return 0.0;
+        }
+        int64 diff = now - Log::lastLogTimeNs;
+        Log::lastLogTimeNs = now;
+        if (diff < 0) {
+            diff = 0;
+        }
+        return (double)diff / 1000000.0;
+    }
+
+    static public bool isColorEnabled() {
+        if (!Log::colorChecked) {
+            Log::colorChecked = true;
+            char* noColor = getenv("NO_COLOR");
+            if (noColor != nullptr && std::string(noColor).length() > 0) {
+                Log::colorEnabled = false;
+            } else {
+                Log::colorEnabled = true;
+            }
+        }
+        return Log::colorEnabled;
+    }
+
+    static public void setColorEnabled(bool enabled) {
+        Log::colorChecked = true;
+        Log::colorEnabled = enabled;
+    }
+
+    static public string getStatusColor(string status) {
+        if (status === "INFO") {
+            return "\033[32m";
+        } else if (status === "DEBUG") {
+            return "\033[35m";
+        } else if (status === "WARN") {
+            return "\033[33m";
+        } else if (status === "ERROR") {
+            return "\033[31m";
+        } else if (status === "DELAY") {
+            return "\033[36m";
+        }
+
+        if (status.length() == 3) {
+            string firstChar = status.substr(0, 1);
+            if (firstChar === "2") {
+                return "\033[32m";
+            } else if (firstChar === "3") {
+                return "\033[36m";
+            } else if (firstChar === "4") {
+                return "\033[33m";
+            } else if (firstChar === "5") {
+                return "\033[31m";
+            }
+        }
+
+        return "\033[36m";
+    }
+
+    static public string formatLine(string timeStr, string status, string delayStr, string content) {
+        if (content.length() > 0) {
+            return "[" + timeStr + "][" + status + "][" + delayStr + "] " + content;
+        }
+        return "[" + timeStr + "][" + status + "][" + delayStr + "]";
+    }
+
+    static public string formatColoredLine(string timeStr, string status, string delayStr, string content) {
+        if (!Log::isColorEnabled()) {
+            return Log::formatLine(timeStr, status, delayStr, content);
+        }
+        std::string color = Log::getStatusColor(status);
+        std::string reset = "\033[0m";
+        if (content.length() > 0) {
+            return color + "[" + timeStr + "][" + status + "][" + delayStr + "]" + reset + " " + content;
+        }
+        return color + "[" + timeStr + "][" + status + "][" + delayStr + "]" + reset;
+    }
+
+    static public Stopwatch* start(string label) {
+        return new Stopwatch(label);
+    }
+
+    static public void delay(string label, double durationMs) {
+        Log::delayWithStatus(label, durationMs, 0);
+    }
+
+    static public void delayMs(string label, double durationMs) {
+        Log::delayWithStatus(label, durationMs, 0);
+    }
+
+    static public void delayApi(string label, double durationMs, int statusCode) {
+        Log::delayWithStatus(label, durationMs, statusCode);
+    }
+
+    static public void delayWithStatus(string label, double durationMs, int statusCode) {
+        Log::lastLogTimeNs = Stopwatch::getNowNs();
+        Log::isTimerInit = true;
+        std::string timeStr = Log::getCurrentTime();
+        std::string status = (statusCode > 0) ? std::to_string(statusCode) : "DELAY";
+        std::string durStr = Log::formatDelayMs(durationMs);
+        println(Log::formatColoredLine(timeStr, status, durStr, label));
+    }
+
+    static public void time(string label, Stopwatch* sw) {
+        if (sw != nullptr) {
+            sw->stop();
+            Log::delayWithStatus(label, sw->elapsedMs(), 0);
+        }
+    }
+
+    static public double nowMs() {
+        return Stopwatch::getNowMs();
+    }
+
+    static public int64 nowNs() {
+        return Stopwatch::getNowNs();
+    }
+
+    static public void info(string msg) {
+        double d = Log::computeDeltaDelayMs();
+        std::string timeStr = Log::getCurrentTime();
+        std::string durStr = Log::formatDelayMs(d);
+        println(Log::formatColoredLine(timeStr, "INFO", durStr, msg));
+    }
+
+    static public void info(string msg, double delayMs) {
+        if (delayMs < 0.0) {
+            delayMs = Log::computeDeltaDelayMs();
+        } else {
+            Log::lastLogTimeNs = Stopwatch::getNowNs();
+            Log::isTimerInit = true;
+        }
+        std::string timeStr = Log::getCurrentTime();
+        std::string durStr = Log::formatDelayMs(delayMs);
+        println(Log::formatColoredLine(timeStr, "INFO", durStr, msg));
+    }
+
+    static public void debug(string msg) {
+        double d = Log::computeDeltaDelayMs();
+        std::string timeStr = Log::getCurrentTime();
+        std::string durStr = Log::formatDelayMs(d);
+        println(Log::formatColoredLine(timeStr, "DEBUG", durStr, msg));
+    }
+
+    static public void debug(string msg, double delayMs) {
+        if (delayMs < 0.0) {
+            delayMs = Log::computeDeltaDelayMs();
+        } else {
+            Log::lastLogTimeNs = Stopwatch::getNowNs();
+            Log::isTimerInit = true;
+        }
+        std::string timeStr = Log::getCurrentTime();
+        std::string durStr = Log::formatDelayMs(delayMs);
+        println(Log::formatColoredLine(timeStr, "DEBUG", durStr, msg));
+    }
+
+    static public void warn(string msg) {
+        double d = Log::computeDeltaDelayMs();
+        std::string timeStr = Log::getCurrentTime();
+        std::string durStr = Log::formatDelayMs(d);
+        println(Log::formatColoredLine(timeStr, "WARN", durStr, msg));
+    }
+
+    static public void warn(string msg, double delayMs) {
+        if (delayMs < 0.0) {
+            delayMs = Log::computeDeltaDelayMs();
+        } else {
+            Log::lastLogTimeNs = Stopwatch::getNowNs();
+            Log::isTimerInit = true;
+        }
+        std::string timeStr = Log::getCurrentTime();
+        std::string durStr = Log::formatDelayMs(delayMs);
+        println(Log::formatColoredLine(timeStr, "WARN", durStr, msg));
+    }
+
+    static public void error(string msg) {
+        double d = Log::computeDeltaDelayMs();
+        std::string timeStr = Log::getCurrentTime();
+        std::string durStr = Log::formatDelayMs(d);
+        println(Log::formatColoredLine(timeStr, "ERROR", durStr, msg));
+    }
+
+    static public void error(string msg, double delayMs) {
+        if (delayMs < 0.0) {
+            delayMs = Log::computeDeltaDelayMs();
+        } else {
+            Log::lastLogTimeNs = Stopwatch::getNowNs();
+            Log::isTimerInit = true;
+        }
+        std::string timeStr = Log::getCurrentTime();
+        std::string durStr = Log::formatDelayMs(delayMs);
+        println(Log::formatColoredLine(timeStr, "ERROR", durStr, msg));
+    }
+
+    static public void log(string msg) {
+        Log::info(msg);
+    }
+
+    static public void log(string msg, double delayMs) {
+        Log::info(msg, delayMs);
+    }
+}
+
+class CexLog {
+    static public string formatDelay(double ms) {
+        return Log::formatDelay(ms);
+    }
+
+    static public string formatDelayMs(double ms) {
+        return Log::formatDelayMs(ms);
+    }
+
+    static public string getCurrentTime() {
+        return Log::getCurrentTime();
+    }
+
+    static public string formatLine(string timeStr, string status, string delayStr, string content) {
+        return Log::formatLine(timeStr, status, delayStr, content);
+    }
+
+    static public string formatColoredLine(string timeStr, string status, string delayStr, string content) {
+        return Log::formatColoredLine(timeStr, status, delayStr, content);
+    }
+
+    static public string getStatusColor(string status) {
+        return Log::getStatusColor(status);
+    }
+
+    static public bool isColorEnabled() {
+        return Log::isColorEnabled();
+    }
+
+    static public void setColorEnabled(bool enabled) {
+        Log::setColorEnabled(enabled);
+    }
+
+    static public Stopwatch* start(string label) {
+        return Log::start(label);
+    }
+
+    static public void delay(string label, double durationMs) {
+        Log::delay(label, durationMs);
+    }
+
+    static public void delayMs(string label, double durationMs) {
+        Log::delayMs(label, durationMs);
+    }
+
+    static public void delayApi(string label, double durationMs, int statusCode) {
+        Log::delayApi(label, durationMs, statusCode);
+    }
+
+    static public void delayWithStatus(string label, double durationMs, int statusCode) {
+        Log::delayWithStatus(label, durationMs, statusCode);
+    }
+
+    static public void time(string label, Stopwatch* sw) {
+        Log::time(label, sw);
+    }
+
+    static public double nowMs() {
+        return Log::nowMs();
+    }
+
+    static public int64 nowNs() {
+        return Log::nowNs();
+    }
+
+    static public void info(string msg) {
+        Log::info(msg);
+    }
+
+    static public void info(string msg, double delayMs) {
+        Log::info(msg, delayMs);
+    }
+
+    static public void debug(string msg) {
+        Log::debug(msg);
+    }
+
+    static public void debug(string msg, double delayMs) {
+        Log::debug(msg, delayMs);
+    }
+
+    static public void warn(string msg) {
+        Log::warn(msg);
+    }
+
+    static public void warn(string msg, double delayMs) {
+        Log::warn(msg, delayMs);
+    }
+
+    static public void error(string msg) {
+        Log::error(msg);
+    }
+
+    static public void error(string msg, double delayMs) {
+        Log::error(msg, delayMs);
+    }
+
+    static public void log(string msg) {
+        Log::info(msg);
+    }
+
+    static public void log(string msg, double delayMs) {
+        Log::info(msg, delayMs);
+    }
+}
+
+class CexLogger {
+    static public string formatDelay(double ms) {
+        return Log::formatDelay(ms);
+    }
+
+    static public string formatDelayMs(double ms) {
+        return Log::formatDelayMs(ms);
+    }
+
+    static public string getCurrentTime() {
+        return Log::getCurrentTime();
+    }
+
+    static public string formatLine(string timeStr, string status, string delayStr, string content) {
+        return Log::formatLine(timeStr, status, delayStr, content);
+    }
+
+    static public string formatColoredLine(string timeStr, string status, string delayStr, string content) {
+        return Log::formatColoredLine(timeStr, status, delayStr, content);
+    }
+
+    static public string getStatusColor(string status) {
+        return Log::getStatusColor(status);
+    }
+
+    static public bool isColorEnabled() {
+        return Log::isColorEnabled();
+    }
+
+    static public void setColorEnabled(bool enabled) {
+        Log::setColorEnabled(enabled);
+    }
+
+    static public Stopwatch* start(string label) {
+        return Log::start(label);
+    }
+
+    static public void delay(string label, double durationMs) {
+        Log::delay(label, durationMs);
+    }
+
+    static public void delayMs(string label, double durationMs) {
+        Log::delayMs(label, durationMs);
+    }
+
+    static public void delayApi(string label, double durationMs, int statusCode) {
+        Log::delayApi(label, durationMs, statusCode);
+    }
+
+    static public void delayWithStatus(string label, double durationMs, int statusCode) {
+        Log::delayWithStatus(label, durationMs, statusCode);
+    }
+
+    static public void time(string label, Stopwatch* sw) {
+        Log::time(label, sw);
+    }
+
+    static public double nowMs() {
+        return Log::nowMs();
+    }
+
+    static public int64 nowNs() {
+        return Log::nowNs();
+    }
+
+    static public void info(string msg) {
+        Log::info(msg);
+    }
+
+    static public void info(string msg, double delayMs) {
+        Log::info(msg, delayMs);
+    }
+
+    static public void debug(string msg) {
+        Log::debug(msg);
+    }
+
+    static public void debug(string msg, double delayMs) {
+        Log::debug(msg, delayMs);
+    }
+
+    static public void warn(string msg) {
+        Log::warn(msg);
+    }
+
+    static public void warn(string msg, double delayMs) {
+        Log::warn(msg, delayMs);
+    }
+
+    static public void error(string msg) {
+        Log::error(msg);
+    }
+
+    static public void error(string msg, double delayMs) {
+        Log::error(msg, delayMs);
+    }
+
+    static public void log(string msg) {
+        Log::info(msg);
+    }
+
+    static public void log(string msg, double delayMs) {
+        Log::info(msg, delayMs);
+    }
+}

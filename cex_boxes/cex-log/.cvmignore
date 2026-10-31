@@ -1,0 +1,13 @@
+.git
+.cvm
+.cex_cache
+bin
+dist
+build
+*.log
+
+# Cex Box dependencies & local box caches
+cex_boxes/
+.cex_boxes/
+**/cex_boxes/
+**/.cex_boxes/

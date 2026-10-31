@@ -1,0 +1,7 @@
+// CexT: Code Coverage Subsystem Facade
+// Unifies CoverageCollector, CoverageInstrumenter, and CoverageGenerator
+
+import "./coverage_types.cex";
+import "./coverage_collector.cex";
+import "./coverage_instrumenter.cex";
+import "./coverage_generator.cex";

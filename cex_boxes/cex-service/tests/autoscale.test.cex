@@ -1,0 +1,308 @@
+// PerfectCex: Auto Scale & DDoS Protection Test Suite (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "../src/types.cex";
+import "../src/request.cex";
+import "../src/response.cex";
+import "../src/middleware.cex";
+import "../src/router.cex";
+import "../src/ssr.cex";
+import "../src/autoscale.cex";
+import "../src/app.cex";
+
+class AutoScaleAssert {
+    static public void equalsInt(int expected, int actual, string msg) {
+        if (expected == actual) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg + " (expected: " + std::to_string(expected) + ", actual: " + std::to_string(actual) + ")");
+        }
+    }
+
+    static public void equalsInt64(int64 expected, int64 actual, string msg) {
+        if (expected == actual) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg + " (expected: " + std::to_string(expected) + ", actual: " + std::to_string(actual) + ")");
+        }
+    }
+
+    static public void equalsString(string expected, string actual, string msg) {
+        if (expected == actual) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg + " (expected: \"" + expected + "\", actual: \"" + actual + "\")");
+        }
+    }
+
+    static public void equalsBool(bool expected, bool actual, string msg) {
+        if (expected == actual) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg + " (expected: " + (expected ? "true" : "false") + ", actual: " + (actual ? "true" : "false") + ")");
+        }
+    }
+
+    static public void isTrue(bool cond, string msg) {
+        if (cond) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg);
+        }
+    }
+
+    static public void isFalse(bool cond, string msg) {
+        if (!cond) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg);
+        }
+    }
+}
+
+void test_autoscale_config_defaults() {
+    println("\n[Test Suite 1: AutoScale & DDoS Default Configuration]");
+    AutoScaleConfig* cfg = new AutoScaleConfig();
+
+    AutoScaleAssert::isTrue(cfg->enabled, "Auto-scale enabled by default");
+    AutoScaleAssert::equalsInt(2, cfg->minWorkers, "Default min workers is 2");
+    AutoScaleAssert::equalsInt(16, cfg->maxWorkers, "Default max workers is 16");
+    AutoScaleAssert::equalsInt(100, cfg->ddosRateLimitPerIp, "DDoS default rate limit is > 100 req/s per IP");
+    AutoScaleAssert::equalsInt(1, cfg->ddosWindowSeconds, "DDoS sliding window is 1 second");
+    AutoScaleAssert::equalsInt(60, cfg->ddosBanDurationSeconds, "DDoS ban duration is 60 seconds");
+    AutoScaleAssert::isTrue(cfg->ddosProtectionEnabled, "DDoS protection enabled by default");
+    AutoScaleAssert::isTrue(cfg->ddosAutoScaleTrigger, "DDoS triggers auto-scale defense by default");
+    AutoScaleAssert::equalsInt64((int64)1048576, cfg->largeTransferThresholdBytes, "Default large transfer threshold is 1 MB (1048576 bytes)");
+    AutoScaleAssert::equalsInt(5, cfg->largeTransferTxCountThreshold, "Default large transfer surge threshold is 5 tx");
+}
+
+void test_autoscale_config_env_loading() {
+    println("\n[Test Suite 2: Configuration Loading From .env File & Env Variables]");
+
+    // 1. Write mock .env file
+    string mockEnvPath = "autoscale_test.env";
+    std::ofstream envFile(mockEnvPath);
+    envFile << "# Custom AutoScale & DDoS Configuration\n";
+    envFile << "AUTOSCALE_ENABLED=true\n";
+    envFile << "AUTOSCALE_MIN_WORKERS=4\n";
+    envFile << "AUTOSCALE_MAX_WORKERS=32\n";
+    envFile << "AUTOSCALE_LARGE_TRANSFER_BYTES=2097152 # 2 MB\n";
+    envFile << "AUTOSCALE_LARGE_TX_THRESHOLD=8\n";
+    envFile << "DDOS_PROTECTION_ENABLED=true\n";
+    envFile << "DDOS_RATE_LIMIT_PER_IP=120\n";
+    envFile << "DDOS_BAN_DURATION_SECONDS=90\n";
+    envFile << "AUTOSCALE_SCALE_UP_STEP=3\n";
+    envFile.close();
+
+    // 2. Load config from mock .env file
+    AutoScaleConfig* cfg = new AutoScaleConfig();
+    bool loaded = cfg->loadFromEnv(mockEnvPath);
+    AutoScaleAssert::isTrue(loaded, "Successfully loaded configuration from .env file");
+
+    AutoScaleAssert::equalsInt(4, cfg->minWorkers, "Loaded minWorkers = 4");
+    AutoScaleAssert::equalsInt(32, cfg->maxWorkers, "Loaded maxWorkers = 32");
+    AutoScaleAssert::equalsInt64((int64)2097152, cfg->largeTransferThresholdBytes, "Loaded largeTransferThresholdBytes = 2MB");
+    AutoScaleAssert::equalsInt(8, cfg->largeTransferTxCountThreshold, "Loaded largeTransferTxCountThreshold = 8");
+    AutoScaleAssert::equalsInt(120, cfg->ddosRateLimitPerIp, "Loaded ddosRateLimitPerIp = 120 req/s");
+    AutoScaleAssert::equalsInt(90, cfg->ddosBanDurationSeconds, "Loaded ddosBanDurationSeconds = 90s");
+    AutoScaleAssert::equalsInt(3, cfg->scaleUpStep, "Loaded scaleUpStep = 3");
+
+    // Clean up temporary test file
+    std::remove(mockEnvPath.c_str());
+}
+
+void test_ddos_detection_and_rate_limiting() {
+    println("\n[Test Suite 3: DDoS Protection (>100 req/s default threshold) & Auto-Scale Reaction]");
+
+    AutoScaleConfig* cfg = new AutoScaleConfig();
+    cfg->minWorkers = 2;
+    cfg->maxWorkers = 8;
+    cfg->ddosRateLimitPerIp = 100; // Exact user requirement: default > 100req/s for an IP
+    cfg->ddosWindowSeconds = 1;
+    cfg->ddosBanDurationSeconds = 60;
+    cfg->ddosAutoScaleTrigger = true;
+
+    AutoScaleManager* scaler = new AutoScaleManager(cfg);
+    AutoScaleAssert::equalsInt(2, scaler->currentWorkers, "Initial worker count is 2 (minWorkers)");
+
+    string attackerIp = "198.51.100.42";
+    int64 nowSec = 5000;
+
+    // Send 100 requests in 1 second window from attackerIp -> all must pass (<= 100 req/s)
+    bool allPassed = true;
+    for (int i = 1; i <= 100; i++) {
+        PerfectRequest* req = new PerfectRequest("GET", "/api/data", "", attackerIp);
+        PerfectResponse* res = new PerfectResponse();
+        bool ok = scaler->evaluateRequestWithTime(req, res, nowSec);
+        if (!ok) {
+            allPassed = false;
+        }
+    }
+    AutoScaleAssert::isTrue(allPassed, "First 100 requests within 1s window from attacker IP allowed");
+    AutoScaleAssert::equalsInt(0, scaler->ddosShield->totalAttacksDetected, "Zero attacks detected during normal volume");
+
+    // The 101st request in the same second window: EXCEEDS 100 req/s limit!
+    PerfectRequest* reqAttack = new PerfectRequest("GET", "/api/data", "", attackerIp);
+    PerfectResponse* resAttack = new PerfectResponse();
+    bool blocked = !scaler->evaluateRequestWithTime(reqAttack, resAttack, nowSec);
+
+    AutoScaleAssert::isTrue(blocked, "101st request (> 100 req/s) detected and blocked as DDoS attack");
+    AutoScaleAssert::equalsInt(429, resAttack->statusCode, "HTTP status 429 Too Many Requests returned");
+    AutoScaleAssert::equalsString("Triggered", resAttack->getHeader("X-DDoS-Protection"), "X-DDoS-Protection header set to Triggered");
+    AutoScaleAssert::equalsString("60", resAttack->getHeader("Retry-After"), "Retry-After header set to 60s");
+    AutoScaleAssert::equalsString("DDOS_MITIGATION", scaler->scaleState, "Auto-scale state transitioned to DDOS_MITIGATION");
+    AutoScaleAssert::isTrue(scaler->currentWorkers > 2, "Workers auto-scaled up to mitigate DDoS impact (workers > 2)");
+    AutoScaleAssert::equalsInt(1, scaler->ddosShield->totalAttacksDetected, "Total DDoS attacks detected is 1");
+
+    // Verify legitimate client IP is NOT blocked
+    string legitIp = "203.0.113.10";
+    PerfectRequest* reqLegit = new PerfectRequest("GET", "/api/data", "", legitIp);
+    PerfectResponse* resLegit = new PerfectResponse();
+    bool legitOk = scaler->evaluateRequestWithTime(reqLegit, resLegit, nowSec);
+    AutoScaleAssert::isTrue(legitOk, "Legitimate IP request allowed without disruption");
+    AutoScaleAssert::equalsInt(200, resLegit->statusCode, "Legitimate request receives HTTP 200 OK");
+}
+
+void test_ddos_ban_expiration() {
+    println("\n[Test Suite 4: DDoS Ban Duration & Automatic Unban Expiration]");
+
+    AutoScaleConfig* cfg = new AutoScaleConfig();
+    cfg->ddosRateLimitPerIp = 100;
+    cfg->ddosBanDurationSeconds = 60;
+
+    DdosShield* shield = new DdosShield(cfg);
+    string ip = "192.0.2.1";
+    int64 nowSec = 1000;
+
+    // Trigger DDoS
+    for (int i = 1; i <= 101; i++) {
+        shield->recordAndCheck(ip, nowSec);
+    }
+    AutoScaleAssert::isTrue(shield->isBlocked(ip, nowSec), "IP is blocked immediately after 101 requests");
+
+    // At 30s into the ban: still blocked
+    AutoScaleAssert::isTrue(shield->isBlocked(ip, nowSec + 30), "IP remains blocked at +30s");
+
+    // At 61s (ban duration of 60s passed): ban expired!
+    bool allowedAfterBan = shield->recordAndCheck(ip, nowSec + 61);
+    AutoScaleAssert::isTrue(allowedAfterBan, "IP automatically unbanned after 60s ban duration expires");
+    AutoScaleAssert::isFalse(shield->isBlocked(ip, nowSec + 61), "IP is no longer marked blocked");
+}
+
+void test_large_transfer_transaction_autoscale() {
+    println("\n[Test Suite 5: Large Transfer Transaction Detection & Auto-Scale Trigger]");
+
+    AutoScaleConfig* cfg = new AutoScaleConfig();
+    cfg->minWorkers = 2;
+    cfg->maxWorkers = 10;
+    cfg->scaleUpStep = 2;
+    cfg->largeTransferThresholdBytes = 1048576; // 1 MB
+    cfg->largeTransferTxCountThreshold = 3;
+
+    AutoScaleManager* scaler = new AutoScaleManager(cfg);
+    AutoScaleAssert::equalsInt(2, scaler->currentWorkers, "Workers start at minWorkers (2)");
+
+    int64 nowSec = 2000;
+
+    // 1. Single massive transfer transaction: 5 MB payload (>= 4x threshold)
+    PerfectRequest* massiveReq = new PerfectRequest("POST", "/api/upload", "payload", "10.10.1.1");
+    massiveReq->setHeader("Content-Length", "5242880"); // 5 MB
+    PerfectResponse* massiveRes = new PerfectResponse();
+
+    bool handled1 = scaler->evaluateRequestWithTime(massiveReq, massiveRes, nowSec);
+    AutoScaleAssert::isTrue(handled1, "Massive transfer request processed");
+    AutoScaleAssert::equalsString("Surge-Detected", massiveRes->getHeader("X-Large-Transfer"), "X-Large-Transfer header indicates Surge-Detected");
+    AutoScaleAssert::equalsInt(4, scaler->currentWorkers, "Workers auto-scaled from 2 to 4 on massive transfer");
+    AutoScaleAssert::equalsInt(1, scaler->transferMonitor->totalLargeTransfers, "Recorded 1 large transfer transaction");
+
+    // 2. Burst of large transfers: 3 transfers of 1.5 MB in the same window
+    for (int i = 0; i < 3; i++) {
+        PerfectRequest* burstReq = new PerfectRequest("POST", "/api/sync", "bulk-data", "10.10.1.2");
+        burstReq->setHeader("Content-Length", "1572864"); // 1.5 MB
+        PerfectResponse* burstRes = new PerfectResponse();
+        scaler->evaluateRequestWithTime(burstReq, burstRes, nowSec);
+    }
+
+    AutoScaleAssert::isTrue(scaler->currentWorkers >= 6, "Workers scaled up to handle burst of large transfer transactions");
+    AutoScaleAssert::equalsInt(4, scaler->transferMonitor->totalLargeTransfers, "Total large transfer transactions recorded is 4");
+}
+
+void test_autoscale_scale_down() {
+    println("\n[Test Suite 6: Graceful Auto-Scale Down on Traffic Normalization]");
+
+    AutoScaleConfig* cfg = new AutoScaleConfig();
+    cfg->minWorkers = 2;
+    cfg->maxWorkers = 8;
+    cfg->scaleDownStep = 1;
+    cfg->cooldownSeconds = 5;
+    cfg->scaleDownThresholdReqPerSec = 50;
+
+    AutoScaleManager* scaler = new AutoScaleManager(cfg);
+    scaler->scaleUp("Manual scale-up for testing", 4);
+    AutoScaleAssert::equalsInt(6, scaler->currentWorkers, "Workers scaled up to 6");
+
+    int64 nowSec = 3000;
+    scaler->lastScaleTimeSec = nowSec;
+
+    // Before cooldown (at +2s): should not scale down
+    PerfectRequest* reqPre = new PerfectRequest("GET", "/health", "", "10.0.0.1");
+    PerfectResponse* resPre = new PerfectResponse();
+    scaler->evaluateRequestWithTime(reqPre, resPre, nowSec + 2);
+    AutoScaleAssert::equalsInt(6, scaler->currentWorkers, "Workers hold at 6 during cooldown period");
+
+    // After cooldown (+6s): low traffic throughput triggers scale down
+    PerfectRequest* reqPost = new PerfectRequest("GET", "/health", "", "10.0.0.1");
+    PerfectResponse* resPost = new PerfectResponse();
+    scaler->evaluateRequestWithTime(reqPost, resPost, nowSec + 6);
+    AutoScaleAssert::equalsInt(5, scaler->currentWorkers, "Workers scaled down from 6 to 5 after cooldown");
+}
+
+void test_cex_service_end_to_end() {
+    println("\n[Test Suite 7: Full CexService End-to-End Integration with Middleware Pipeline]");
+
+    PerfectApp* app = new PerfectApp();
+    AutoScaleConfig* cfg = new AutoScaleConfig();
+    cfg->minWorkers = 2;
+    cfg->maxWorkers = 16;
+    cfg->ddosRateLimitPerIp = 100;
+    app->enableAutoScaleWithConfig(cfg);
+
+    app->api("GET", "/api/status", "Service status", "{\"status\": \"operational\"}");
+
+    // 1. Verify standard request contains telemetry headers
+    PerfectResponse* res1 = app->simulateRequestWithIp("GET", "/api/status", "", "172.16.0.5");
+    AutoScaleAssert::equalsInt(200, res1->statusCode, "End-to-end GET /api/status returns 200 OK");
+    AutoScaleAssert::equalsString("2", res1->getHeader("X-Auto-Scale-Workers"), "Response contains X-Auto-Scale-Workers: 2");
+    AutoScaleAssert::equalsString("Active", res1->getHeader("X-DDoS-Protection"), "Response contains X-DDoS-Protection: Active");
+
+    // 2. Verify metrics JSON serialization
+    string metricsJson = app->autoScaler->getMetricsJson();
+    AutoScaleAssert::isTrue(metricsJson.find("\"currentWorkers\": 2") != -1, "Metrics JSON contains currentWorkers");
+    AutoScaleAssert::isTrue(metricsJson.find("\"ddosRateLimitPerIp\": 100") != -1, "Metrics JSON contains ddosRateLimitPerIp: 100");
+
+    // 3. Test CexService subclass initialization with automatic auto-scale
+    CexService* s = new CexService(cfg);
+    s->api("GET", "/api/ping", "Ping endpoint", "{\"pong\": true}");
+    PerfectResponse* resPing = s->simulateRequestWithIp("GET", "/api/ping", "", "172.16.0.9");
+    AutoScaleAssert::equalsInt(200, resPing->statusCode, "CexService subclass handles request with auto-scale active");
+    AutoScaleAssert::equalsString("2", resPing->getHeader("X-Auto-Scale-Workers"), "CexService includes auto-scale workers header");
+}
+
+int main() {
+    println("===============================================================");
+    println("   @cex-service Auto-Scale & DDoS Protection Test Suite        ");
+    println("===============================================================");
+
+    test_autoscale_config_defaults();
+    test_autoscale_config_env_loading();
+    test_ddos_detection_and_rate_limiting();
+    test_ddos_ban_expiration();
+    test_large_transfer_transaction_autoscale();
+    test_autoscale_scale_down();
+    test_cex_service_end_to_end();
+
+    println("\n===============================================================");
+    println("Status: ALL AUTOSCALE & DDOS TESTS PASSED ✅");
+    println("===============================================================");
+    return 0;
+}

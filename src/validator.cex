@@ -7,15 +7,15 @@ import "./reporter.cex";
 import fs from "fs";
 
 class PackValidator {
-    private SchemaValidator* schemaVal = new SchemaValidator();
-    private DiagnosticReporter* reporter = new DiagnosticReporter();
+    private schemaVal: SchemaValidator* = new SchemaValidator();
+    private reporter: DiagnosticReporter* = new DiagnosticReporter();
 
     public constructor() {}
 
     public ValidationResult* validateContent(string manifestContent) {
         // 1. JSON Syntax & Structural Token Parsing
-        JsonParser* parser = new JsonParser(manifestContent);
-        ValidationResult* result = parser->parseAndValidateSyntax();
+        let parser: JsonParser* = new JsonParser(manifestContent);
+        let result: ValidationResult* = parser->parseAndValidateSyntax();
 
         // 2. Schema and Rule 69 Validation
         this.schemaVal->validateManifestSchema(manifestContent, result);
@@ -38,21 +38,21 @@ class PackValidator {
 
     public bool validateFile(string filepath) {
         if (!fs.exists(filepath)) {
-            ValidationResult* emptyRes = new ValidationResult();
+            let emptyRes: ValidationResult* = new ValidationResult();
             emptyRes->addError("FILE_NOT_FOUND", "Could not read file or file is empty: " + filepath, 1, 1);
             this.reporter->printResult(filepath, emptyRes);
             return false;
         }
 
-        string content = fs.readFile(filepath);
+        let content: string = fs.readFile(filepath);
         if (content.length() == 0) {
-            ValidationResult* emptyRes = new ValidationResult();
+            let emptyRes: ValidationResult* = new ValidationResult();
             emptyRes->addError("FILE_NOT_FOUND", "Could not read file or file is empty: " + filepath, 1, 1);
             this.reporter->printResult(filepath, emptyRes);
             return false;
         }
 
-        ValidationResult* result = this.validateContent(content);
+        let result: ValidationResult* = this.validateContent(content);
         this.reporter->printResult(filepath, result);
         return result->isValid;
     }

@@ -1,0 +1,211 @@
+// PerfectCex: Core HTTP, Router, Middleware, SSR, CexSocket, CexPubSub & CexSQL Test Suite
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "@cex-std";
+import "@cext/src/assert.cex";
+import "@cext/src/runner.cex";
+import "../src/types.cex";
+import "../src/request.cex";
+import "../src/response.cex";
+import "../src/middleware.cex";
+import "../src/router.cex";
+import "../src/ssr.cex";
+import "../src/autoscale.cex";
+import "../src/async_handler.cex";
+import "../src/app.cex";
+
+void test_request_and_response() {
+    println("\n[Test Suite 1: Request & Response Abstractions]");
+    PerfectRequest* req = new PerfectRequest("GET", "/api/items?sort=asc&limit=10", "", "192.168.1.100");
+    Assert::equalsString(req->method, "GET", "Request method is GET");
+    Assert::equalsString(req->path, "/api/items", "Path separated from query string");
+    Assert::equalsString(req->queryString, "sort=asc&limit=10", "Query string captured");
+    Assert::equalsString(req->clientIp, "192.168.1.100", "Client IP matches");
+
+    req->setHeader("User-Agent", "PerfectCexTestClient/1.0");
+    Assert::equalsString(req->getHeader("User-Agent"), "PerfectCexTestClient/1.0", "Request header retrieved");
+
+    PerfectResponse* res = new PerfectResponse();
+    Assert::equalsInt(res->statusCode, 200, "Default status code is 200");
+    Assert::equalsString(res->statusText, "OK", "Default status text is OK");
+
+    res->status(404);
+    Assert::equalsInt(res->statusCode, 404, "Updated status code is 404");
+    Assert::equalsString(res->statusText, "Not Found", "Status text updated to Not Found");
+
+    res->json("{\"status\":\"ok\"}");
+    Assert::equalsString(res->getHeader("Content-Type"), "application/json; charset=utf-8", "JSON Content-Type set");
+    Assert::equalsString(res->body, "{\"status\":\"ok\"}", "JSON body matches");
+}
+
+void test_router_and_param_matching() {
+    println("\n[Test Suite 2: Parametric Router Engine]");
+    PerfectRouter* router = new PerfectRouter();
+    router->addRoute("GET", "/health", "api", "Health Check");
+    router->addRoute("GET", "/users/:id", "api", "Get User by ID");
+    router->addRoute("POST", "/users", "api", "Create User");
+
+    PerfectRequest* req1 = new PerfectRequest("GET", "/health", "");
+    RouteEntry* r1 = router->findRoute("GET", "/health", req1);
+    Assert::isTrue(r1 !== nullptr, "Exact route /health found");
+    Assert::equalsString(r1->description, "Health Check", "Route description matches");
+
+    PerfectRequest* req2 = new PerfectRequest("GET", "/users/42", "");
+    RouteEntry* r2 = router->findRoute("GET", "/users/42", req2);
+    Assert::isTrue(r2 !== nullptr, "Parametric route /users/:id matches /users/42");
+    Assert::equalsString(req2->getParam("id"), "42", "Param 'id' captured as '42'");
+
+    PerfectRequest* req3 = new PerfectRequest("DELETE", "/health", "");
+    RouteEntry* r3 = router->findRoute("DELETE", "/health", req3);
+    Assert::isTrue(r3 === nullptr, "Route with mismatched HTTP method returns nullptr");
+}
+
+void test_ssr_document() {
+    println("\n[Test Suite 3: Server-Side Rendering (SSR) Document]");
+    SSRDocument* doc = new SSRDocument("Home", "Welcome", "<h1>Hello PerfectCex</h1>", "{\"user\":\"guest\"}");
+    string html = doc->renderFullHtml();
+
+    Assert::isTrue((int)html.find("<!DOCTYPE html>") !== -1, "Rendered HTML contains <!DOCTYPE html>");
+    Assert::isTrue((int)html.find("<title>Welcome</title>") !== -1, "Rendered HTML contains page title");
+    Assert::isTrue((int)html.find("<h1>Hello PerfectCex</h1>") !== -1, "Rendered HTML contains body content");
+    Assert::isTrue((int)html.find("{\"user\":\"guest\"}") !== -1, "Rendered HTML contains hydration payload");
+}
+
+void test_app_pipeline() {
+    println("\n[Test Suite 4: PerfectApp Dispatch Pipeline]");
+    PerfectApp* app = new PerfectApp();
+
+    // Register SSR page
+    SSRDocument* homeDoc = new SSRDocument("Index", "Home", "<p>Welcome to 2-TEK</p>", "{}");
+    app->page("/", homeDoc);
+
+    // Register API
+    app->api("GET", "/api/v1/ping", "Ping API", "{\"pong\":true}");
+
+    // Test SSR dispatch
+    PerfectRequest* reqPage = new PerfectRequest("GET", "/", "");
+    PerfectResponse* resPage = new PerfectResponse();
+    app->handle(reqPage, resPage);
+    Assert::equalsInt(resPage->statusCode, 200, "SSR page returns 200");
+    Assert::isTrue((int)resPage->body.find("Welcome to 2-TEK") !== -1, "SSR response contains page content");
+
+    // Test API dispatch
+    PerfectRequest* reqApi = new PerfectRequest("GET", "/api/v1/ping", "");
+    PerfectResponse* resApi = new PerfectResponse();
+    app->handle(reqApi, resApi);
+    Assert::equalsInt(resApi->statusCode, 200, "API endpoint returns 200");
+    Assert::equalsString(resApi->body, "{\"pong\":true}", "API returns expected JSON");
+
+    // Test 404 dispatch
+    PerfectRequest* req404 = new PerfectRequest("GET", "/nonexistent", "");
+    PerfectResponse* res404 = new PerfectResponse();
+    app->handle(req404, res404);
+    Assert::equalsInt(res404->statusCode, 404, "Nonexistent route returns 404");
+}
+
+void test_middleware_pipeline() {
+    println("\n[Test Suite 5: Middleware Interception & Pipeline]");
+    PerfectApp* app = new PerfectApp();
+    app->use(new CorsMiddleware("https://2tek.org"));
+    app->use(new TimingMiddleware());
+    app->use(new AuthMiddleware("secret-token"));
+    app->api("GET", "/secure/data", "Protected Data", "{\"secret\":12345}");
+
+    // Request without token should be blocked by AuthMiddleware
+    PerfectRequest* reqBlocked = new PerfectRequest("GET", "/secure/data", "");
+    PerfectResponse* resBlocked = new PerfectResponse();
+    app->handle(reqBlocked, resBlocked);
+    Assert::equalsInt(resBlocked->statusCode, 401, "Unauthenticated request blocked with 401");
+    Assert::equalsString(resBlocked->getHeader("Access-Control-Allow-Origin"), "https://2tek.org", "CORS header attached even on abort");
+
+    // Request with valid token should pass through
+    PerfectRequest* reqAllowed = new PerfectRequest("GET", "/secure/data", "");
+    reqAllowed->setHeader("Authorization", "Bearer secret-token");
+    PerfectResponse* resAllowed = new PerfectResponse();
+    app->handle(reqAllowed, resAllowed);
+    Assert::equalsInt(resAllowed->statusCode, 200, "Authenticated request passes with 200");
+    Assert::equalsString(resAllowed->body, "{\"secret\":12345}", "Authenticated request receives payload");
+}
+
+void test_socket_pubsub_sql_integration() {
+    println("\n[Test Suite 6: CexSocket, CexPubSub & CexSQL Integration in CexService]");
+    CexService* service = new CexService(nullptr);
+
+    // 1. Pub/Sub Event Bus subscription on CexService
+    int reqEventCount = 0;
+    service->on("service.request.**", [&reqEventCount](PubSubEnvelope* env) {
+        if (env != nullptr) {
+            reqEventCount++;
+        }
+    });
+
+    // 2. Relational SQL Table & Async Query inside CexService
+    SQLEngine* sqlEngine = service->getSQL();
+    Table* usersTbl = sqlEngine->createTable("service_users");
+    usersTbl->addColumn("id");
+    usersTbl->addColumn("name");
+    Array<string>* r1 = new Array<string>();
+    r1->push("1");
+    r1->push("Alice");
+    usersTbl->insert(1, r1);
+
+    QueryResult* qRes = await service->querySQLAsync("SELECT * FROM service_users WHERE id = 1");
+    Assert::equalsInt((int)qRes->rows->length(), 1, "CexService::querySQLAsync resolves 1 indexed SQL row");
+    Assert::equalsString(qRes->rows->get(0)->get(1), "Alice", "SQL row name matches Alice");
+
+    // 3. Live Socket Server + Client HTTP Roundtrip on CexService
+    service->api("GET", "/api/status", "Service Status", "{\"service\":\"CexService\",\"sqlRows\":1}");
+    int testPort = 19455;
+    bool listening = await service->listenAsync(testPort, "127.0.0.1");
+    Assert::isTrue(listening, "CexService::listenAsync binds TCP/HTTP socket server");
+
+    std::thread srvThread([service]() {
+        service->serveOnce();
+    });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    CexSocketClient* client = new CexSocketClient("127.0.0.1", testPort);
+    string rawResp = await client->httpGetAsync("/api/status");
+    string bodyResp = CexSocketClient::extractBody(rawResp);
+    Assert::equalsString(bodyResp, "{\"service\":\"CexService\",\"sqlRows\":1}", "CexSocketClient receives HTTP response from CexService");
+
+    srvThread.join();
+    await service->closeServerAsync();
+    Assert::equalsInt(reqEventCount, 1, "CexPubSub on CexService captured live socket HTTP request event");
+}
+
+int main() {
+    println("===============================================================================");
+    println("              2-TEK PerfectCex: Core Router & Service Test Suite               ");
+    println("===============================================================================");
+
+    TestSuite* suite = new TestSuite("CexService Core, Socket, PubSub & SQL Suite");
+    int mark = 0;
+
+    test_request_and_response();
+    suite->addResult("test_request_and_response", Assert::getFailures() == mark, "request/response failed", 1);
+    mark = Assert::getFailures();
+
+    test_router_and_param_matching();
+    suite->addResult("test_router_and_param_matching", Assert::getFailures() == mark, "router failed", 1);
+    mark = Assert::getFailures();
+
+    test_ssr_document();
+    suite->addResult("test_ssr_document", Assert::getFailures() == mark, "ssr failed", 1);
+    mark = Assert::getFailures();
+
+    test_app_pipeline();
+    suite->addResult("test_app_pipeline", Assert::getFailures() == mark, "app pipeline failed", 1);
+    mark = Assert::getFailures();
+
+    test_middleware_pipeline();
+    suite->addResult("test_middleware_pipeline", Assert::getFailures() == mark, "middleware failed", 1);
+    mark = Assert::getFailures();
+
+    test_socket_pubsub_sql_integration();
+    suite->addResult("test_socket_pubsub_sql_integration", Assert::getFailures() == mark, "socket/pubsub/sql integration failed", 2);
+
+    TestReporter::printSummary(suite);
+    return (Assert::getFailures() > 0 || suite->failCount() > 0) ? 1 : 0;
+}

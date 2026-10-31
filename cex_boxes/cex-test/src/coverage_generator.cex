@@ -1,0 +1,362 @@
+// CexT: Code Coverage Report Generator
+// Generates ASCII tables, standard LCOV (lcov.info), JSON, and HTML dashboards
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule (No Symbols), Rule (Virtual DOM)
+
+import "./coverage_types.cex";
+import "@cex-filesystem/src/filesystem.cex";
+import "@cex-virtual-dom/src/vnode.cex";
+import fs from "fs";
+
+class CoverageGenerator {
+    public static string generateAsciiReport(CoverageStats* stats) {
+        string out = "";
+        out += "+---------------------------------------------------------------------------------------------------------------+\n";
+        out += "|                                   2-TEK CexTest Code Coverage Report                                          |\n";
+        out += "+---------------------------------------------------------------------------------------------------------------+\n";
+        out += CoverageGenerator::padRight("File", 44) + " " +
+               CoverageGenerator::padLeft("Lines", 7) + " " +
+               CoverageGenerator::padLeft("Exec", 7) + " " +
+               CoverageGenerator::padLeft("Hit", 7) + " " +
+               CoverageGenerator::padLeft("Miss", 7) + " " +
+               CoverageGenerator::padLeft("Cover %", 9) + "   " +
+               "Missing Lines\n";
+        out += "-----------------------------------------------------------------------------------------------------------------\n";
+
+        int totalFiles = stats->totalFiles;
+        for (int i = 0; i < totalFiles; i++) {
+            FileCoverage* fc = stats->files->get(i);
+            string pctStr = to_string(fc->getCoveragePctInt()) + "%";
+            string missingSummary = fc->getMissingLinesSummary();
+            if (missingSummary.length() == 0) missingSummary = "None";
+
+            out += CoverageGenerator::padRight(fc->filePath, 44) + " " +
+                   CoverageGenerator::padLeft(to_string(fc->totalLines), 7) + " " +
+                   CoverageGenerator::padLeft(to_string(fc->executableLines), 7) + " " +
+                   CoverageGenerator::padLeft(to_string(fc->hitLines), 7) + " " +
+                   CoverageGenerator::padLeft(to_string(fc->missedLines), 7) + " " +
+                   CoverageGenerator::padLeft(pctStr, 9) + "   " +
+                   missingSummary + "\n";
+        }
+
+        out += "-----------------------------------------------------------------------------------------------------------------\n";
+        string totalPctStr = to_string(stats->overallPctInt) + "%";
+        out += CoverageGenerator::padRight("TOTAL", 44) + " " +
+               CoverageGenerator::padLeft(to_string(stats->totalLines), 7) + " " +
+               CoverageGenerator::padLeft(to_string(stats->totalExecutable), 7) + " " +
+               CoverageGenerator::padLeft(to_string(stats->totalHit), 7) + " " +
+               CoverageGenerator::padLeft(to_string(stats->totalMissed), 7) + " " +
+               CoverageGenerator::padLeft(totalPctStr, 9) + "   -\n";
+        out += "+---------------------------------------------------------------------------------------------------------------+\n";
+
+        int healthCode = (stats->overallPctInt >= 80) ? 2 : ((stats->overallPctInt >= 50) ? 1 : 0);
+        switch (healthCode) {
+            case 2:
+            out += "  Coverage Health: EXCELLENT [PASS] (" + totalPctStr + " statement coverage)\n";
+            break;
+            case 1:
+            out += "  Coverage Health: MODERATE [WARN] (" + totalPctStr + " statement coverage)\n";
+            break;
+            default:
+            out += "  Coverage Health: LOW [FAIL] (" + totalPctStr + " statement coverage)\n";
+            break;
+        }
+        out += "-----------------------------------------------------------------------------------------------------------------\n";
+        return out;
+    }
+
+    public static string generateLcov(CoverageStats* stats, string testName) {
+        string out = "";
+        string tName = testName.length() > 0 ? testName : "CexTest";
+
+        int totalFiles = stats->totalFiles;
+        for (int i = 0; i < totalFiles; i++) {
+            FileCoverage* fc = stats->files->get(i);
+            out += "TN:" + tName + "\n";
+            out += "SF:" + fc->filePath + "\n";
+
+            int lCount = (int)fc->lines->length();
+            for (int j = 0; j < lCount; j++) {
+                CoverageLineInfo* info = fc->lines->get(j);
+                if (info->isExecutable) {
+                    out += "DA:" + to_string(info->lineNumber) + "," + to_string(info->hitCount) + "\n";
+                }
+            }
+
+            out += "LH:" + to_string(fc->hitLines) + "\n";
+            out += "LF:" + to_string(fc->executableLines) + "\n";
+            out += "end_of_record\n";
+        }
+        return out;
+    }
+
+    public static string generateJson(CoverageStats* stats) {
+        string out = "{\n";
+        out += "  \"generator\": \"CexTest Coverage Generator v1.0.0\",\n";
+        out += "  \"summary\": {\n";
+        out += "    \"totalFiles\": " + to_string(stats->totalFiles) + ",\n";
+        out += "    \"totalLines\": " + to_string(stats->totalLines) + ",\n";
+        out += "    \"executableLines\": " + to_string(stats->totalExecutable) + ",\n";
+        out += "    \"hitLines\": " + to_string(stats->totalHit) + ",\n";
+        out += "    \"missedLines\": " + to_string(stats->totalMissed) + ",\n";
+        out += "    \"coveragePercentage\": " + to_string(stats->overallPctInt) + "\n";
+        out += "  },\n";
+        out += "  \"files\": [\n";
+
+        int fCount = stats->totalFiles;
+        for (int i = 0; i < fCount; i++) {
+            FileCoverage* fc = stats->files->get(i);
+            out += "    {\n";
+            out += "      \"file\": \"" + fc->filePath + "\",\n";
+            out += "      \"totalLines\": " + to_string(fc->totalLines) + ",\n";
+            out += "      \"executableLines\": " + to_string(fc->executableLines) + ",\n";
+            out += "      \"hitLines\": " + to_string(fc->hitLines) + ",\n";
+            out += "      \"missedLines\": " + to_string(fc->missedLines) + ",\n";
+            out += "      \"coveragePercentage\": " + to_string(fc->getCoveragePctInt()) + ",\n";
+            out += "      \"missingLinesSummary\": \"" + fc->getMissingLinesSummary() + "\",\n";
+            out += "      \"lines\": [\n";
+
+            int lCount = (int)fc->lines->length();
+            bool firstLine = true;
+            for (int j = 0; j < lCount; j++) {
+                CoverageLineInfo* info = fc->lines->get(j);
+                if (info->isExecutable) {
+                    if (!firstLine) out += ",\n";
+                    out += "        {\"line\": " + to_string(info->lineNumber) + ", \"hit\": " + to_string(info->hitCount) + "}";
+                    firstLine = false;
+                }
+            }
+            out += "\n      ]\n";
+            out += "    }";
+            if (i + 1 < fCount) out += ",";
+            out += "\n";
+        }
+
+        out += "  ]\n";
+        out += "}\n";
+        return out;
+    }
+
+    public static string generateHtml(CoverageStats* stats, string reportTitle) {
+        string title = reportTitle.length() > 0 ? reportTitle : "CexTest Coverage Report";
+        VNode* htmlNode = VNode::createElement("html");
+        htmlNode->setProp("lang", "en");
+
+        VNode* headNode = VNode::createElement("head");
+        VNode* meta1 = VNode::createElement("meta");
+        meta1->setProp("charset", "UTF-8");
+        VNode* meta2 = VNode::createElement("meta");
+        meta2->setProp("name", "viewport");
+        meta2->setProp("content", "width=device-width, initial-scale=1.0");
+        VNode* titleNode = VNode::createElement("title");
+        titleNode->appendChild(VNode::createText(title));
+        VNode* styleNode = VNode::createElement("style");
+        styleNode->appendChild(VNode::createText(
+            "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 24px; }\n"
+            ".container { max-width: 1100px; margin: 0 auto; }\n"
+            ".header { border-bottom: 2px solid #334155; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }\n"
+            "h1 { margin: 0; font-size: 24px; color: #38bdf8; }\n"
+            ".cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }\n"
+            ".card { background: #1e293b; border-radius: 8px; padding: 16px; border: 1px solid #334155; text-align: center; }\n"
+            ".card-val { font-size: 28px; font-weight: bold; margin-top: 8px; }\n"
+            ".card-pct { color: #4ade80; }\n"
+            ".progress-bar { background: #334155; border-radius: 9999px; height: 12px; overflow: hidden; margin-bottom: 24px; }\n"
+            ".progress-fill { background: #22c55e; height: 100%; transition: width 0.3s; }\n"
+            "table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; border: 1px solid #334155; }\n"
+            "th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #334155; }\n"
+            "th { background: #0f172a; font-weight: 600; color: #94a3b8; }\n"
+            "tr:hover { background: #243248; }\n"
+            ".badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }\n"
+            ".badge-pass { background: #14532d; color: #4ade80; }\n"
+            ".badge-warn { background: #713f12; color: #fde047; }\n"
+            ".badge-fail { background: #7f1d1d; color: #f87171; }"
+        ));
+        headNode->appendChild(meta1);
+        headNode->appendChild(meta2);
+        headNode->appendChild(titleNode);
+        headNode->appendChild(styleNode);
+        htmlNode->appendChild(headNode);
+
+        VNode* bodyNode = VNode::createElement("body");
+        VNode* containerNode = VNode::createElement("div");
+        containerNode->setProp("class", "container");
+
+        VNode* headerNode = VNode::createElement("div");
+        headerNode->setProp("class", "header");
+        VNode* h1Node = VNode::createElement("h1");
+        h1Node->appendChild(VNode::createText(title));
+        VNode* spanHeader = VNode::createElement("span");
+        spanHeader->appendChild(VNode::createText("2-TEK Cex Ecosystem"));
+        headerNode->appendChild(h1Node);
+        headerNode->appendChild(spanHeader);
+        containerNode->appendChild(headerNode);
+
+        VNode* cardsNode = VNode::createElement("div");
+        cardsNode->setProp("class", "cards");
+
+        VNode* card1 = VNode::createElement("div");
+        card1->setProp("class", "card");
+        VNode* card1Label = VNode::createElement("div");
+        card1Label->appendChild(VNode::createText("Overall Coverage"));
+        VNode* card1Val = VNode::createElement("div");
+        card1Val->setProp("class", "card-val card-pct");
+        card1Val->appendChild(VNode::createText(to_string(stats->overallPctInt) + "%"));
+        card1->appendChild(card1Label);
+        card1->appendChild(card1Val);
+        cardsNode->appendChild(card1);
+
+        VNode* card2 = VNode::createElement("div");
+        card2->setProp("class", "card");
+        VNode* card2Label = VNode::createElement("div");
+        card2Label->appendChild(VNode::createText("Files Analyzed"));
+        VNode* card2Val = VNode::createElement("div");
+        card2Val->setProp("class", "card-val");
+        card2Val->appendChild(VNode::createText(to_string(stats->totalFiles)));
+        card2->appendChild(card2Label);
+        card2->appendChild(card2Val);
+        cardsNode->appendChild(card2);
+
+        VNode* card3 = VNode::createElement("div");
+        card3->setProp("class", "card");
+        VNode* card3Label = VNode::createElement("div");
+        card3Label->appendChild(VNode::createText("Executable Lines"));
+        VNode* card3Val = VNode::createElement("div");
+        card3Val->setProp("class", "card-val");
+        card3Val->appendChild(VNode::createText(to_string(stats->totalExecutable)));
+        card3->appendChild(card3Label);
+        card3->appendChild(card3Val);
+        cardsNode->appendChild(card3);
+
+        VNode* card4 = VNode::createElement("div");
+        card4->setProp("class", "card");
+        VNode* card4Label = VNode::createElement("div");
+        card4Label->appendChild(VNode::createText("Hit / Missed"));
+        VNode* card4Val = VNode::createElement("div");
+        card4Val->setProp("class", "card-val");
+        card4Val->appendChild(VNode::createText(to_string(stats->totalHit) + " / " + to_string(stats->totalMissed)));
+        card4->appendChild(card4Label);
+        card4->appendChild(card4Val);
+        cardsNode->appendChild(card4);
+
+        containerNode->appendChild(cardsNode);
+
+        VNode* progBar = VNode::createElement("div");
+        progBar->setProp("class", "progress-bar");
+        VNode* progFill = VNode::createElement("div");
+        progFill->setProp("class", "progress-fill");
+        progFill->setProp("style", "width: " + to_string(stats->overallPctInt) + "%;");
+        progBar->appendChild(progFill);
+        containerNode->appendChild(progBar);
+
+        VNode* tableNode = VNode::createElement("table");
+        VNode* theadNode = VNode::createElement("thead");
+        VNode* trHead = VNode::createElement("tr");
+        Array<string>* headers = new Array<string>();
+        headers->push("File Path");
+        headers->push("Total");
+        headers->push("Exec");
+        headers->push("Hit");
+        headers->push("Miss");
+        headers->push("Coverage");
+        headers->push("Missing Lines");
+        for (int h = 0; h < (int)headers->length(); h++) {
+            VNode* th = VNode::createElement("th");
+            th->appendChild(VNode::createText(headers->get(h)));
+            trHead->appendChild(th);
+        }
+        theadNode->appendChild(trHead);
+        tableNode->appendChild(theadNode);
+
+        VNode* tbodyNode = VNode::createElement("tbody");
+        int fCount = stats->totalFiles;
+        for (int i = 0; i < fCount; i++) {
+            FileCoverage* fc = stats->files->get(i);
+            int pct = fc->getCoveragePctInt();
+            string bClass = pct >= 80 ? "badge-pass" : (pct >= 50 ? "badge-warn" : "badge-fail");
+            string missing = fc->getMissingLinesSummary();
+            if (missing.length() == 0) missing = "None";
+
+            VNode* trRow = VNode::createElement("tr");
+
+            VNode* td1 = VNode::createElement("td");
+            td1->appendChild(VNode::createText(fc->filePath));
+            trRow->appendChild(td1);
+
+            VNode* td2 = VNode::createElement("td");
+            td2->appendChild(VNode::createText(to_string(fc->totalLines)));
+            trRow->appendChild(td2);
+
+            VNode* td3 = VNode::createElement("td");
+            td3->appendChild(VNode::createText(to_string(fc->executableLines)));
+            trRow->appendChild(td3);
+
+            VNode* td4 = VNode::createElement("td");
+            td4->appendChild(VNode::createText(to_string(fc->hitLines)));
+            trRow->appendChild(td4);
+
+            VNode* td5 = VNode::createElement("td");
+            td5->appendChild(VNode::createText(to_string(fc->missedLines)));
+            trRow->appendChild(td5);
+
+            VNode* td6 = VNode::createElement("td");
+            VNode* badge = VNode::createElement("span");
+            badge->setProp("class", "badge " + bClass);
+            badge->appendChild(VNode::createText(to_string(pct) + "%"));
+            td6->appendChild(badge);
+            trRow->appendChild(td6);
+
+            VNode* td7 = VNode::createElement("td");
+            td7->appendChild(VNode::createText(missing));
+            trRow->appendChild(td7);
+
+            tbodyNode->appendChild(trRow);
+        }
+        tableNode->appendChild(tbodyNode);
+        containerNode->appendChild(tableNode);
+
+        bodyNode->appendChild(containerNode);
+        htmlNode->appendChild(bodyNode);
+
+        return "<!DOCTYPE html>\n" + htmlNode->toHtml() + "\n";
+    }
+
+    public static bool exportReports(CoverageStats* stats, string outputDir, string baseName) {
+        if (!fs.exists(outputDir)) {
+            CexFilesystem::createDirectories(outputDir);
+        }
+        string bName = baseName.length() > 0 ? baseName : "coverage";
+        string lcovStr = CoverageGenerator::generateLcov(stats, bName);
+        string jsonStr = CoverageGenerator::generateJson(stats);
+        string htmlStr = CoverageGenerator::generateHtml(stats, "CexTest Coverage Report");
+        string asciiStr = CoverageGenerator::generateAsciiReport(stats);
+
+        bool ok1 = fs.writeFile(outputDir + "/lcov.info", lcovStr);
+        bool ok2 = fs.writeFile(outputDir + "/" + bName + ".json", jsonStr);
+        bool ok3 = fs.writeFile(outputDir + "/index.html", htmlStr);
+        bool ok4 = fs.writeFile(outputDir + "/summary.txt", asciiStr);
+
+        return ok1 && ok2 && ok3 && ok4;
+    }
+
+    public static bool checkThreshold(CoverageStats* stats, int minPercentage) {
+        return stats->overallPctInt >= minPercentage;
+    }
+
+    public static string padRight(string s, int width) {
+        string res = s;
+        while ((int)res.length() < width) {
+            res += " ";
+        }
+        if ((int)res.length() > width && width > 3) {
+            res = res.substr(0, width - 3) + "...";
+        }
+        return res;
+    }
+
+    public static string padLeft(string s, int width) {
+        string res = s;
+        while ((int)res.length() < width) {
+            res = " " + res;
+        }
+        return res;
+    }
+}

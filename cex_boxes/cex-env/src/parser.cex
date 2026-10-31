@@ -1,0 +1,127 @@
+// CexEnvLoader: DotEnv Parser & Syntax Analysis (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+class EnvParser {
+    static public string trim(string s) {
+        string res = s;
+        while (!res.empty() && (res.front() == ' ' || res.front() == '\t' || res.front() == '\r' || res.front() == '\n')) {
+            res.erase(0, 1);
+        }
+        while (!res.empty() && (res.back() == ' ' || res.back() == '\t' || res.back() == '\r' || res.back() == '\n')) {
+            res.pop_back();
+        }
+        return res;
+    }
+
+    static public bool parseLine(string line, string& outKey, string& outVal) {
+        string l = EnvParser::trim(line);
+        if (l.empty() || l.front() == '#') {
+            return false;
+        }
+
+        // Handle 'export ' prefix
+        if (l.length() >= 7 && l.substr(0, 7) == "export ") {
+            l = EnvParser::trim(l.substr(7));
+        }
+
+        size_t eqPos = l.find('=');
+        if (eqPos == std::string::npos) {
+            return false;
+        }
+
+        string k = EnvParser::trim(l.substr(0, eqPos));
+        if (k.empty()) {
+            return false;
+        }
+
+        string rawVal = l.substr(eqPos + 1);
+        // Trim leading spaces from raw value
+        while (!rawVal.empty() && (rawVal.front() == ' ' || rawVal.front() == '\t')) {
+            rawVal.erase(0, 1);
+        }
+
+        string v = "";
+
+        if (!rawVal.empty() && rawVal.front() == '"') {
+            // Double-quoted string: parse escape sequences until closing quote
+            rawVal.erase(0, 1); // drop opening quote
+            bool escaped = false;
+            size_t i = 0;
+            while (i < rawVal.length()) {
+                char c = rawVal[i];
+                if (escaped) {
+                    if (c == 'n') v.push_back('\n');
+                    else if (c == 't') v.push_back('\t');
+                    else if (c == 'r') v.push_back('\r');
+                    else if (c == '"') v.push_back('"');
+                    else if (c == '\\') v.push_back('\\');
+                    else v.push_back(c);
+                    escaped = false;
+                } else if (c == '\\') {
+                    escaped = true;
+                } else if (c == '"') {
+                    // Reached closing quote
+                    break;
+                } else {
+                    v.push_back(c);
+                }
+                i++;
+            }
+        } else if (!rawVal.empty() && rawVal.front() == '\'') {
+            // Single-quoted literal string: raw content until closing quote
+            rawVal.erase(0, 1); // drop opening quote
+            size_t closePos = rawVal.find('\'');
+            if (closePos != std::string::npos) {
+                v = rawVal.substr(0, closePos);
+            } else {
+                v = rawVal;
+            }
+        } else {
+            // Unquoted string: strip inline comments (# preceded by whitespace or at end)
+            size_t hashPos = rawVal.find('#');
+            if (hashPos != std::string::npos) {
+                rawVal = rawVal.substr(0, hashPos);
+            }
+            v = EnvParser::trim(rawVal);
+        }
+
+        outKey = k;
+        outVal = v;
+        return true;
+    }
+
+    static public bool parseBool(string valStr, bool defaultVal) {
+        string s = EnvParser::trim(valStr);
+        for (size_t i = 0; i < s.length(); i++) {
+            s[i] = (char)std::tolower(s[i]);
+        }
+
+        if (s == "true" || s == "1" || s == "yes" || s == "on" || s == "y") {
+            return true;
+        }
+        if (s == "false" || s == "0" || s == "no" || s == "off" || s == "n") {
+            return false;
+        }
+        return defaultVal;
+    }
+
+    static public int parseInt(string valStr, int defaultVal) {
+        string s = EnvParser::trim(valStr);
+        if (s.empty()) return defaultVal;
+        try {
+            return std::stoi(s);
+        } catch (...) {
+            return defaultVal;
+        }
+    }
+
+    static public double parseFloat(string valStr, double defaultVal) {
+        string s = EnvParser::trim(valStr);
+        if (s.empty()) return defaultVal;
+        try {
+            return std::stod(s);
+        } catch (...) {
+            return defaultVal;
+        }
+    }
+}

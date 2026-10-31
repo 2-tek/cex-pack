@@ -1,0 +1,80 @@
+{
+    "name": "cex-test",
+    "version": "2.0.0",
+    "type": "tool",
+    "binary": "{rootPathDir}/{name}-{type}/{version}/bin",
+    "description": "CexTest: Native Test & Debugging Engine for C-ext (Cex)",
+    "main": "src/index.cex",
+    "bin": "./.bin",
+    "output": ".bin",
+    "author": "2-TEK Ecosystem",
+    "license": "MIT",
+    "dependencies": {
+        "cex-env": "2.0.0",
+        "cex": "2.0.0",
+        "cex-log": "2.0.0",
+        "cex-runners": "2.0.0",
+        "cex-pipeline": "2.0.0",
+        "cex-std": "2.0.0",
+        "cex-cstdlib": "2.0.0",
+        "cex-unistd": "2.0.0",
+        "cex-filesystem": "2.0.0",
+        "cex-virtual-dom": "2.0.0"
+    },
+    "alias": {
+        "@": ".",
+        "@/src": "./src"
+    },
+    "includeDirs": [
+        "./src"
+    ],
+    "scripts": {
+        "build": "cexp-v8-stable build scripts/cli.cex -o .bin",
+        "cli": "./.bin",
+        "cli:build": "cexp-v8-stable build scripts/cli.cex -o .bin",
+        "cli:reserve": "CEX_DIR/cex-test-v1/$version/bin",
+        "bin": "./.bin",
+        "dev": "cexr-factory src/index.cex",
+        "lint": "cex-lint",
+        "test": "cext tests/cex_test.test.cex",
+        "test:factory": "cexr-factory tests/cex_test.test.cex",
+        "test:cext": "cext run tests/cex_test.test.cex"
+    },
+    "lint": {
+        "onBuild": true,
+        "include": [
+            "src",
+            "tests",
+            "examples"
+        ],
+        "rules": {
+            "indent": {
+                "level": "error",
+                "size": 4
+            },
+            "quotes": {
+                "level": "error",
+                "style": "double"
+            },
+            "max-line-length": {
+                "level": "off",
+                "max": 160
+            },
+            "semi": "error",
+            "no-tabs": "error",
+            "no-trailing-spaces": "error",
+            "eol-last": "error"
+        }
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/2-tek/cex-test.git"
+    },
+    "runtime": "cexr-factory",
+    "target": "runtime",
+    "required": {
+        "cexr-factory": "^8",
+        "cexp-v8": "^8",
+        "cexp-v8-stable": "^8"
+    }
+}

@@ -1,0 +1,124 @@
+// CexLog: Comprehensive Test Suite (C-ext)
+// Powered by cex-t (Test, Assertions & Verification)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "../src/log.cex";
+import "@cex-test/src/assert.cex";
+import "@cex-test/src/runner.cex";
+import fs from "fs";
+
+int main() {
+    println("===============================================================================");
+    println("       2-TEK CexLog Test Suite (CexT Test Engine)                              ");
+    println("===============================================================================");
+
+    TestSuite* suite = new TestSuite("CexLog Precision & Delay Profiler Tests");
+    int mark = 0;
+
+    // Test 1: Stopwatch lifecycle
+    Stopwatch* sw = Log::start("Unit Workload");
+    Assert::equalsString(sw->label, "Unit Workload", "Stopwatch label initialized");
+    Assert::isTrue(sw->isRunning, "Stopwatch is running initially");
+    Assert::isTrue(sw->startTimeNs > 0, "Start time is positive");
+
+    int64 sum = 0;
+    for (int i = 0; i < 5000; i++) {
+        sum = sum + i;
+    }
+
+    double elapsed = sw->stop();
+    Assert::isTrue(!sw->isRunning, "Stopwatch is stopped");
+    Assert::isTrue(sw->endTimeNs >= sw->startTimeNs, "End time >= start time");
+    Assert::isTrue(elapsed >= 0.0, "Elapsed ms is non-negative");
+    Assert::isTrue(sw->elapsedNs() >= 0, "Elapsed ns is non-negative");
+
+    string formatted = sw->format();
+    Assert::isTrue(formatted.length() > 0, "Stopwatch formatted output is not empty");
+    suite->addResult("test_stopwatch_lifecycle", Assert::getFailures() == mark, "assertions failed - see [FAIL] lines above", 1);
+    mark = Assert::getFailures();
+
+    // Test 2: Delay formatting
+    string f1 = Log::formatDelay(0.0005);
+    Assert::isTrue(f1.find("ns") != -1, "Sub-microsecond formatted as ns");
+
+    string f2 = Log::formatDelay(0.5);
+    Assert::isTrue(f2.find("µs") != -1, "Sub-millisecond formatted as µs");
+
+    string f3 = Log::formatDelay(150.0);
+    Assert::isTrue(f3.find("ms") != -1, "Millisecond formatted as ms");
+
+    string f4 = Log::formatDelay(2500.0);
+    Assert::isTrue(f4.find("s") != -1, "Multi-second formatted as s");
+    suite->addResult("test_delay_formatting", Assert::getFailures() == mark, "assertions failed - see [FAIL] lines above", 1);
+    mark = Assert::getFailures();
+
+    // Test 3: Clocks
+    int64 t1 = Log::nowNs();
+    double t2 = Log::nowMs();
+    Assert::isTrue(t1 > 0, "nowNs returns valid positive nanoseconds");
+    Assert::isTrue(t2 > 0.0, "nowMs returns valid positive milliseconds");
+    suite->addResult("test_now_clocks", Assert::getFailures() == mark, "assertions failed - see [FAIL] lines above", 1);
+    mark = Assert::getFailures();
+
+    // Test 4: Current time format
+    string curTime = Log::getCurrentTime();
+    Assert::equalsInt(8, (int)curTime.length(), "Current time is formatted as HH:MM:SS (length 8)");
+    Assert::isTrue(curTime.find(":") != -1, "Current time contains colon delimiter");
+    suite->addResult("test_current_time_format", Assert::getFailures() == mark, "assertions failed - see [FAIL] lines above", 1);
+    mark = Assert::getFailures();
+
+    // Test 5: Line formatting without icons or linked symbols
+    string rawLine = Log::formatLine("10:00:00", "INFO", "0.50ms", "Server started");
+    Assert::equalsString("[10:00:00][INFO][0.50ms] Server started", rawLine, "Format strictly matches [time][status][delaytime] content");
+    Assert::isTrue(rawLine.find("[Log]") == -1, "No [Log] linked symbol present");
+    Assert::isTrue(rawLine.find("ℹ️") == -1, "No info icon present");
+    Assert::isTrue(rawLine.find("⏱️") == -1, "No stopwatch icon present");
+    Assert::isTrue(rawLine.find("•") == -1, "No bullet symbol present");
+
+    string apiLine = Log::formatLine("10:00:01", "200", "0.016ms", "GET /api/v1/projects");
+    Assert::equalsString("[10:00:01][200][0.016ms] GET /api/v1/projects", apiLine, "Status code formatted in [status] slot");
+    suite->addResult("test_line_format_specification", Assert::getFailures() == mark, "assertions failed - see [FAIL] lines above", 1);
+    mark = Assert::getFailures();
+
+    // Test 6: Text colors (cmd color) and toggling
+    Log::setColorEnabled(true);
+    Assert::equalsString("\033[32m", Log::getStatusColor("INFO"), "INFO status color is green");
+    Assert::equalsString("\033[35m", Log::getStatusColor("DEBUG"), "DEBUG status color is magenta");
+    Assert::equalsString("\033[33m", Log::getStatusColor("WARN"), "WARN status color is yellow");
+    Assert::equalsString("\033[31m", Log::getStatusColor("ERROR"), "ERROR status color is red");
+    Assert::equalsString("\033[36m", Log::getStatusColor("DELAY"), "DELAY status color is cyan");
+    Assert::equalsString("\033[32m", Log::getStatusColor("200"), "200 HTTP status color is green");
+    Assert::equalsString("\033[33m", Log::getStatusColor("404"), "404 HTTP status color is yellow");
+    Assert::equalsString("\033[31m", Log::getStatusColor("500"), "500 HTTP status color is red");
+
+    string coloredLine = Log::formatColoredLine("10:00:00", "INFO", "0.10ms", "Ready");
+    Assert::isTrue(coloredLine.find("\033[32m") != -1, "Colored line contains green ANSI sequence");
+    Assert::isTrue(coloredLine.find("[10:00:00][INFO][0.10ms]") != -1, "Colored line maintains structured bracket format");
+
+    Log::setColorEnabled(false);
+    string plainLine = Log::formatColoredLine("10:00:00", "INFO", "0.10ms", "Ready");
+    Assert::equalsString("[10:00:00][INFO][0.10ms] Ready", plainLine, "Disabled color produces clean uncolored line");
+    Log::setColorEnabled(true);
+    suite->addResult("test_text_color_formatting", Assert::getFailures() == mark, "assertions failed - see [FAIL] lines above", 1);
+    mark = Assert::getFailures();
+
+    // Test 7: Live execution of log levels and delay profiler
+    Log::info("Execution check 1");
+    Log::debug("Execution check 2");
+    Log::warn("Execution check 3");
+    Log::error("Execution check 4");
+    Log::delay("Manual Delay Check", 1.25);
+    Log::delayWithStatus("GET /health", 0.05, 200);
+    CexLog::info("CexLog alias check");
+    CexLogger::info("CexLogger alias check");
+    suite->addResult("test_live_logging_execution", Assert::getFailures() == mark, "assertions failed - see [FAIL] lines above", 1);
+    mark = Assert::getFailures();
+
+    println("\n");
+    TestReporter::printSummary(suite);
+    int failures = Assert::getFailures();
+    if (failures > 0) {
+        return 1;
+    }
+    return suite->failCount() > 0 ? 1 : 0;
+}

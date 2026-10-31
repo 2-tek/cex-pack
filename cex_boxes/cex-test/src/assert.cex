@@ -1,0 +1,378 @@
+// CexT: Assertions Engine
+// Comprehensive assertion primitives for C-ext unit testing powered by CexLog
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule (No Symbols)
+
+import "@cex-log/src/log.cex";
+
+using ThrowAction = std::function<void()>;
+
+class Assert {
+    private static int failures;
+    private static int totalChecks;
+
+    public static void reset() {
+        Assert::failures = 0;
+        Assert::totalChecks = 0;
+    }
+
+    public static int getFailures() {
+        return Assert::failures;
+    }
+
+    public static int getTotalChecks() {
+        return Assert::totalChecks;
+    }
+
+    public static bool isTrue(bool condition, string msg) {
+        Assert::totalChecks++;
+        if (!condition) {
+            Assert::failures++;
+            print("  [FAIL] Assertion isTrue failed: ");
+            println(msg);
+            Log::error("Assertion isTrue failed: " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool isFalse(bool condition, string msg) {
+        Assert::totalChecks++;
+        if (condition) {
+            Assert::failures++;
+            print("  [FAIL] Assertion isFalse failed: ");
+            println(msg);
+            Log::error("Assertion isFalse failed: " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool equalsInt(int actual, int expected, string msg) {
+        Assert::totalChecks++;
+        if (actual !== expected) {
+            Assert::failures++;
+            print("  [FAIL] Expected ");
+            print(expected);
+            print(" but got ");
+            print(actual);
+            print(": ");
+            println(msg);
+            Log::error("Assertion equalsInt failed (" + to_string(expected) + " != " + to_string(actual) + "): " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool equalsString(string actual, string expected, string msg) {
+        Assert::totalChecks++;
+        if (actual !== expected) {
+            Assert::failures++;
+            print("  [FAIL] Expected \"");
+            print(expected);
+            print("\" but got \"");
+            print(actual);
+            print("\": ");
+            println(msg);
+            Log::error("Assertion equalsString failed (\"" + expected + "\" != \"" + actual + "\"): " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool notNull(void* ptr, string msg) {
+        Assert::totalChecks++;
+        if (ptr == nullptr) {
+            Assert::failures++;
+            print("  [FAIL] Expected non-null pointer: ");
+            println(msg);
+            Log::error("Assertion notNull failed: " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool greaterThan(int a, int b, string msg) {
+        Assert::totalChecks++;
+        if (a <= b) {
+            Assert::failures++;
+            print("  [FAIL] Expected ");
+            print(a);
+            print(" > ");
+            print(b);
+            print(": ");
+            println(msg);
+            Log::error("Assertion greaterThan failed: " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool lessThan(int a, int b, string msg) {
+        Assert::totalChecks++;
+        if (a >= b) {
+            Assert::failures++;
+            print("  [FAIL] Expected ");
+            print(a);
+            print(" < ");
+            print(b);
+            print(": ");
+            println(msg);
+            Log::error("Assertion lessThan failed: " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool greaterOrEqual(int a, int b, string msg) {
+        Assert::totalChecks++;
+        if (a < b) {
+            Assert::failures++;
+            print("  [FAIL] Expected ");
+            print(a);
+            print(" >= ");
+            print(b);
+            print(": ");
+            println(msg);
+            Log::error("Assertion greaterOrEqual failed: " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool lessOrEqual(int a, int b, string msg) {
+        Assert::totalChecks++;
+        if (a > b) {
+            Assert::failures++;
+            print("  [FAIL] Expected ");
+            print(a);
+            print(" <= ");
+            print(b);
+            print(": ");
+            println(msg);
+            Log::error("Assertion lessOrEqual failed: " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool containsString(string haystack, string needle, string msg) {
+        Assert::totalChecks++;
+        if (haystack.find(needle) == -1) {
+            Assert::failures++;
+            print("  [FAIL] Expected string containing \"");
+            print(needle);
+            print("\": ");
+            println(msg);
+            Log::error("Assertion containsString failed: " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool resolvesTrue(Promise<bool>* p, string msg) {
+        Assert::totalChecks++;
+        if (p == nullptr) {
+            Assert::failures++;
+            print("  [FAIL] Promise is null: ");
+            println(msg);
+            return false;
+        }
+        try {
+            bool res = await p;
+            if (!res) {
+                Assert::failures++;
+                print("  [FAIL] Promise resolved to false: ");
+                println(msg);
+                return false;
+            }
+            print("  [PASS] ");
+            println(msg);
+            return true;
+        } catch (...) {
+            Assert::failures++;
+            print("  [FAIL] Promise threw unexpected exception: ");
+            println(msg);
+            return false;
+        }
+    }
+
+    public static bool resolvesFalse(Promise<bool>* p, string msg) {
+        Assert::totalChecks++;
+        if (p == nullptr) {
+            Assert::failures++;
+            print("  [FAIL] Promise is null: ");
+            println(msg);
+            return false;
+        }
+        try {
+            bool res = await p;
+            if (res) {
+                Assert::failures++;
+                print("  [FAIL] Promise resolved to true: ");
+                println(msg);
+                return false;
+            }
+            print("  [PASS] ");
+            println(msg);
+            return true;
+        } catch (...) {
+            Assert::failures++;
+            print("  [FAIL] Promise threw unexpected exception: ");
+            println(msg);
+            return false;
+        }
+    }
+
+    public static bool resolvesEqualsInt(Promise<int>* p, int expected, string msg) {
+        Assert::totalChecks++;
+        if (p == nullptr) {
+            Assert::failures++;
+            print("  [FAIL] Promise is null: ");
+            println(msg);
+            return false;
+        }
+        try {
+            int val = await p;
+            if (val !== expected) {
+                Assert::failures++;
+                print("  [FAIL] Expected promise resolving to ");
+                print(expected);
+                print(" but got ");
+                print(val);
+                print(": ");
+                println(msg);
+                return false;
+            }
+            print("  [PASS] ");
+            println(msg);
+            return true;
+        } catch (...) {
+            Assert::failures++;
+            print("  [FAIL] Promise threw unexpected exception: ");
+            println(msg);
+            return false;
+        }
+    }
+
+    public static bool resolvesEqualsString(Promise<string>* p, string expected, string msg) {
+        Assert::totalChecks++;
+        if (p == nullptr) {
+            Assert::failures++;
+            print("  [FAIL] Promise is null: ");
+            println(msg);
+            return false;
+        }
+        try {
+            string val = await p;
+            if (val != expected) {
+                Assert::failures++;
+                print("  [FAIL] Expected promise resolving to \"");
+                print(expected);
+                print("\" but got \"");
+                print(val);
+                print("\": ");
+                println(msg);
+                return false;
+            }
+            print("  [PASS] ");
+            println(msg);
+            return true;
+        } catch (...) {
+            Assert::failures++;
+            print("  [FAIL] Promise threw unexpected exception: ");
+            println(msg);
+            return false;
+        }
+    }
+
+    public static bool rejectsBool(Promise<bool>* p, string expectedError, string msg) {
+        Assert::totalChecks++;
+        if (p == nullptr) {
+            Assert::failures++;
+            print("  [FAIL] Promise is null: ");
+            println(msg);
+            return false;
+        }
+        try {
+            bool val = await p;
+            Assert::failures++;
+            print("  [FAIL] Expected promise to reject but it resolved: ");
+            println(msg);
+            return false;
+        } catch (...) {
+            print("  [PASS] ");
+            println(msg);
+            return true;
+        }
+    }
+
+    public static bool assertThrows(ThrowAction fn, string msg) {
+        Assert::totalChecks++;
+        bool threw = false;
+        try {
+            fn();
+        } catch (...) {
+            threw = true;
+        }
+        if (!threw) {
+            Assert::failures++;
+            print("  [FAIL] Expected exception but none was thrown: ");
+            println(msg);
+            Log::error("Assertion assertThrows failed: " + msg);
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool expectThrow(ThrowAction fn, string msg) {
+        return Assert::assertThrows(fn, msg);
+    }
+
+    public static bool assertDoesNotThrow(ThrowAction fn, string msg) {
+        Assert::totalChecks++;
+        bool threw = false;
+        string errStr = "";
+        try {
+            fn();
+        } catch (...) {
+            threw = true;
+            errStr = "unknown exception";
+        }
+        if (threw) {
+            Assert::failures++;
+            print("  [FAIL] Unexpected exception thrown (" + errStr + "): ");
+            println(msg);
+            Log::error("Assertion assertDoesNotThrow failed: " + msg + " (" + errStr + ")");
+            return false;
+        }
+        print("  [PASS] ");
+        println(msg);
+        return true;
+    }
+
+    public static bool expectNoThrow(ThrowAction fn, string msg) {
+        return Assert::assertDoesNotThrow(fn, msg);
+    }
+}

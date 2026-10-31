@@ -1,0 +1,95 @@
+// PerfectCex Example 04: Auto-Scale & DDoS Protection Demonstration
+// Demonstrates automatic scaling with large transfer transactions, DDoS mitigation (> 100 req/s), and .env loading
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "../src/types.cex";
+import "../src/request.cex";
+import "../src/response.cex";
+import "../src/middleware.cex";
+import "../src/router.cex";
+import "../src/ssr.cex";
+import "../src/autoscale.cex";
+import "../src/app.cex";
+
+int main() {
+    println("===============================================================");
+    println("   PerfectCex: Auto-Scale & DDoS Protection Demonstration      ");
+    println("===============================================================");
+
+    // 1. Initialize CexService with Auto-Scale & DDoS Protection
+    println("\n[1. Initializing Service with AutoScale & DDoS Engine]");
+    AutoScaleConfig* cfg = new AutoScaleConfig();
+    cfg->minWorkers = 2;
+    cfg->maxWorkers = 16;
+    cfg->ddosRateLimitPerIp = 100; // DDOS default > 100req/s for an ip
+    cfg->ddosBanDurationSeconds = 60;
+    cfg->largeTransferThresholdBytes = 1048576; // 1 MB
+
+    PerfectApp* app = new PerfectApp();
+    app->use(new TimingMiddleware());
+    app->use(new CorsMiddleware("*"));
+    app->use(new LoggerMiddleware());
+    app->enableAutoScaleWithConfig(cfg);
+
+    // Register API Endpoints
+    app->api("GET", "/api/transfer/info", "Transaction Status Info", "{\"status\": \"ready\", \"bandwidth\": \"10Gbps\"}");
+    app->api("POST", "/api/transfer/data", "Data Transfer Endpoint", "{\"status\": \"accepted\", \"bytesReceived\": 2097152}");
+
+    println("Service started with " + std::to_string(app->autoScaler->currentWorkers) + " baseline workers.");
+    println("DDoS rate limit: " + std::to_string(cfg->ddosRateLimitPerIp) + " req/s per IP.");
+    println("Large transfer threshold: " + std::to_string((int)(cfg->largeTransferThresholdBytes / 1024)) + " KB.");
+
+    // 2. Normal Traffic Verification
+    println("\n[2. Normal User Traffic Simulation]");
+    string legitIp = "192.168.1.100";
+    PerfectResponse* res1 = app->simulateRequestWithIp("GET", "/api/transfer/info", "", legitIp);
+    print("GET /api/transfer/info Status: "); println(res1->statusCode);
+    print("Auto-Scale Workers Header:    "); println(res1->getHeader("X-Auto-Scale-Workers"));
+    print("Auto-Scale Status Header:     "); println(res1->getHeader("X-Auto-Scale-Status"));
+    print("DDoS Protection Header:       "); println(res1->getHeader("X-DDoS-Protection"));
+
+    // 3. Large Transfer Transaction
+    println("\n[3. Simulating Large Transfer Transaction (5 MB payload)]");
+    PerfectRequest* largeReq = new PerfectRequest("POST", "/api/transfer/data", "payload", "192.168.1.101");
+    largeReq->setHeader("Content-Length", "5242880"); // 5 MB
+    PerfectResponse* largeRes = new PerfectResponse();
+    app->handle(largeReq, largeRes);
+
+    print("POST /api/transfer/data Status: "); println(largeRes->statusCode);
+    print("Large Transfer Header:         "); println(largeRes->getHeader("X-Large-Transfer"));
+    print("Auto-Scaled Workers:           "); println(largeRes->getHeader("X-Auto-Scale-Workers"));
+    print("Auto-Scale Status:             "); println(largeRes->getHeader("X-Auto-Scale-Status"));
+
+    // 4. DDoS Attack Simulation (> 100 req/s for an IP)
+    println("\n[4. Simulating DDoS Attack from Single IP (> 100 req/s)]");
+    string attackerIp = "45.33.32.156";
+    int64 nowSec = 10000;
+
+    println("Sending 100 requests within 1s window from " + attackerIp + "...");
+    for (int i = 1; i <= 100; i++) {
+        PerfectRequest* r = new PerfectRequest("GET", "/api/transfer/info", "", attackerIp);
+        PerfectResponse* resp = new PerfectResponse();
+        app->autoScaler->evaluateRequestWithTime(r, resp, nowSec);
+    }
+    println("100 requests handled normally at capacity limit.");
+
+    println("\n--> Sending 101st request from " + attackerIp + " (exceeding 100 req/s limit)...");
+    PerfectRequest* attackReq = new PerfectRequest("GET", "/api/transfer/info", "", attackerIp);
+    PerfectResponse* attackRes = new PerfectResponse();
+    bool allowed = app->autoScaler->evaluateRequestWithTime(attackReq, attackRes, nowSec);
+
+    print("Allowed:                       "); println(allowed ? "true" : "false (BLOCKED)");
+    print("Response Status Code:          "); println(attackRes->statusCode);
+    print("X-DDoS-Protection Header:      "); println(attackRes->getHeader("X-DDoS-Protection"));
+    print("Retry-After Header:            "); println(attackRes->getHeader("Retry-After"));
+    print("Auto-Scaled Workers (Defense): "); println(attackRes->getHeader("X-Auto-Scale-Workers"));
+    print("Auto-Scale Status:             "); println(attackRes->getHeader("X-Auto-Scale-Status"));
+    print("DDoS Rejection Payload:        "); println(attackRes->body);
+
+    // 5. Display Comprehensive Telemetry Metrics
+    println("\n[5. Comprehensive Service & Auto-Scale Telemetry]");
+    app->displayMetrics();
+
+    println("\n=== Auto-Scale & DDoS Demonstration Completed Successfully! ===");
+    return 0;
+}

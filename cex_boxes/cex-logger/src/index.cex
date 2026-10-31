@@ -1,0 +1,24 @@
+// CexLog: Entry Point Module (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "./log.cex";
+
+int main() {
+    println("===============================================================================");
+    println("      2-TEK CexLog: High-Resolution Logging & Delay Profiler Engine            ");
+    println("===============================================================================");
+
+    Log::info("CexLog Engine Initialized");
+    Stopwatch* sw = Log::start("Sample Operation");
+
+    // Simulate small workload
+    int64 sum = 0;
+    for (int i = 0; i < 100000; i++) {
+        sum = sum + i;
+    }
+
+    sw->stop();
+    Log::delay("Sample Operation (sum=" + std::to_string(sum) + ")", sw->elapsedMs());
+    Log::info("Completed with formatted delay: " + sw->format());
+    return 0;
+}

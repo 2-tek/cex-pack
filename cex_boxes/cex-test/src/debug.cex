@@ -1,0 +1,65 @@
+// CexT: Debugging and Inspection Subsystem
+// Memory inspection, structured logging, checkpoints, and diagnostics powered by CexLog
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule (No Symbols)
+
+import "@cex-log/src/log.cex";
+
+class Debugger {
+    private static int checkpointCounter;
+
+    public static void log(string tag, string message) {
+        Log::debug("[" + tag + "] " + message);
+    }
+
+    public static void checkpoint(string name) {
+        Debugger::checkpointCounter++;
+        Log::info("CHECKPOINT #" + to_string(Debugger::checkpointCounter) + ": " + name);
+    }
+
+    public static int getCheckpointCounter() {
+        return Debugger::checkpointCounter;
+    }
+
+    public static void dumpHex(string title, string data) {
+        println("+---------------------------------------------------------------+");
+        print("| Hex Dump: ");
+        print(title);
+        println("");
+        println("+---------------------------------------------------------------+");
+        int len = (int)data.length();
+        for (int i = 0; i < len; i++) {
+            int c = (int)data.at(i);
+            if (c < 0) c = c + 256;
+            print(" ");
+            if (c < 16) print("0");
+            string hexChars = "0123456789ABCDEF";
+            print(hexChars.substr((c / 16) % 16, 1));
+            print(hexChars.substr(c % 16, 1));
+            if ((i + 1) % 16 == 0) {
+                println("");
+            }
+        }
+        if (len % 16 != 0) {
+            println("");
+        }
+        println("-----------------------------------------------------------------");
+    }
+
+    public static void inspectMemory(string label, void* ptr, int sizeBytes) {
+        println("+---------------------------------------------------------------+");
+        print("| Memory Inspection: ");
+        print(label);
+        println("");
+        println("+---------------------------------------------------------------+");
+        print("  Address:    ");
+        if (ptr == nullptr) {
+            println("nullptr");
+        } else {
+            println(ptr);
+        }
+        print("  Size:       ");
+        print(sizeBytes);
+        println(" bytes");
+        println("-----------------------------------------------------------------");
+    }
+}

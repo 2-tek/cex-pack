@@ -1,0 +1,251 @@
+// CexT: Code Coverage Collector
+// Central runtime singleton for recording statement hits and managing file coverage
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "./coverage_types.cex";
+import "@cex-cstdlib/src/cstdlib.cex";
+import "@cex-env/src/env_loader.cex";
+import fs from "fs";
+
+class CoverageCollector {
+    private static Array<FileCoverage*>* files;
+    private static bool isInitialized;
+
+    public static void init() {
+        CoverageCollector::files = new Array<FileCoverage*>();
+        CoverageCollector::isInitialized = true;
+    }
+
+    public static void reset() {
+        CoverageCollector::files = new Array<FileCoverage*>();
+        CoverageCollector::isInitialized = true;
+    }
+
+    public static FileCoverage* getFile(string filePath) {
+        if (!CoverageCollector::isInitialized || CoverageCollector::files == nullptr) {
+            CoverageCollector::init();
+        }
+        int total = (int)CoverageCollector::files->length();
+        for (int i = 0; i < total; i++) {
+            FileCoverage* fc = CoverageCollector::files->get(i);
+            if (fc->filePath === filePath) {
+                return fc;
+            }
+        }
+        return nullptr;
+    }
+
+    public static FileCoverage* getOrCreateFile(string filePath) {
+        FileCoverage* existing = CoverageCollector::getFile(filePath);
+        if (existing != nullptr) {
+            return existing;
+        }
+        FileCoverage* fc = new FileCoverage(filePath);
+        CoverageCollector::files->push(fc);
+        return fc;
+    }
+
+    public static FileCoverage* registerFile(string filePath, string sourceContent) {
+        FileCoverage* fc = CoverageCollector::getOrCreateFile(filePath);
+        fc->lines->clear();
+        fc->totalLines = 0;
+        fc->executableLines = 0;
+        fc->hitLines = 0;
+        fc->missedLines = 0;
+
+        int len = (int)sourceContent.length();
+        int lineStart = 0;
+        int lineNum = 1;
+        bool inBlockComment = false;
+
+        for (int i = 0; i <= len; i++) {
+            if (i == len || sourceContent.substr(i, 1) === "\n") {
+                string lineStr = "";
+                if (i > lineStart) {
+                    lineStr = sourceContent.substr(lineStart, i - lineStart);
+                }
+                if (lineStr.length() > 0 && lineStr.substr(lineStr.length() - 1) === "\r") {
+                    lineStr = lineStr.substr(0, lineStr.length() - 1);
+                }
+
+                bool isExec = CoverageCollector::isLineExecutable(lineStr, inBlockComment);
+                fc->addLine(lineNum, isExec, lineStr);
+
+                lineStart = i + 1;
+                lineNum++;
+            }
+        }
+        return fc;
+    }
+
+    public static FileCoverage* registerFileLines(string filePath, int totalLines, Array<int>* execLines) {
+        FileCoverage* fc = CoverageCollector::getOrCreateFile(filePath);
+        fc->lines->clear();
+        fc->totalLines = 0;
+        fc->executableLines = 0;
+        fc->hitLines = 0;
+        fc->missedLines = 0;
+
+        int eCount = (int)execLines->length();
+        for (int l = 1; l <= totalLines; l++) {
+            bool isExec = false;
+            for (int e = 0; e < eCount; e++) {
+                if (execLines->get(e) == l) {
+                    isExec = true;
+                    break;
+                }
+            }
+            fc->addLine(l, isExec, "");
+        }
+        return fc;
+    }
+
+    public static void hit(string filePath, int line) {
+        FileCoverage* fc = CoverageCollector::getOrCreateFile(filePath);
+        fc->recordHit(line, 1);
+    }
+
+    public static void hitCount(string filePath, int line, int count) {
+        FileCoverage* fc = CoverageCollector::getOrCreateFile(filePath);
+        fc->recordHit(line, count);
+    }
+
+    public static Array<FileCoverage*>* getFiles() {
+        if (!CoverageCollector::isInitialized || CoverageCollector::files == nullptr) {
+            CoverageCollector::init();
+        }
+        return CoverageCollector::files;
+    }
+
+    public static CoverageStats* computeStats() {
+        CoverageStats* stats = new CoverageStats();
+        Array<FileCoverage*>* files = CoverageCollector::getFiles();
+        int total = (int)files->length();
+        for (int i = 0; i < total; i++) {
+            stats->addFile(files->get(i));
+        }
+        return stats;
+    }
+
+    public static string dumpTrace() {
+        Array<FileCoverage*>* files = CoverageCollector::getFiles();
+        int fCount = (int)files->length();
+        string out = "";
+        for (int i = 0; i < fCount; i++) {
+            FileCoverage* fc = files->get(i);
+            int lCount = (int)fc->lines->length();
+            for (int j = 0; j < lCount; j++) {
+                CoverageLineInfo* info = fc->lines->get(j);
+                if (info->hitCount > 0) {
+                    out = out + fc->filePath + ":" + to_string(info->lineNumber) + ":" + to_string(info->hitCount) + "\n";
+                }
+            }
+        }
+        return out;
+    }
+
+    public static void loadTrace(string traceData) {
+        int len = (int)traceData.length();
+        int lineStart = 0;
+
+        while (lineStart < len) {
+            int nextNl = (int)traceData.find("\n", lineStart);
+            int lineEnd = (nextNl !== -1) ? nextNl : len;
+            if (lineEnd > lineStart) {
+                string entry = traceData.substr(lineStart, lineEnd - lineStart);
+                if (entry.length() > 0 && entry.substr(entry.length() - 1) === "\r") {
+                    entry = entry.substr(0, entry.length() - 1);
+                }
+                CoverageCollector::parseAndRecordTraceLine(entry);
+            }
+            if (nextNl === -1) {
+                break;
+            }
+            lineStart = nextNl + 1;
+        }
+    }
+
+    public static void autoDumpTrace() {
+        string traceStr = CexEnv::loadString("CEX_COVERAGE_TRACE", "");
+        if (traceStr.length() > 0) {
+            string data = CoverageCollector::dumpTrace();
+            fs.writeFile(traceStr, data);
+        }
+    }
+
+    public static void parseAndRecordTraceLine(string entry) {
+        int p1 = (int)entry.find(":");
+        if (p1 == -1) return;
+        int p2 = (int)entry.find(":", p1 + 1);
+        if (p2 == -1) return;
+
+        string filePath = entry.substr(0, p1);
+        string lineStr = entry.substr(p1 + 1, p2 - p1 - 1);
+        string countStr = entry.substr(p2 + 1);
+
+        int lineNum = EnvParser::parseInt(lineStr, 0);
+        int count = EnvParser::parseInt(countStr, 0);
+        CoverageCollector::hitCount(filePath, lineNum, count);
+    }
+
+    public static bool isLineExecutable(string rawLine, bool inBlockComment) {
+        string trimmed = CoverageCollector::trim(rawLine);
+        if (trimmed.length() == 0) return false;
+
+        if (inBlockComment) {
+            int endComment = (int)trimmed.find("*/");
+            if (endComment != -1) {
+                return false;
+            }
+            return false;
+        }
+
+        if (trimmed.rfind("/*", 0) == 0) {
+            if (trimmed.find("*/") == -1) {
+                return false;
+            }
+            return false;
+        }
+
+        if (trimmed.rfind("//", 0) == 0) return false;
+        if (trimmed.rfind("import ", 0) == 0) return false;
+        if (trimmed.rfind("package ", 0) == 0) return false;
+
+        if (trimmed === "{" || trimmed === "}" || trimmed === "};") return false;
+
+        if (trimmed.rfind("class ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("interface ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("namespace ", 0) == 0 && trimmed.find("{") != -1) return false;
+
+        // Function / method / constructor definitions
+        if (trimmed.rfind("fn ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("public fn ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("private fn ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("public static fn ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("private static fn ", 0) == 0 && trimmed.find("{") != -1) return false;
+        if (trimmed.rfind("public static ", 0) == 0 && trimmed.find("(") != -1 && trimmed.find("{") != -1) return false;
+        string ctorToken = "constructor";
+        if (trimmed.find(ctorToken) != -1 && trimmed.find("(") != -1 && trimmed.find("{") != -1) return false;
+        if ((trimmed.rfind("public:", 0) == 0 || trimmed.rfind("private:", 0) == 0) && trimmed.find("(") != -1 && trimmed.find("{") != -1) return false;
+
+        if ((trimmed.rfind("public ", 0) == 0 || trimmed.rfind("private ", 0) == 0) &&
+            trimmed.find(":") != -1 && trimmed.find(";") != -1 && trimmed.find("=") == -1 && trimmed.find("(") == -1) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public static string trim(string s) {
+        int start = 0;
+        int end = (int)s.length() - 1;
+        while (start <= end && (s.substr(start, 1) === " " || s.substr(start, 1) === "\t" || s.substr(start, 1) === "\r" || s.substr(start, 1) === "\n")) {
+            start++;
+        }
+        while (end >= start && (s.substr(end, 1) === " " || s.substr(end, 1) === "\t" || s.substr(end, 1) === "\r" || s.substr(end, 1) === "\n")) {
+            end--;
+        }
+        if (start > end) return "";
+        return s.substr(start, end - start + 1);
+    }
+}

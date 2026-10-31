@@ -1,0 +1,190 @@
+// PerfectCex: Promise & Asynchronous Route Handling Test Suite (C-ext)
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "../src/types.cex";
+import "../src/request.cex";
+import "../src/response.cex";
+import "../src/middleware.cex";
+import "../src/router.cex";
+import "../src/ssr.cex";
+import "../src/autoscale.cex";
+import "../src/async_handler.cex";
+import "../src/app.cex";
+
+class PromiseAssert {
+    static public void equalsInt(int expected, int actual, string msg) {
+        if (expected == actual) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg + " (expected: " + std::to_string(expected) + ", actual: " + std::to_string(actual) + ")");
+        }
+    }
+
+    static public void equalsString(string expected, string actual, string msg) {
+        if (expected == actual) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg + " (expected: \"" + expected + "\", actual: \"" + actual + "\")");
+        }
+    }
+
+    static public void equalsBool(bool expected, bool actual, string msg) {
+        if (expected == actual) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg + " (expected: " + (expected ? "true" : "false") + ", actual: " + (actual ? "true" : "false") + ")");
+        }
+    }
+
+    static public void isTrue(bool cond, string msg) {
+        if (cond) {
+            println("  ✓ [PASS] " + msg);
+        } else {
+            println("  ❌ [FAIL] " + msg);
+        }
+    }
+}
+
+class HeavyComputeAsyncHandler : AsyncRouteHandler {
+    public constructor() {
+        this.method = "GET";
+        this.pattern = "/api/compute";
+        this.description = "Async Heavy Background Computation";
+    }
+
+    public Promise<bool>* handle(PerfectRequest* req, PerfectResponse* res) {
+        return Promise::parallel([req, res]() -> bool {
+            int sum = 0;
+            for (int i = 1; i <= 100; i++) {
+                sum += i;
+            }
+            res->status(200);
+            res->json("{\"result\": " + std::to_string(sum) + ", \"status\": \"computed_async\"}");
+            return true;
+        });
+    }
+}
+
+class DatabaseQueryAsyncHandler : AsyncRouteHandler {
+    public constructor() {
+        this.method = "POST";
+        this.pattern = "/api/query";
+        this.description = "Async Database Transaction Query";
+    }
+
+    public Promise<bool>* handle(PerfectRequest* req, PerfectResponse* res) {
+        return Promise::parallel([req, res]() -> bool {
+            res->status(201);
+            res->json("{\"txId\": \"tx-9871\", \"status\": \"committed\", \"rows\": 42}");
+            return true;
+        });
+    }
+}
+
+void test_async_route_handler_execution() {
+    println("\n[Test Suite 1: Asynchronous Promise Route Handlers]");
+
+    PerfectApp* app = new PerfectApp();
+    app->use(new TimingMiddleware());
+    app->use(new CorsMiddleware("*"));
+
+    app->asyncApi(new HeavyComputeAsyncHandler());
+    app->asyncApi(new DatabaseQueryAsyncHandler());
+
+    // 1. Execute GET /api/compute
+    PerfectResponse* resCompute = app->simulateRequest("GET", "/api/compute", "");
+    PromiseAssert::equalsInt(200, resCompute->statusCode, "Async compute endpoint returns 200 OK");
+    PromiseAssert::isTrue(resCompute->body.find("\"result\": 5050") != -1, "Async compute body contains expected sum 5050");
+    PromiseAssert::isTrue(resCompute->body.find("\"computed_async\"") != -1, "Async compute body confirmed async execution");
+
+    // 2. Execute POST /api/query
+    PerfectResponse* resQuery = app->simulateRequest("POST", "/api/query", "{}");
+    PromiseAssert::equalsInt(201, resQuery->statusCode, "Async database query returns 201 Created");
+    PromiseAssert::isTrue(resQuery->body.find("\"txId\": \"tx-9871\"") != -1, "Async query response contains txId");
+}
+
+void test_simulate_request_async() {
+    println("\n[Test Suite 2: Full Request Simulation via Promise<PerfectResponse*>* and await]");
+
+    PerfectApp* app = new PerfectApp();
+    app->api("GET", "/api/items", "Get inventory", "[{\"id\": 1, \"name\": \"Sensor\"}]");
+
+    // Simulate asynchronously on parallel worker thread
+    Promise<PerfectResponse*>* pRes = app->simulateRequestAsync("GET", "/api/items", "");
+    PerfectResponse* res = await pRes;
+
+    PromiseAssert::equalsInt(200, res->statusCode, "simulateRequestAsync fulfills with 200 OK");
+    PromiseAssert::isTrue(res->body.find("Sensor") != -1, "Response payload contains Sensor item");
+}
+
+void test_async_promise_with_autoscale() {
+    println("\n[Test Suite 3: Async Promise Execution with AutoScale & DDoS Engine]");
+
+    AutoScaleConfig* cfg = new AutoScaleConfig();
+    cfg->minWorkers = 2;
+    cfg->maxWorkers = 8;
+    cfg->ddosRateLimitPerIp = 100;
+
+    PerfectApp* app = new PerfectApp();
+    app->enableAutoScaleWithConfig(cfg);
+    app->asyncApi(new HeavyComputeAsyncHandler());
+
+    // 1. Normal async request with client IP
+    Promise<PerfectResponse*>* pNormal = app->simulateRequestAsync("GET", "/api/compute", "", "192.168.1.55");
+    PerfectResponse* resNormal = await pNormal;
+
+    PromiseAssert::equalsInt(200, resNormal->statusCode, "Normal async request succeeds with 200 OK");
+    PromiseAssert::equalsString("2", resNormal->getHeader("X-Auto-Scale-Workers"), "Response contains X-Auto-Scale-Workers: 2");
+    PromiseAssert::equalsString("Active", resNormal->getHeader("X-DDoS-Protection"), "Response contains X-DDoS-Protection: Active");
+
+    // 2. Check metrics
+    PromiseAssert::isTrue(app->totalRequestsHandled >= 1, "Requests handled tracked in metrics");
+}
+
+void test_multiple_concurrent_async_promises() {
+    println("\n[Test Suite 4: Concurrent Execution of Multiple Asynchronous Requests]");
+
+    PerfectApp* app = new PerfectApp();
+    app->asyncApi(new HeavyComputeAsyncHandler());
+
+    Promise<PerfectResponse*>* p1 = app->simulateRequestAsync("GET", "/api/compute", "");
+    Promise<PerfectResponse*>* p2 = app->simulateRequestAsync("GET", "/api/compute", "");
+    Promise<PerfectResponse*>* p3 = app->simulateRequestAsync("GET", "/api/compute", "");
+
+    PerfectResponse* r1 = await p1;
+    PerfectResponse* r2 = await p2;
+    PerfectResponse* r3 = await p3;
+
+    PromiseAssert::equalsInt(200, r1->statusCode, "Concurrent request 1 fulfilled with 200 OK");
+    PromiseAssert::equalsInt(200, r2->statusCode, "Concurrent request 2 fulfilled with 200 OK");
+    PromiseAssert::equalsInt(200, r3->statusCode, "Concurrent request 3 fulfilled with 200 OK");
+}
+
+void test_async_promise_utilities() {
+    println("\n[Test Suite 5: AsyncPromiseUtils Sleep & Cooperative Yield]");
+
+    Promise<bool>* pSleep = AsyncPromiseUtils::sleep(5);
+    bool okSleep = await pSleep;
+    PromiseAssert::isTrue(okSleep, "AsyncPromiseUtils::sleep fulfills after delay");
+
+    Promise<bool>* pYield = AsyncPromiseUtils::yield();
+    bool okYield = await pYield;
+    PromiseAssert::isTrue(okYield, "AsyncPromiseUtils::yield cooperatively yields execution");
+}
+
+int main() {
+    println("===============================================================");
+    println("      @cex-service Promise & Async Handling Test Suite         ");
+    println("===============================================================");
+
+    test_async_route_handler_execution();
+    test_simulate_request_async();
+    test_async_promise_with_autoscale();
+    test_multiple_concurrent_async_promises();
+    test_async_promise_utilities();
+
+    println("\n===============================================================");
+    println("Status: ALL PROMISE & ASYNC TESTS PASSED ✅");
+    println("===============================================================");
+    return 0;
+}

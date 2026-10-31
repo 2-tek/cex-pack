@@ -1,0 +1,591 @@
+// PerfectCex: Auto Scale Engine & DDoS Protection System
+// Next.js-inspired high-performance auto-scaling architecture
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "./types.cex";
+import "./request.cex";
+import "./response.cex";
+
+class AutoScaleConfig {
+    public bool enabled = true;
+    public int minWorkers = 2;
+    public int maxWorkers = 16;
+    public int scaleUpThresholdReqPerSec = 500;
+    public int scaleDownThresholdReqPerSec = 50;
+    public int64 largeTransferThresholdBytes;
+    public int largeTransferTxCountThreshold = 5;
+    public int cooldownSeconds = 10;
+    public bool ddosProtectionEnabled = true;
+    public int ddosRateLimitPerIp;
+    public int ddosWindowSeconds = 1;
+    public int ddosBanDurationSeconds = 60;
+    public bool ddosAutoScaleTrigger = true;
+    public int scaleUpStep = 2;
+    public int scaleDownStep = 1;
+
+    public constructor() {
+        this.largeTransferThresholdBytes = 1048576; // 1 MB default
+        this.ddosRateLimitPerIp = 100; // DDOS default > 100req/s for an ip
+    }
+
+    static public string trim(string s) {
+        string res = s;
+        while (!res.empty() && (res.front() == ' ' || res.front() == '\t' || res.front() == '\r' || res.front() == '\n')) {
+            res.erase(0, 1);
+        }
+        while (!res.empty() && (res.back() == ' ' || res.back() == '\t' || res.back() == '\r' || res.back() == '\n')) {
+            res.pop_back();
+        }
+        return res;
+    }
+
+    static public bool parseBool(string valStr, bool defaultVal) {
+        string s = AutoScaleConfig::trim(valStr);
+        for (size_t i = 0; i < s.length(); i++) {
+            s[i] = (char)std::tolower(s[i]);
+        }
+        if (s == "true" || s == "1" || s == "yes" || s == "on") return true;
+        if (s == "false" || s == "0" || s == "no" || s == "off") return false;
+        return defaultVal;
+    }
+
+    static public int parseInt(string valStr, int defaultVal) {
+        string s = AutoScaleConfig::trim(valStr);
+        if (s.empty()) return defaultVal;
+        try {
+            return std::stoi(s);
+        } catch (...) {
+            return defaultVal;
+        }
+    }
+
+    static public int64 parseInt64(string valStr, int64 defaultVal) {
+        string s = AutoScaleConfig::trim(valStr);
+        if (s.empty()) return defaultVal;
+        try {
+            return (int64)std::stoll(s);
+        } catch (...) {
+            return defaultVal;
+        }
+    }
+
+    static public int resolveKeyCode(string k) {
+        if (k == "AUTOSCALE_ENABLED") return 1;
+        if (k == "AUTOSCALE_MIN_WORKERS") return 2;
+        if (k == "AUTOSCALE_MAX_WORKERS") return 3;
+        if (k == "AUTOSCALE_SCALE_UP_THRESHOLD") return 4;
+        if (k == "AUTOSCALE_SCALE_DOWN_THRESHOLD") return 5;
+        if (k == "AUTOSCALE_LARGE_TRANSFER_BYTES") return 6;
+        if (k == "AUTOSCALE_LARGE_TX_THRESHOLD") return 7;
+        if (k == "AUTOSCALE_COOLDOWN_SECONDS") return 8;
+        if (k == "DDOS_PROTECTION_ENABLED") return 9;
+        if (k == "DDOS_RATE_LIMIT_PER_IP") return 10;
+        if (k == "DDOS_WINDOW_SECONDS") return 11;
+        if (k == "DDOS_BAN_DURATION_SECONDS") return 12;
+        if (k == "DDOS_AUTO_SCALE_TRIGGER") return 13;
+        if (k == "AUTOSCALE_SCALE_UP_STEP") return 14;
+        if (k == "AUTOSCALE_SCALE_DOWN_STEP") return 15;
+        return 0;
+    }
+
+    public void applyKeyValue(string key, string val) {
+        string k = AutoScaleConfig::trim(key);
+        string v = AutoScaleConfig::trim(val);
+        // Strip quotes
+        if (v.length() >= 2 && ((v.front() == '"' && v.back() == '"') || (v.front() == '\'' && v.back() == '\''))) {
+            v = v.substr(1, v.length() - 2);
+        }
+
+        int keyCode = AutoScaleConfig::resolveKeyCode(k);
+        switch (keyCode) {
+            case 1: {
+                this.enabled = AutoScaleConfig::parseBool(v, this.enabled);
+                break;
+            }
+            case 2: {
+                this.minWorkers = AutoScaleConfig::parseInt(v, this.minWorkers);
+                break;
+            }
+            case 3: {
+                this.maxWorkers = AutoScaleConfig::parseInt(v, this.maxWorkers);
+                break;
+            }
+            case 4: {
+                this.scaleUpThresholdReqPerSec = AutoScaleConfig::parseInt(v, this.scaleUpThresholdReqPerSec);
+                break;
+            }
+            case 5: {
+                this.scaleDownThresholdReqPerSec = AutoScaleConfig::parseInt(v, this.scaleDownThresholdReqPerSec);
+                break;
+            }
+            case 6: {
+                this.largeTransferThresholdBytes = AutoScaleConfig::parseInt64(v, this.largeTransferThresholdBytes);
+                break;
+            }
+            case 7: {
+                this.largeTransferTxCountThreshold = AutoScaleConfig::parseInt(v, this.largeTransferTxCountThreshold);
+                break;
+            }
+            case 8: {
+                this.cooldownSeconds = AutoScaleConfig::parseInt(v, this.cooldownSeconds);
+                break;
+            }
+            case 9: {
+                this.ddosProtectionEnabled = AutoScaleConfig::parseBool(v, this.ddosProtectionEnabled);
+                break;
+            }
+            case 10: {
+                this.ddosRateLimitPerIp = AutoScaleConfig::parseInt(v, this.ddosRateLimitPerIp);
+                break;
+            }
+            case 11: {
+                this.ddosWindowSeconds = AutoScaleConfig::parseInt(v, this.ddosWindowSeconds);
+                break;
+            }
+            case 12: {
+                this.ddosBanDurationSeconds = AutoScaleConfig::parseInt(v, this.ddosBanDurationSeconds);
+                break;
+            }
+            case 13: {
+                this.ddosAutoScaleTrigger = AutoScaleConfig::parseBool(v, this.ddosAutoScaleTrigger);
+                break;
+            }
+            case 14: {
+                this.scaleUpStep = AutoScaleConfig::parseInt(v, this.scaleUpStep);
+                break;
+            }
+            case 15: {
+                this.scaleDownStep = AutoScaleConfig::parseInt(v, this.scaleDownStep);
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    }
+
+    public bool loadFromEnv(string envPath) {
+        bool loadedFromFile = false;
+
+        // Try specified or candidate file paths
+        Array<string>* candidatePaths = new Array<string>();
+        if (!envPath.empty()) {
+            candidatePaths->push(envPath);
+        }
+        candidatePaths->push(".env");
+        candidatePaths->push("../.env");
+        candidatePaths->push("../../.env");
+        candidatePaths->push("config/.env");
+
+        int count = (int)candidatePaths->length();
+        for (int i = 0; i < count; i++) {
+            string p = candidatePaths->get(i);
+            std::ifstream file(p);
+            if (file.is_open()) {
+                string line = "";
+                while (std::getline(file, line)) {
+                    string l = AutoScaleConfig::trim(line);
+                    if (l.empty() || l.front() == '#') continue;
+                    if (l.length() >= 7 && l.substr(0, 7) == "export ") {
+                        l = AutoScaleConfig::trim(l.substr(7));
+                    }
+                    size_t eqPos = l.find('=');
+                    if (eqPos != std::string::npos) {
+                        string k = l.substr(0, eqPos);
+                        string v = l.substr(eqPos + 1);
+                        // Strip trailing inline comment
+                        size_t hashPos = v.find('#');
+                        if (hashPos != std::string::npos && (hashPos == 0 || v[hashPos - 1] == ' ' || v[hashPos - 1] == '\t')) {
+                            v = v.substr(0, hashPos);
+                        }
+                        this.applyKeyValue(k, v);
+                        loadedFromFile = true;
+                    }
+                }
+                break; // Stop at first found valid .env file
+            }
+        }
+
+        // System environment variables fallback/override
+        this.loadFromSystemEnv();
+        return loadedFromFile;
+    }
+
+    public bool loadDefaultEnv() {
+        return this.loadFromEnv(".env");
+    }
+
+    public void loadFromSystemEnv() {
+        char* v = nullptr;
+        v = std::getenv("AUTOSCALE_ENABLED"); if (v != nullptr) this.applyKeyValue("AUTOSCALE_ENABLED", v);
+        v = std::getenv("AUTOSCALE_MIN_WORKERS"); if (v != nullptr) this.applyKeyValue("AUTOSCALE_MIN_WORKERS", v);
+        v = std::getenv("AUTOSCALE_MAX_WORKERS"); if (v != nullptr) this.applyKeyValue("AUTOSCALE_MAX_WORKERS", v);
+        v = std::getenv("AUTOSCALE_SCALE_UP_THRESHOLD"); if (v != nullptr) this.applyKeyValue("AUTOSCALE_SCALE_UP_THRESHOLD", v);
+        v = std::getenv("AUTOSCALE_SCALE_DOWN_THRESHOLD"); if (v != nullptr) this.applyKeyValue("AUTOSCALE_SCALE_DOWN_THRESHOLD", v);
+        v = std::getenv("AUTOSCALE_LARGE_TRANSFER_BYTES"); if (v != nullptr) this.applyKeyValue("AUTOSCALE_LARGE_TRANSFER_BYTES", v);
+        v = std::getenv("AUTOSCALE_LARGE_TX_THRESHOLD"); if (v != nullptr) this.applyKeyValue("AUTOSCALE_LARGE_TX_THRESHOLD", v);
+        v = std::getenv("AUTOSCALE_COOLDOWN_SECONDS"); if (v != nullptr) this.applyKeyValue("AUTOSCALE_COOLDOWN_SECONDS", v);
+        v = std::getenv("DDOS_PROTECTION_ENABLED"); if (v != nullptr) this.applyKeyValue("DDOS_PROTECTION_ENABLED", v);
+        v = std::getenv("DDOS_RATE_LIMIT_PER_IP"); if (v != nullptr) this.applyKeyValue("DDOS_RATE_LIMIT_PER_IP", v);
+        v = std::getenv("DDOS_WINDOW_SECONDS"); if (v != nullptr) this.applyKeyValue("DDOS_WINDOW_SECONDS", v);
+        v = std::getenv("DDOS_BAN_DURATION_SECONDS"); if (v != nullptr) this.applyKeyValue("DDOS_BAN_DURATION_SECONDS", v);
+        v = std::getenv("DDOS_AUTO_SCALE_TRIGGER"); if (v != nullptr) this.applyKeyValue("DDOS_AUTO_SCALE_TRIGGER", v);
+        v = std::getenv("AUTOSCALE_SCALE_UP_STEP"); if (v != nullptr) this.applyKeyValue("AUTOSCALE_SCALE_UP_STEP", v);
+        v = std::getenv("AUTOSCALE_SCALE_DOWN_STEP"); if (v != nullptr) this.applyKeyValue("AUTOSCALE_SCALE_DOWN_STEP", v);
+    }
+
+    static public AutoScaleConfig* loadEnv() {
+        AutoScaleConfig* cfg = new AutoScaleConfig();
+        cfg->loadDefaultEnv();
+        return cfg;
+    }
+
+    static public AutoScaleConfig* loadEnvPath(string envPath) {
+        AutoScaleConfig* cfg = new AutoScaleConfig();
+        cfg->loadFromEnv(envPath);
+        return cfg;
+    }
+}
+
+class IpRateRecord {
+    public string ip;
+    public int64 windowStartSec;
+    public int requestCount = 0;
+    public bool isBlocked = false;
+    public int64 blockedUntilSec = 0;
+    public int totalViolations = 0;
+    public int totalRequests = 0;
+
+    public constructor(string ip, int64 nowSec) {
+        this.ip = ip;
+        this.windowStartSec = nowSec;
+    }
+}
+
+class DdosShield {
+    public Array<IpRateRecord*>* records = new Array<IpRateRecord*>();
+    public AutoScaleConfig* config;
+    public int totalAttacksDetected = 0;
+    public int totalBlockedRequests = 0;
+
+    public constructor(AutoScaleConfig* config) {
+        this.config = config;
+    }
+
+    public IpRateRecord* findRecord(string ip) {
+        int count = (int)this.records->length();
+        for (int i = 0; i < count; i++) {
+            IpRateRecord* r = this.records->get(i);
+            if (r->ip == ip) {
+                return r;
+            }
+        }
+        return nullptr;
+    }
+
+    public bool recordAndCheck(string ip, int64 nowSec) {
+        if (!this.config->ddosProtectionEnabled) {
+            return true;
+        }
+
+        IpRateRecord* r = this.findRecord(ip);
+        if (r == nullptr) {
+            r = new IpRateRecord(ip, nowSec);
+            this.records->push(r);
+        }
+
+        r->totalRequests++;
+
+        // 1. If currently blocked, check if ban duration has passed
+        if (r->isBlocked) {
+            if (nowSec < r->blockedUntilSec) {
+                this.totalBlockedRequests++;
+                return false; // Still blocked
+            }
+            // Ban expired: unblock
+            r->isBlocked = false;
+            r->windowStartSec = nowSec;
+            r->requestCount = 0;
+        }
+
+        // 2. Sliding window rate limit check
+        int64 windowDelta = nowSec - r->windowStartSec;
+        if (windowDelta < (int64)this.config->ddosWindowSeconds) {
+            r->requestCount++;
+            // Check threshold: default > 100 req/s
+            if (r->requestCount > this.config->ddosRateLimitPerIp) {
+                r->isBlocked = true;
+                r->blockedUntilSec = nowSec + (int64)this.config->ddosBanDurationSeconds;
+                r->totalViolations++;
+                this.totalAttacksDetected++;
+                this.totalBlockedRequests++;
+                return false; // Rate limit exceeded!
+            }
+        } else {
+            // New window started
+            r->windowStartSec = nowSec;
+            r->requestCount = 1;
+        }
+
+        return true;
+    }
+
+    public bool isBlocked(string ip, int64 nowSec) {
+        IpRateRecord* r = this.findRecord(ip);
+        if (r == nullptr) return false;
+        if (r->isBlocked && nowSec < r->blockedUntilSec) {
+            return true;
+        }
+        return false;
+    }
+
+    public void unblock(string ip) {
+        IpRateRecord* r = this.findRecord(ip);
+        if (r != nullptr) {
+            r->isBlocked = false;
+            r->requestCount = 0;
+        }
+    }
+
+    public void clear() {
+        this.records = new Array<IpRateRecord*>();
+        this.totalAttacksDetected = 0;
+        this.totalBlockedRequests = 0;
+    }
+}
+
+class LargeTransferRecord {
+    public int totalLargeTransfers = 0;
+    public int windowLargeTransfers = 0;
+    public int64 totalBytesTransferred = 0;
+    public int64 windowBytesTransferred = 0;
+    public int64 lastWindowSec = 0;
+    public AutoScaleConfig* config;
+
+    public constructor(AutoScaleConfig* config) {
+        this.config = config;
+    }
+
+    public bool recordTransfer(int64 bytes, int64 nowSec) {
+        this.totalBytesTransferred += bytes;
+
+        if (nowSec != this.lastWindowSec) {
+            this.lastWindowSec = nowSec;
+            this.windowLargeTransfers = 0;
+            this.windowBytesTransferred = 0;
+        }
+
+        this.windowBytesTransferred += bytes;
+
+        if (bytes >= this.config->largeTransferThresholdBytes) {
+            this.totalLargeTransfers++;
+            this.windowLargeTransfers++;
+            return true;
+        }
+        return false;
+    }
+
+    public bool isSurge(int64 nowSec) {
+        if (nowSec != this.lastWindowSec) {
+            return false;
+        }
+        return this.windowLargeTransfers >= this.config->largeTransferTxCountThreshold;
+    }
+}
+
+class AutoScaleManager {
+    public AutoScaleConfig* config;
+    public DdosShield* ddosShield;
+    public LargeTransferRecord* transferMonitor;
+    public int currentWorkers;
+    public string scaleState = "OPTIMAL";
+    public int64 lastScaleTimeSec = 0;
+    public int windowRequestCount = 0;
+    public int64 windowStartSec = 0;
+    public int totalRequestsHandled = 0;
+    public int totalScaleUpEvents = 0;
+    public int totalScaleDownEvents = 0;
+    public string lastScaleReason = "Initial startup";
+
+    public constructor(AutoScaleConfig* config) {
+        this.config = (config != nullptr) ? config : new AutoScaleConfig();
+        this.ddosShield = new DdosShield(this.config);
+        this.transferMonitor = new LargeTransferRecord(this.config);
+        this.currentWorkers = this.config->minWorkers;
+    }
+
+    public int64 getCurrentTimeSec() {
+        auto now = std::chrono::system_clock::now().time_since_epoch();
+        return (int64)std::chrono::duration_cast<std::chrono::seconds>(now).count();
+    }
+
+    public int scaleUp(string reason, int delta) {
+        this.lastScaleReason = reason;
+        this.lastScaleTimeSec = this.getCurrentTimeSec();
+
+        if (this.currentWorkers >= this.config->maxWorkers) {
+            this.currentWorkers = this.config->maxWorkers;
+            this.scaleState = "MAX_CAPACITY";
+            return this.currentWorkers;
+        }
+
+        int newWorkers = this.currentWorkers + delta;
+        if (newWorkers > this.config->maxWorkers) {
+            newWorkers = this.config->maxWorkers;
+        }
+
+        this.currentWorkers = newWorkers;
+        this.totalScaleUpEvents++;
+        if (this.scaleState !== "DDOS_MITIGATION") {
+            this.scaleState = "SCALING_UP";
+        }
+        return this.currentWorkers;
+    }
+
+    public int scaleDown(string reason, int delta) {
+        this.lastScaleReason = reason;
+        this.lastScaleTimeSec = this.getCurrentTimeSec();
+
+        if (this.currentWorkers <= this.config->minWorkers) {
+            this.currentWorkers = this.config->minWorkers;
+            this.scaleState = "OPTIMAL";
+            return this.currentWorkers;
+        }
+
+        int newWorkers = this.currentWorkers - delta;
+        if (newWorkers < this.config->minWorkers) {
+            newWorkers = this.config->minWorkers;
+        }
+
+        this.currentWorkers = newWorkers;
+        this.totalScaleDownEvents++;
+        this.scaleState = (this.currentWorkers == this.config->minWorkers) ? "OPTIMAL" : "SCALING_DOWN";
+        return this.currentWorkers;
+    }
+
+    public bool evaluateRequest(PerfectRequest* req, PerfectResponse* res) {
+        return this.evaluateRequestWithTime(req, res, 0);
+    }
+
+    public bool evaluateRequestWithTime(PerfectRequest* req, PerfectResponse* res, int64 simulatedNowSec) {
+        if (!this.config->enabled) {
+            return true;
+        }
+
+        int64 nowSec = (simulatedNowSec > 0) ? simulatedNowSec : this.getCurrentTimeSec();
+        this.totalRequestsHandled++;
+
+        // Update overall throughput window
+        if (nowSec != this.windowStartSec) {
+            this.windowStartSec = nowSec;
+            this.windowRequestCount = 1;
+        } else {
+            this.windowRequestCount++;
+        }
+
+        // 1. Client IP & DDoS Mitigation Check
+        string clientIp = req->getClientIp();
+        bool allowed = this.ddosShield->recordAndCheck(clientIp, nowSec);
+
+        if (!allowed) {
+            if (this.config->ddosAutoScaleTrigger) {
+                this.scaleState = "DDOS_MITIGATION";
+                this.scaleUp("DDoS attack mitigation triggered (IP " + clientIp + " > " + std::to_string(this.config->ddosRateLimitPerIp) + " req/s)", this.config->scaleUpStep);
+            }
+
+            res->status(429);
+            res->setHeader("Retry-After", std::to_string(this.config->ddosBanDurationSeconds));
+            res->setHeader("X-DDoS-Protection", "Triggered");
+            res->setHeader("X-DDoS-Rate-Limit", std::to_string(this.config->ddosRateLimitPerIp) + " req/s");
+            res->setHeader("X-Auto-Scale-Workers", std::to_string(this.currentWorkers));
+            res->setHeader("X-Auto-Scale-Status", this.scaleState);
+            res->json("{\"error\": \"Too Many Requests\", \"message\": \"DDoS rate limit exceeded (> " + std::to_string(this.config->ddosRateLimitPerIp) + " req/s)\", \"status\": 429, \"clientIp\": \"" + clientIp + "\"}");
+            return false;
+        }
+
+        // 2. Large Transfer Transaction Check
+        int64 transferBytes = (int64)req->body.length();
+        string clHeader = req->getHeader("Content-Length");
+        if (clHeader !== "") {
+            try {
+                int64 parsedCl = (int64)std::stoll(clHeader);
+                if (parsedCl > transferBytes) {
+                    transferBytes = parsedCl;
+                }
+            } catch (...) {}
+        }
+
+        bool isLargeTx = this.transferMonitor->recordTransfer(transferBytes, nowSec);
+        if (isLargeTx) {
+            // Check if massive single transfer (e.g. >= 4x threshold) or surge of large transfers
+            bool isMassive = transferBytes >= (this.config->largeTransferThresholdBytes * 4);
+            bool isSurge = this.transferMonitor->isSurge(nowSec);
+
+            if (isMassive || isSurge) {
+                res->setHeader("X-Large-Transfer", "Surge-Detected");
+                this.scaleUp("Large transfer transaction burst (" + std::to_string((int)(transferBytes / 1024)) + " KB)", this.config->scaleUpStep);
+            } else {
+                res->setHeader("X-Large-Transfer", "Detected");
+            }
+        }
+
+        // 3. High Overall Throughput Auto-Scale Check
+        if (this.windowRequestCount > this.config->scaleUpThresholdReqPerSec) {
+            this.scaleUp("Global throughput surge (" + std::to_string(this.windowRequestCount) + " req/s)", this.config->scaleUpStep);
+        }
+
+        // 4. Graceful Scale Down Check (if cooldown has passed)
+        if (this.currentWorkers > this.config->minWorkers && (nowSec - this.lastScaleTimeSec) >= (int64)this.config->cooldownSeconds) {
+            if (this.windowRequestCount < this.config->scaleDownThresholdReqPerSec && !this.transferMonitor->isSurge(nowSec)) {
+                this.scaleDown("Traffic normalized below scale-down threshold", this.config->scaleDownStep);
+            }
+        }
+
+        // 5. Inject Telemetry Headers into Response
+        res->setHeader("X-Auto-Scale-Workers", std::to_string(this.currentWorkers));
+        res->setHeader("X-Auto-Scale-Status", this.scaleState);
+        res->setHeader("X-DDoS-Protection", "Active");
+
+        return true;
+    }
+
+    public bool handleRequest(PerfectRequest* req, PerfectResponse* res) {
+        return this.evaluateRequest(req, res);
+    }
+
+    public void displayMetrics() {
+        println("╔═══════════════════════════════════════════════════════════════╗");
+        println("║           CexService Auto Scale & DDoS Telemetry              ║");
+        println("╚═══════════════════════════════════════════════════════════════╝");
+        print("  Auto-Scale Status:       "); println(this.scaleState);
+        print("  Active Workers:          "); print(this.currentWorkers); print(" (Min: "); print(this.config->minWorkers); print(", Max: "); print(this.config->maxWorkers); println(")");
+        print("  Total Requests Handled:  "); println(this.totalRequestsHandled);
+        print("  Scale-Up Events:         "); println(this.totalScaleUpEvents);
+        print("  Scale-Down Events:       "); println(this.totalScaleDownEvents);
+        print("  Large Transfer Tx Count: "); println(this.transferMonitor->totalLargeTransfers);
+        print("  Total Data Transferred:  "); print((int)(this.transferMonitor->totalBytesTransferred / 1024)); println(" KB");
+        print("  DDoS Attacks Detected:   "); println(this.ddosShield->totalAttacksDetected);
+        print("  DDoS Requests Blocked:   "); println(this.ddosShield->totalBlockedRequests);
+        print("  DDoS Rate Limit:         "); print(this.config->ddosRateLimitPerIp); println(" req/s per IP");
+        print("  Last Scale Reason:       "); println(this.lastScaleReason);
+        println("─────────────────────────────────────────────────────────────────");
+    }
+
+    public string getMetricsJson() {
+        string out = "{";
+        out += "\"status\": \"" + this.scaleState + "\",";
+        out += "\"currentWorkers\": " + std::to_string(this.currentWorkers) + ",";
+        out += "\"minWorkers\": " + std::to_string(this.config->minWorkers) + ",";
+        out += "\"maxWorkers\": " + std::to_string(this.config->maxWorkers) + ",";
+        out += "\"totalRequests\": " + std::to_string(this.totalRequestsHandled) + ",";
+        out += "\"scaleUpEvents\": " + std::to_string(this.totalScaleUpEvents) + ",";
+        out += "\"scaleDownEvents\": " + std::to_string(this.totalScaleDownEvents) + ",";
+        out += "\"largeTransfers\": " + std::to_string(this.transferMonitor->totalLargeTransfers) + ",";
+        out += "\"totalBytesTransferred\": " + std::to_string(this.transferMonitor->totalBytesTransferred) + ",";
+        out += "\"ddosAttacksDetected\": " + std::to_string(this.ddosShield->totalAttacksDetected) + ",";
+        out += "\"ddosBlockedRequests\": " + std::to_string(this.ddosShield->totalBlockedRequests) + ",";
+        out += "\"ddosRateLimitPerIp\": " + std::to_string(this.config->ddosRateLimitPerIp);
+        out += "}";
+        return out;
+    }
+}

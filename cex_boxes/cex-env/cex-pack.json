@@ -1,0 +1,22 @@
+{
+    "name": "cex-env",
+    "version": "2.0.0",
+    "description": "2-TEK Cex Environment Configuration Loader (.env parser, hierarchy traversal, type-safe casting, and system env fallback) in C-ext (Cex)",
+    "main": "src/index.cex",
+    "runtime": "cexr-factory",
+    "target": "runtime",
+    "required": {
+        "cexr-factory": "^8",
+        "cexp-v8": "^8",
+        "cexp-v8-stable": "^8"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/2-tek/cex-env.git"
+    },
+    "scripts": {
+        "test": "cxvm test tests/cex_env_loader.test.cex"
+    },
+    "author": "2-TEK Ecosystem",
+    "license": "MIT"
+}

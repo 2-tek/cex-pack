@@ -1,0 +1,21 @@
+// Cex-CLI Configuration Loader (C-ext)
+
+import "./types.cex";
+
+class CexCliConfig {
+    public string packageName = "@2tek/cli";
+    public string version = "1.0.1";
+    public string defaultTarget = "development";
+    public Array<string>* buildScripts = new Array<string>();
+
+    public constructor() {
+        this.buildScripts->push("compile");
+        this.buildScripts->push("lint");
+        this.buildScripts->push("test");
+        this.buildScripts->push("bundle");
+    }
+
+    public int getScriptCount() {
+        return (int)this.buildScripts->length();
+    }
+}

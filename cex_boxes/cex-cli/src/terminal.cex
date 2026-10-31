@@ -1,0 +1,67 @@
+// Cex-CLI ANSI Terminal Frame & UI Renderer (C-ext)
+
+import "@cex-log/src/log.cex";
+
+class TerminalUI {
+    static public void renderHeader(string title, string subtext) {
+        Log::info("+--------------------------------------------------------+");
+        string line1 = "| " + title;
+        int padLen = 54 - (int)title.length();
+        for (int i = 0; i < padLen; i++) {
+            line1 = line1 + " ";
+        }
+        line1 = line1 + "|";
+        Log::info(line1);
+        if (subtext != "") {
+            string line2 = "| " + subtext;
+            int padLen2 = 54 - (int)subtext.length();
+            for (int i = 0; i < padLen2; i++) {
+                line2 = line2 + " ";
+            }
+            line2 = line2 + "|";
+            Log::info(line2);
+        }
+        Log::info("+--------------------------------------------------------+");
+    }
+
+    static public void renderTaskStatus(string taskName, string status, int durationMs) {
+        string row = "  * " + taskName;
+        string dots = " ......................................... ";
+        int padLen = 35 - (int)taskName.length();
+        if (padLen > 0) {
+            row = row + dots.substr(0, padLen);
+        }
+        int sCode = (status == "PASSED" || status == "OK") ? 1 : (status == "RUNNING" ? 2 : (status == "FAILED" ? 3 : 0));
+        switch (sCode) {
+            case 1:
+            Log::info(row + "[ OK PASSED ] (" + to_string(durationMs) + "ms)");
+            break;
+            case 2:
+            Log::info(row + "[ RUNNING ]");
+            break;
+            case 3:
+            Log::error(row + "[ FAILED ] (" + to_string(durationMs) + "ms)");
+            break;
+            default:
+            Log::info(row + "[ PENDING ]");
+            break;
+        }
+    }
+
+    static public void renderSuccessBanner(string message) {
+        Log::info("[OK] SUCCESS: " + message);
+    }
+
+    static public void renderWarningBanner(string message) {
+        Log::info("[WARN] " + message);
+    }
+
+    static public void renderErrorBanner(string message) {
+        Log::error("[FAIL] ERROR: " + message);
+    }
+
+    static public void renderStatusRow(string label, string status, string detail) {
+        string statusBadge = "[" + status + "]";
+        Log::info("  * " + label + " " + statusBadge + " " + detail);
+    }
+}

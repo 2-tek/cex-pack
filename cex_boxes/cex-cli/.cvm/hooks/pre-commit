@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# 2-TEK Ecosystem: Pre-Commit Hook (Auto-Fix with CexLint)
+# Rule Conformance: Rule 29 (EOF), Rule 72 (Dynamic Paths), Rule (No Symbols)
+set -e
+
+echo "==> [pre-commit] Running CexLint auto-fix before commit..."
+
+# 1. Dynamically locate cxvm / cex / cex-lint (Rule 72)
+CXVM_BIN=""
+for cand in "$CXVM_DIR/bin/cxvm" "$HOME/.cxvm/bin/cxvm" "$(command -v cxvm 2>/dev/null)" "$CXVM_DIR/bin/cex" "$HOME/.cxvm/bin/cex" "$(command -v cex 2>/dev/null)"; do
+  if [ -n "$cand" ] && [ -x "$cand" ]; then
+    CXVM_BIN="$cand"
+    break
+  fi
+done
+
+if [ -n "$CXVM_BIN" ]; then
+  "$CXVM_BIN" lint --fix . 2>/dev/null || true
+  echo "[OK] [pre-commit] CexLint auto-fix completed."
+else
+  # Fallback to direct cex-lint script
+  for cand in "$HOME/Projects/dependencies/cex-lint/src/index.cex" "$HOME/Projects/cex-lint/src/index.cex" ".cex_boxes/cex-lint/src/index.cex" ".cex_boxes/@cex-lint/src/index.cex"; do
+    if [ -f "$cand" ]; then
+      cexr "$cand" . --fix 2>/dev/null || true
+      echo "[OK] [pre-commit] CexLint auto-fix completed via $cand."
+      break
+    fi
+  done
+fi
+
+# 2. Re-stage any files modified by auto-fix
+if command -v git >/dev/null 2>&1 && [ -d ".git" ]; then
+  git add -u 2>/dev/null || true
+fi
+if [ -d ".cvm" ]; then
+  if command -v cvm >/dev/null 2>&1; then
+    cvm add -u 2>/dev/null || true
+  fi
+fi
+
+exit 0

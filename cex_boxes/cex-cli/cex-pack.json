@@ -1,0 +1,63 @@
+{
+    "name": "cex-cli",
+    "version": "2.0.0",
+    "description": "Cex-CLI: Terminal Build Command Runner, Task Automation & Terminal UI Engine in C-ext (Cex)",
+    "main": "src/index.cex",
+    "author": "2-TEK Ecosystem",
+    "license": "MIT",
+    "runtime": "cexr-factory",
+    "target": "runtime",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/2-tek/cex-cli.git"
+    },
+    "required": {
+        "cexr-factory": "^8",
+        "cexp-v8": "^8",
+        "cexp-v8-stable": "^8"
+    },
+    "scripts": {
+        "build": "cexp-v8-stable build src/index.cex -o bin/cex-cli",
+        "build:cexp": "cexr-factory src/index.cex build:cexp-v8-stable all",
+        "build:cexr-factory": "cexr-factory src/index.cex build:cexr-factory all",
+        "build:toolchain": "cexr-factory src/index.cex build:toolchain all",
+        "start": "cexr-factory src/index.cex",
+        "dev": "cexr-factory src/index.cex",
+        "test": "cxvm test tests/cli.test.cex",
+        "example:pipeline": "cexr-factory examples/01_build_pipeline_runner.cex",
+        "example:ui": "cexr-factory examples/02_terminal_ui_rendering.cex",
+        "example:governance": "cexr-factory examples/03_agents_and_cvm_governance.cex"
+    },
+    "dependencies": {
+        "cex-env": "2.0.0",
+        "cex-logger": "2.0.0",
+        "cex-r": "2.0.0",
+        "cex-s": "2.0.0",
+        "cex-test": "2.0.0"
+    },
+    "includeDirs": [
+        "./src"
+    ],
+    "lint": {
+        "onBuild": true,
+        "include": [
+            "src",
+            "examples",
+            "tests"
+        ],
+        "rules": {
+            "indent": {
+                "level": "error",
+                "size": 4
+            },
+            "quotes": {
+                "level": "error",
+                "style": "double"
+            },
+            "semi": "error",
+            "no-tabs": "error",
+            "no-trailing-spaces": "error",
+            "eol-last": "error"
+        }
+    }
+}

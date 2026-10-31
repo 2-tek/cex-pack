@@ -1,0 +1,332 @@
+// CexTest: Async, Promise & Timeout Utilities
+// Native Promise, async execution, parallel tasks and .env default timeout support
+// Rule Conformance: Rule 69 (Target), Rule 29 (EOF), Rule 72 (Dynamic Paths)
+
+import "@cex-env/src/env_loader.cex";
+import "@cex-log/src/log.cex";
+import "@cex-unistd/src/unistd.cex";
+import "@cex-cstdlib/src/cstdlib.cex";
+
+using AsyncPromise = Promise<bool>*;
+using AsyncTestAction = std::function<AsyncPromise()>;
+
+class TestTimeout {
+    private static int overrideTimeoutMs;
+    private static bool hasOverride;
+    private static string customEnvPath;
+    private static int cachedTimeoutMs;
+    private static bool isCacheValid;
+
+    public static void invalidateCache() {
+        TestTimeout::cachedTimeoutMs = 0;
+        TestTimeout::isCacheValid = false;
+    }
+
+    public static void setOverrideTimeoutMs(int ms) {
+        TestTimeout::overrideTimeoutMs = ms;
+        TestTimeout::hasOverride = true;
+        TestTimeout::cachedTimeoutMs = ms;
+        TestTimeout::isCacheValid = true;
+    }
+
+    public static void clearOverride() {
+        TestTimeout::overrideTimeoutMs = 0;
+        TestTimeout::hasOverride = false;
+        TestTimeout::customEnvPath = "";
+        TestTimeout::cachedTimeoutMs = 0;
+        TestTimeout::isCacheValid = false;
+    }
+
+    public static void setEnvFile(string path) {
+        TestTimeout::customEnvPath = path;
+        TestTimeout::hasOverride = false;
+        TestTimeout::cachedTimeoutMs = 0;
+        TestTimeout::isCacheValid = false;
+    }
+
+    public static string getEnvFile() {
+        return TestTimeout::customEnvPath;
+    }
+
+    public static int parsePositiveTimeout(string rawVal) {
+        if (rawVal.length() === 0) {
+            return 0;
+        }
+        int parsed = EnvParser::parseInt(rawVal, 0);
+        if (parsed <= 0) {
+            return 0;
+        }
+        return parsed;
+    }
+
+    public static int loadTimeoutFromFileOnly(string filePath) {
+        EnvLoader* loader = new EnvLoader();
+        int count = loader->loadFile(filePath);
+        if (count <= 0) {
+            return 0;
+        }
+        Array<string>* keys = new Array<string>();
+        keys->push("CEX_TEST_TIMEOUT_MS");
+        keys->push("TEST_TIMEOUT_MS");
+        keys->push("CEX_TEST_TIMEOUT");
+        keys->push("TEST_TIMEOUT");
+        keys->push("TIMEOUT_MS");
+        keys->push("TIMEOUT");
+
+        int kLen = (int)keys->length();
+        int loadedLen = (int)loader->keysList->length();
+        for (int i = 0; i < kLen; i++) {
+            string targetKey = keys->get(i);
+            for (int j = 0; j < loadedLen; j++) {
+                if (loader->keysList->get(j) == targetKey) {
+                    int parsed = TestTimeout::parsePositiveTimeout(loader->valuesList->get(j));
+                    if (parsed > 0) {
+                        return parsed;
+                    }
+                    return 0;
+                }
+            }
+        }
+        return 0;
+    }
+
+    public static int getTimeoutMs() {
+        if (TestTimeout::hasOverride) {
+            return TestTimeout::overrideTimeoutMs;
+        }
+        if (TestTimeout::isCacheValid) {
+            return TestTimeout::cachedTimeoutMs;
+        }
+        if (TestTimeout::customEnvPath.length() > 0) {
+            int customVal = TestTimeout::loadTimeoutFromFileOnly(TestTimeout::customEnvPath);
+            TestTimeout::cachedTimeoutMs = customVal;
+            TestTimeout::isCacheValid = true;
+            return customVal;
+        }
+
+        int directEnvVal = TestTimeout::loadTimeoutFromFileOnly(".env");
+        if (directEnvVal > 0) {
+            TestTimeout::cachedTimeoutMs = directEnvVal;
+            TestTimeout::isCacheValid = true;
+            return directEnvVal;
+        }
+
+        Array<string>* keys = new Array<string>();
+        keys->push("CEX_TEST_TIMEOUT_MS");
+        keys->push("TEST_TIMEOUT_MS");
+        keys->push("CEX_TEST_TIMEOUT");
+        keys->push("TEST_TIMEOUT");
+        keys->push("TIMEOUT_MS");
+        keys->push("TIMEOUT");
+
+        int kLen = (int)keys->length();
+        for (int i = 0; i < kLen; i++) {
+            string key = keys->get(i);
+            string raw = CexEnv::loadString(key, "");
+            if (raw.length() > 0) {
+                int parsed = TestTimeout::parsePositiveTimeout(raw);
+                if (parsed > 0) {
+                    TestTimeout::cachedTimeoutMs = parsed;
+                    TestTimeout::isCacheValid = true;
+                    return parsed;
+                }
+                TestTimeout::cachedTimeoutMs = 0;
+                TestTimeout::isCacheValid = true;
+                return 0;
+            }
+        }
+
+        Array<string>* fallbackFiles = new Array<string>();
+        fallbackFiles->push("cex-test/.env");
+        fallbackFiles->push("../cex-test/.env");
+        fallbackFiles->push(".cex_boxes/cex-test/.env");
+        fallbackFiles->push("../.cex_boxes/cex-test/.env");
+        int fLen = (int)fallbackFiles->length();
+        for (int f = 0; f < fLen; f++) {
+            int fromBox = TestTimeout::loadTimeoutFromFileOnly(fallbackFiles->get(f));
+            if (fromBox > 0) {
+                TestTimeout::cachedTimeoutMs = fromBox;
+                TestTimeout::isCacheValid = true;
+                return fromBox;
+            }
+        }
+
+        TestTimeout::cachedTimeoutMs = 0;
+        TestTimeout::isCacheValid = true;
+        return 0;
+    }
+
+    public static bool isConfigured() {
+        return TestTimeout::getTimeoutMs() > 0;
+    }
+
+    public static bool isTimedOut(int timeoutMs, double elapsedMs) {
+        if (timeoutMs <= 0) {
+            return true;
+        }
+        return elapsedMs > (double)timeoutMs;
+    }
+
+    public static string formatTimeoutError(int timeoutMs, double elapsedMs) {
+        if (timeoutMs <= 0) {
+            return "Timeout Error: Default timeout is not set in .env";
+        }
+        return "Timeout Error: Task exceeded timeout of " + to_string(timeoutMs) + "ms (elapsed: " + Log::formatDelayMs(elapsedMs) + ")";
+    }
+}
+
+class AsyncTest {
+    public static int getDefaultTimeoutMs() {
+        return TestTimeout::getTimeoutMs();
+    }
+
+    public static bool hasDefaultTimeout() {
+        return TestTimeout::isConfigured();
+    }
+
+    public static Promise<bool>* withTimeout(AsyncTestAction fn, int timeoutMs) {
+        if (timeoutMs <= 0) {
+            return AsyncTest::rejectBool(TestTimeout::formatTimeoutError(timeoutMs, 0.0));
+        }
+        Stopwatch* sw = Log::start("async_with_timeout");
+        try {
+            Promise<bool>* p = fn();
+            if (p == nullptr) {
+                sw->stop();
+                return AsyncTest::rejectBool("Async test returned null promise");
+            }
+            bool ok = await p;
+            sw->stop();
+            double elapsedMs = sw->elapsedMs();
+            if (TestTimeout::isTimedOut(timeoutMs, elapsedMs)) {
+                return AsyncTest::rejectBool(TestTimeout::formatTimeoutError(timeoutMs, elapsedMs));
+            }
+            return AsyncTest::resolveBool(ok);
+        } catch (...) {
+            sw->stop();
+            return AsyncTest::rejectBool("Uncaught exception in async test");
+        }
+    }
+
+    public static Promise<bool>* withDefaultTimeout(AsyncTestAction fn) {
+        return AsyncTest::withTimeout(fn, TestTimeout::getTimeoutMs());
+    }
+
+    public static Promise<bool>* sleep(int ms) {
+        return Promise::parallel([ms]() -> bool {
+            if (ms > 0) {
+                CexUnistd::sleepMs(ms);
+            }
+            return true;
+        });
+    }
+
+    public static Promise<bool>* yield() {
+        return Promise::parallel([]() -> bool {
+            CexUnistd::sleepMs(0);
+            return true;
+        });
+    }
+
+    public static Promise<int>* resolveInt(int val) {
+        return Promise::resolve(val);
+    }
+
+    public static Promise<string>* resolveString(string val) {
+        return Promise::resolve(val);
+    }
+
+    public static Promise<bool>* resolveBool(bool val) {
+        return Promise::resolve(val);
+    }
+
+    public static Promise<int>* rejectInt(string err) {
+        Promise<int>* p = new Promise<int>();
+        p->rejectError(err);
+        return p;
+    }
+
+    public static Promise<string>* rejectString(string err) {
+        Promise<string>* p = new Promise<string>();
+        p->rejectError(err);
+        return p;
+    }
+
+    public static Promise<bool>* rejectBool(string err) {
+        Promise<bool>* p = new Promise<bool>();
+        p->rejectError(err);
+        return p;
+    }
+
+    public static Promise<Array<int>*>* allInt(Array<Promise<int>*>* promises) {
+        return Promise::all(promises);
+    }
+
+    public static Promise<Array<string>*>* allString(Array<Promise<string>*>* promises) {
+        return Promise::all(promises);
+    }
+
+    public static Promise<Array<bool>*>* allBool(Array<Promise<bool>*>* promises) {
+        return Promise::all(promises);
+    }
+
+    public static bool isPending(Promise<bool>* p) {
+        return p != nullptr && p->isPending();
+    }
+
+    public static bool isPending(Promise<int>* p) {
+        return p != nullptr && p->isPending();
+    }
+
+    public static bool isPending(Promise<string>* p) {
+        return p != nullptr && p->isPending();
+    }
+
+    public static bool isPendingInt(Promise<int>* p) {
+        return p != nullptr && p->isPending();
+    }
+
+    public static bool isPendingString(Promise<string>* p) {
+        return p != nullptr && p->isPending();
+    }
+
+    public static bool isFulfilled(Promise<bool>* p) {
+        return p != nullptr && p->isFulfilled();
+    }
+
+    public static bool isFulfilled(Promise<int>* p) {
+        return p != nullptr && p->isFulfilled();
+    }
+
+    public static bool isFulfilled(Promise<string>* p) {
+        return p != nullptr && p->isFulfilled();
+    }
+
+    public static bool isFulfilledInt(Promise<int>* p) {
+        return p != nullptr && p->isFulfilled();
+    }
+
+    public static bool isFulfilledString(Promise<string>* p) {
+        return p != nullptr && p->isFulfilled();
+    }
+
+    public static bool isRejected(Promise<bool>* p) {
+        return p != nullptr && p->isRejected();
+    }
+
+    public static bool isRejected(Promise<int>* p) {
+        return p != nullptr && p->isRejected();
+    }
+
+    public static bool isRejected(Promise<string>* p) {
+        return p != nullptr && p->isRejected();
+    }
+
+    public static bool isRejectedInt(Promise<int>* p) {
+        return p != nullptr && p->isRejected();
+    }
+
+    public static bool isRejectedString(Promise<string>* p) {
+        return p != nullptr && p->isRejected();
+    }
+}
