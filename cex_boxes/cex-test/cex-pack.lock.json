@@ -1,0 +1,61 @@
+{
+    "name": "cex-test",
+    "version": "2.0.0",
+    "lockfileVersion": 1,
+    "encryption": {
+        "algorithm": "aes-256-cbc",
+        "scope": "project"
+    },
+    "dependencies": {
+        "cex-env": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-env.git",
+            "ref": "cex_boxes"
+        },
+        "cex": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex.git",
+            "ref": "cex_boxes"
+        },
+        "cex-log": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-log.git",
+            "ref": "cex_boxes"
+        },
+        "cex-runners": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-runners.git",
+            "ref": "cex_boxes"
+        },
+        "cex-pipeline": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-pipeline.git",
+            "ref": "cex_boxes"
+        },
+        "cex-std": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-std.git",
+            "ref": "cex_boxes"
+        },
+        "cex-cstdlib": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-cstdlib.git",
+            "ref": "cex_boxes"
+        },
+        "cex-unistd": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-unistd.git",
+            "ref": "cex_boxes"
+        },
+        "cex-filesystem": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-filesystem.git",
+            "ref": "cex_boxes"
+        },
+        "cex-virtual-dom": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-virtual-dom.git",
+            "ref": "cex_boxes"
+        }
+    }
+}

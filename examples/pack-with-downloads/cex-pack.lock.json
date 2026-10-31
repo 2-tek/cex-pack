@@ -1,0 +1,31 @@
+{
+    "name": "sample-pack-app",
+    "version": "2.0.0",
+    "lockfileVersion": 1,
+    "encryption": {
+        "algorithm": "aes-256-cbc",
+        "scope": "project"
+    },
+    "dependencies": {
+        "cex-env": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-env.git",
+            "ref": "cex_boxes"
+        },
+        "cex-logger": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-logger.git",
+            "ref": "cex_boxes"
+        },
+        "cex-cli": {
+            "version": "2.0.0",
+            "url": "cex-enc:55104e718d0bbe937d5ccd3e67cb96cc:1ac24cc9e39dc6cf04476c12bd305b5020490d21bb0968e06bc059d355d01fd5164360b14399fdc1d93f2f432823c7f672e17d194d3ca04c42c9f52335a58095",
+            "ref": "cex_boxes"
+        },
+        "cex-test": {
+            "version": "2.0.0",
+            "url": "cex-enc:fe4134ee06de9b31c7f4ecc5c6d27f87:8bdc04374eb307a23a3d09cc1057b3b923e1ff45a7f554027bfa2f977336f856c154a6f3b4390e514af4ada2a0b24a40",
+            "ref": "cex_boxes"
+        }
+    }
+}

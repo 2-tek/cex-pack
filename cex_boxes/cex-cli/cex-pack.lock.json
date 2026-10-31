@@ -1,0 +1,36 @@
+{
+    "name": "cex-cli",
+    "version": "2.0.0",
+    "lockfileVersion": 1,
+    "encryption": {
+        "algorithm": "aes-256-cbc",
+        "scope": "project"
+    },
+    "dependencies": {
+        "cex-env": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-env.git",
+            "ref": "cex_boxes"
+        },
+        "cex-logger": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-logger.git",
+            "ref": "cex_boxes"
+        },
+        "cex-r": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-r.git",
+            "ref": "cex_boxes"
+        },
+        "cex-s": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-s.git",
+            "ref": "cex_boxes"
+        },
+        "cex-test": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-test.git",
+            "ref": "cex_boxes"
+        }
+    }
+}

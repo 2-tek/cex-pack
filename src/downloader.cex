@@ -216,9 +216,30 @@ class DependencyDownloader {
         }
         if (lastSlash != -1) {
             let parentDir: string = manifestPath.substr(0, lastSlash);
-            return parentDir + "/cex-pack-linked.json";
+            let lockFile: string = parentDir + "/cex-pack.lock.json";
+            if (fs.exists(lockFile)) {
+                return lockFile;
+            }
+            let altLockFile: string = parentDir + "/cex-lock.json";
+            if (fs.exists(altLockFile)) {
+                return altLockFile;
+            }
+            let legacyFile: string = parentDir + "/cex-pack-linked.json";
+            if (fs.exists(legacyFile)) {
+                return legacyFile;
+            }
+            return lockFile;
         }
-        return "cex-pack-linked.json";
+        if (fs.exists("cex-pack.lock.json")) {
+            return "cex-pack.lock.json";
+        }
+        if (fs.exists("cex-lock.json")) {
+            return "cex-lock.json";
+        }
+        if (fs.exists("cex-pack-linked.json")) {
+            return "cex-pack-linked.json";
+        }
+        return "cex-pack.lock.json";
     }
 
     static public string stripScopeAlias(string pkgName) {
@@ -238,42 +259,70 @@ class DependencyDownloader {
         let deps: Array<PackageDependency*>* = new Array<PackageDependency*>();
 
         let depIndex: int = manifestContent.find("\"dependencies\"");
-        if (depIndex == -1) {
-            return deps;
+        if (depIndex != -1) {
+            let openBrace: int = manifestContent.find("{", depIndex);
+            let closeBrace: int = manifestContent.find("}", openBrace);
+            if (openBrace != -1 && closeBrace != -1 && closeBrace > openBrace) {
+                let depBlock: string = manifestContent.substr(openBrace + 1, closeBrace - openBrace - 1);
+                let len: int = (int)depBlock.length();
+                let pos: int = 0;
+
+                while (pos < len) {
+                    let keyStart: int = depBlock.find("\"", pos);
+                    if (keyStart == -1) break;
+
+                    let keyEnd: int = depBlock.find("\"", keyStart + 1);
+                    if (keyEnd == -1) break;
+
+                    let pkgName: string = depBlock.substr(keyStart + 1, keyEnd - keyStart - 1);
+
+                    let colonPos: int = depBlock.find(":", keyEnd + 1);
+                    if (colonPos == -1) break;
+
+                    let valStart: int = depBlock.find("\"", colonPos + 1);
+                    if (valStart == -1) break;
+
+                    let valEnd: int = depBlock.find("\"", valStart + 1);
+                    if (valEnd == -1) break;
+
+                    let versionSpec: string = depBlock.substr(valStart + 1, valEnd - valStart - 1);
+
+                    deps->push(new PackageDependency(pkgName, versionSpec));
+                    pos = valEnd + 1;
+                }
+            }
         }
 
-        let openBrace: int = manifestContent.find("{", depIndex);
-        let closeBrace: int = manifestContent.find("}", openBrace);
-        if (openBrace == -1 || closeBrace == -1 || closeBrace <= openBrace) {
-            return deps;
-        }
-
-        let depBlock: string = manifestContent.substr(openBrace + 1, closeBrace - openBrace - 1);
-        let len: int = (int)depBlock.length();
-        let pos: int = 0;
-
-        while (pos < len) {
-            let keyStart: int = depBlock.find("\"", pos);
-            if (keyStart == -1) break;
-
-            let keyEnd: int = depBlock.find("\"", keyStart + 1);
-            if (keyEnd == -1) break;
-
-            let pkgName: string = depBlock.substr(keyStart + 1, keyEnd - keyStart - 1);
-
-            let colonPos: int = depBlock.find(":", keyEnd + 1);
-            if (colonPos == -1) break;
-
-            let valStart: int = depBlock.find("\"", colonPos + 1);
-            if (valStart == -1) break;
-
-            let valEnd: int = depBlock.find("\"", valStart + 1);
-            if (valEnd == -1) break;
-
-            let versionSpec: string = depBlock.substr(valStart + 1, valEnd - valStart - 1);
-
-            deps->push(new PackageDependency(pkgName, versionSpec));
-            pos = valEnd + 1;
+        let pkgIndex: int = manifestContent.find("\"packages\"");
+        if (pkgIndex != -1) {
+            let openBracket: int = manifestContent.find("[", pkgIndex);
+            let closeBracket: int = manifestContent.find("]", openBracket);
+            if (openBracket != -1 && closeBracket != -1 && closeBracket > openBracket) {
+                let pkgBlock: string = manifestContent.substr(openBracket + 1, closeBracket - openBracket - 1);
+                let pLen: int = (int)pkgBlock.length();
+                let pPos: int = 0;
+                while (pPos < pLen) {
+                    let qStart: int = pkgBlock.find("\"", pPos);
+                    if (qStart == -1) break;
+                    let qEnd: int = pkgBlock.find("\"", qStart + 1);
+                    if (qEnd == -1) break;
+                    let pName: string = pkgBlock.substr(qStart + 1, qEnd - qStart - 1);
+                    if (pName.length() > 0) {
+                        let alreadyExists: bool = false;
+                        let dLen: int = (int)deps->length();
+                        for (let d: int = 0; d < dLen; d = d + 1) {
+                            if (deps->get(d)->packageName == pName) {
+                                alreadyExists = true;
+                                break;
+                            }
+                        }
+                        if (!alreadyExists) {
+                            deps->push(new PackageDependency(pName, "2.0.0"));
+                        }
+                    }
+                    pPos = qEnd + 1;
+                }
+            }
         }
 
         return deps;
@@ -956,9 +1005,16 @@ class DependencyDownloader {
 
         out = out + "    }\n";
         out = out + "}\n";
-
-        fs.writeFile(linkedPath, out);
-        println("\x1b[1;32m[CexPack Link] Synchronized " + linkedPath + " with " + targetManifest + " (v" + projVer + ")\x1b[0m");
+        let lastSlash: int = -1;
+        let tLen: int = (int)targetManifest.length();
+        for (let i: int = 0; i < tLen; i = i + 1) {
+            if (targetManifest.substr(i, 1) == "/") {
+                lastSlash = i;
+            }
+        }
+        let outLockPath: string = (lastSlash != -1) ? (targetManifest.substr(0, lastSlash) + "/cex-pack.lock.json") : "cex-pack.lock.json";
+        fs.writeFile(outLockPath, out);
+        println("\x1b[1;32m[CexPack Lock] Synchronized " + outLockPath + " with " + targetManifest + " (v" + projVer + ")\x1b[0m");
         return true;
     }
 

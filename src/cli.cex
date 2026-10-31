@@ -25,7 +25,8 @@ class PackCLI {
         println("  Commands:");
         println("    check [file]       Validate JSON syntax and manifest schema (default: cex-pack.json)");
         println("    downloads [file] [dir] Download dependencies into cex_boxes");
-        println("    link [file]        Generate or refresh project-encrypted cex-pack-linked.json lockfile");
+        println("    lock [file]        Generate or refresh cex-pack.lock.json lockfile (alias: link)");
+        println("    link [file]        Generate or refresh project cex-pack.lock.json lockfile");
         println("    push [file]        Push manifest and working changes to CVM repository");
         println("    commit [msg]       Commit staged changes to CVM repository (-m \"message\")");
         println("    cvm [action]       Dispatch CodeVersionManager commands (status, config, push, commit, sync)");
@@ -203,7 +204,7 @@ class PackCLI {
             return 1;
         }
 
-        if (cmd == "link" || cmd == "--link") {
+        if (cmd == "lock" || cmd == "--lock" || cmd == "link" || cmd == "--link") {
             let ok: bool = this.downloader->linkManifest(fileToValidate);
             if (ok) {
                 return 0;

@@ -1,0 +1,21 @@
+{
+    "name": "example-ui",
+    "version": "2.0.0",
+    "lockfileVersion": 1,
+    "encryption": {
+        "algorithm": "aes-256-cbc",
+        "scope": "project"
+    },
+    "dependencies": {
+        "cex-env": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-env.git",
+            "ref": "cex_boxes"
+        },
+        "cex-logger": {
+            "version": "2.0.0",
+            "url": "https://github.com/2-tek/cex-logger.git",
+            "ref": "cex_boxes"
+        }
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "name": "cex-env",
+    "version": "2.0.0",
+    "lockfileVersion": 1,
+    "encryption": {
+        "algorithm": "aes-256-cbc",
+        "scope": "project"
+    },
+    "dependencies": {
+    }
+}
